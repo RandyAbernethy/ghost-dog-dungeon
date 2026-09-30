@@ -1622,7 +1622,11 @@ func (g *game) useWardingCharm() bool {
 	}
 	g.player.WardingCharms--
 	g.player.ShieldTurns = 3
-	g.addMessage("A pale ward circles you for the next few enemy turns.")
+	if g.dog.Freed && g.dog.Alive {
+		g.addMessage("A pale ward circles you and the Ghost Dog for the next 3 enemy turns.")
+	} else {
+		g.addMessage("A pale ward circles you for the next 3 enemy turns.")
+	}
 	return true
 }
 
@@ -2247,6 +2251,9 @@ func (g *game) attackDog(m *monster) {
 }
 
 func (g *game) hurtDog(damage int, source string) {
+	if g.player.ShieldTurns > 0 && g.dog.Freed && g.dog.Alive {
+		damage = max(0, damage-3)
+	}
 	g.dog.HP -= damage
 	g.addMessage(fmt.Sprintf("%s hits the ghost dog for %d damage. (%d/%d)", source, damage, max(g.dog.HP, 0), g.dog.MaxHP))
 	if g.dog.HP <= 0 {
@@ -2296,7 +2303,7 @@ func (g *game) collectItems() {
 			g.addMessage("You take a blink stone. Use g to teleport to a nearby open tile.")
 		case itemWardingCharm:
 			g.player.WardingCharms++
-			g.addMessage("You take a warding charm. Use b to soften incoming blows for 3 enemy turns.")
+			g.addMessage("You take a warding charm. Use b to protect you and your Ghost Dog for 3 enemy turns.")
 		case itemSunOrb:
 			g.player.SunOrbs++
 			g.addMessage("You cradle a sun orb. Use u to burn every undead monster on this floor.")
@@ -2696,7 +2703,7 @@ func inspectItemText(it item) string {
 	case itemBlinkStone:
 		return "blink stone. Teleports you to a nearby open tile."
 	case itemWardingCharm:
-		return "warding charm. Reduces damage for 3 enemy turns."
+		return "warding charm. Reduces damage to you and your Ghost Dog for 3 enemy turns."
 	case itemSunOrb:
 		return "sun orb. Burns every undead enemy on the floor."
 	case itemFrostCharm:
@@ -2781,7 +2788,7 @@ func (g *game) inventoryLines() []struct {
 		name        string
 		count       int
 		description string
-	}{{"Healing Potion", g.player.Potions, "Use p to restore 12-18 health instantly."}, {"Fire Scroll", g.player.FireScrolls, "Use f to blast the nearest monster within 6 tiles and scorch adjacent foes."}, {"Blink Stone", g.player.BlinkStones, "Use g to teleport to a nearby open tile when surrounded."}, {"Warding Charm", g.player.WardingCharms, "Use b to reduce incoming damage for the next 3 enemy turns."}, {"Sun Orb", g.player.SunOrbs, "Use u to burn every undead monster on the current floor."}, {"Frost Charm", g.player.FrostCharms, "Use t to freeze and damage the nearest enemy for two turns."}, {"Starfire Orb", g.player.StarfireOrbs, "Use o to deal 18-24 damage to the nearest enemy within 6 tiles."}, {"Phoenix Ash", g.player.PhoenixAshes, "Use n to restore 22-30 health below full health."}, {"Ghost Dog Recall Scroll", g.player.GhostRecallScrolls, "Use r to summon a fallen Ghost Dog at full hit points."}, {"Ghost Dog Story Scrolls", len(g.player.StoryChapters), "Collected story chapters are preserved with your save."}}
+	}{{"Healing Potion", g.player.Potions, "Use p to restore 12-18 health instantly."}, {"Fire Scroll", g.player.FireScrolls, "Use f to blast the nearest monster within 6 tiles and scorch adjacent foes."}, {"Blink Stone", g.player.BlinkStones, "Use g to teleport to a nearby open tile when surrounded."}, {"Warding Charm", g.player.WardingCharms, "Use b to reduce incoming damage to you and your Ghost Dog for the next 3 enemy turns."}, {"Sun Orb", g.player.SunOrbs, "Use u to burn every undead monster on the current floor."}, {"Frost Charm", g.player.FrostCharms, "Use t to freeze and damage the nearest enemy for two turns."}, {"Starfire Orb", g.player.StarfireOrbs, "Use o to deal 18-24 damage to the nearest enemy within 6 tiles."}, {"Phoenix Ash", g.player.PhoenixAshes, "Use n to restore 22-30 health below full health."}, {"Ghost Dog Recall Scroll", g.player.GhostRecallScrolls, "Use r to summon a fallen Ghost Dog at full hit points."}, {"Ghost Dog Story Scrolls", len(g.player.StoryChapters), "Collected story chapters are preserved with your save."}}
 }
 
 func (g *game) contextHint() string {

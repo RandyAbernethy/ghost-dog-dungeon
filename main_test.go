@@ -276,6 +276,67 @@ func TestGhostDogTargetsPlayersFight(t *testing.T) {
 	}
 }
 
+func TestWardingCharmProtectsGhostDogForThreeEnemyTurns(t *testing.T) {
+	g := newGame(10)
+	g.player.Pos = pos{X: 5, Y: 5}
+	g.player.WardingCharms = 1
+	g.dog.Freed = true
+	g.dog.Pos = pos{X: 6, Y: 5}
+	g.current().Monsters = []*monster{{Kind: monsterOrc, Name: "Orc Brute", Pos: pos{X: 7, Y: 5}, HP: 1000, MaxHP: 1000, MinDamage: 7, MaxDamage: 7}}
+
+	for turn, command := range []string{"b", ".", ".", "."} {
+		beforeHP := g.dog.HP
+		g.processCommand(command)
+		wantDamage := 3
+		if turn == 3 {
+			wantDamage = 6
+		}
+		if got := beforeHP - g.dog.HP; got != wantDamage {
+			t.Fatalf("enemy turn %d dealt %d damage to dog, want %d", turn+1, got, wantDamage)
+		}
+		if got, want := g.player.ShieldTurns, max(0, 2-turn); got != want {
+			t.Fatalf("enemy turn %d left %d ward turns, want %d", turn+1, got, want)
+		}
+	}
+	if g.player.WardingCharms != 0 {
+		t.Fatal("casting the ward should consume one charm")
+	}
+}
+
+func TestWardCannotHealGhostDogWithSmallHits(t *testing.T) {
+	g := newGame(10)
+	g.dog.Freed = true
+	g.player.ShieldTurns = 3
+	for _, damage := range []int{1, 2, 3} {
+		g.hurtDog(damage, "A weak blow")
+		if g.dog.HP != g.dog.MaxHP || !g.dog.Alive {
+			t.Fatalf("warded hit of %d should leave dog unharmed, got %+v", damage, g.dog)
+		}
+	}
+}
+
+func TestWardProtectsGhostDogFromLightning(t *testing.T) {
+	damage := func(shieldTurns int) int {
+		g := newGame(10)
+		g.player.Pos = pos{X: 5, Y: 5}
+		g.player.ShieldTurns = shieldTurns
+		g.dog.Freed = true
+		g.dog.Pos = pos{X: 6, Y: 5}
+		g.rng = newSimpleRNG(2)
+		herald := newMonster(monsterStormHerald)
+		herald.Pos = pos{X: 8, Y: 5}
+		g.monsterTurn(&herald)
+		return g.dog.MaxHP - g.dog.HP
+	}
+	unwarded, warded := damage(0), damage(3)
+	if unwarded < 3 || unwarded > 6 {
+		t.Fatalf("expected lightning to hit dog for 3-6 damage, got %d", unwarded)
+	}
+	if warded != unwarded-3 {
+		t.Fatalf("warded lightning dealt %d damage, want %d", warded, unwarded-3)
+	}
+}
+
 func TestGhostDogDeathExplainsHowToFreeIt(t *testing.T) {
 	g := newGame(10)
 	g.dog.Freed = true
