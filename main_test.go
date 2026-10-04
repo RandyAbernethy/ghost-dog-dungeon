@@ -138,7 +138,7 @@ func TestSaveAndLoadRoundTrip(t *testing.T) {
 	}
 }
 
-func TestCompareTooltipAndAutoEquipForWeaponAndArmor(t *testing.T) {
+func TestCompareTooltipAndCarryWeaponAndArmor(t *testing.T) {
 	g := newGame(5)
 	g.player.Pos = g.current().Start
 	g.current().Items = []item{{Pos: g.player.Pos, Kind: itemWeapon, Weapon: weapon{Name: "Moonblade", Min: 7, Max: 11}}, {Pos: g.player.Pos, Kind: itemArmor, Armor: armor{Name: "Knight Mail", Slot: slotBody, Defense: 3, Rarity: rarityEpic}}}
@@ -149,6 +149,12 @@ func TestCompareTooltipAndAutoEquipForWeaponAndArmor(t *testing.T) {
 	}
 	if !strings.Contains(joined, "Epic Knight Mail") {
 		t.Fatalf("missing colored/rarity armor name in %q", joined)
+	}
+	if g.player.Weapon.Name != "Rusty Knife" || g.player.BodyArmor.Name != "Worn Coat" {
+		t.Fatal("finding equipment should preserve the player's chosen loadout")
+	}
+	if len(g.player.Weapons) != 2 || len(g.player.Armors) != 4 {
+		t.Fatalf("found gear was not retained: weapons=%d armors=%d", len(g.player.Weapons), len(g.player.Armors))
 	}
 }
 
@@ -190,7 +196,7 @@ func TestCodexScreenShowsKnownEnemies(t *testing.T) {
 		t.Fatalf("run() error = %v", err)
 	}
 	plain := stripANSI(stdout.String())
-	for _, want := range []string{"=== Enemy Codex ===", "Dungeon Rat", "Trick:"} {
+	for _, want := range []string{"=== Enemy Codex ===", newGame(3).current().Monsters[0].Name, "Trick:"} {
 		if !strings.Contains(plain, want) {
 			t.Fatalf("codex output missing %q in %q", want, plain)
 		}
@@ -347,7 +353,7 @@ func TestGhostDogDeathExplainsHowToFreeIt(t *testing.T) {
 	if g.dog.Alive || g.dog.HP != 0 {
 		t.Fatalf("ghost dog should be dead at 0 HP, got alive=%t hp=%d", g.dog.Alive, g.dog.HP)
 	}
-	if !strings.Contains(strings.Join(g.messages, "\n"), "The Ghost Dog can only be freed now by killing the Dread Lich") {
+	if !strings.Contains(strings.Join(g.messages, "\n"), "The Ghost Dog can only be freed now by a magic spell or by killing the Dread Lich") {
 		t.Fatalf("missing ghost-dog death guidance: %q", strings.Join(g.messages, " | "))
 	}
 }

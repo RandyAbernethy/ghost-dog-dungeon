@@ -42,6 +42,7 @@ type weapon struct {
 	Min   int    `json:"min"`
 	Max   int    `json:"max"`
 	Magic bool   `json:"magic,omitempty"`
+	Reach int    `json:"reach,omitempty"`
 }
 
 type armorSlot string
@@ -63,10 +64,12 @@ const (
 )
 
 type armor struct {
-	Name    string    `json:"name"`
-	Slot    armorSlot `json:"slot"`
-	Defense int       `json:"defense"`
-	Rarity  rarity    `json:"rarity"`
+	Name        string    `json:"name"`
+	Slot        armorSlot `json:"slot"`
+	Defense     int       `json:"defense"`
+	Rarity      rarity    `json:"rarity"`
+	SpellWard   int       `json:"spell_ward,omitempty"`
+	StrikeBonus int       `json:"strike_bonus,omitempty"`
 }
 
 type itemKind int
@@ -84,6 +87,7 @@ const (
 	itemPhoenixAsh
 	itemGhostRecallScroll
 	itemStoryScroll
+	itemSideStoryScroll
 )
 
 type item struct {
@@ -94,30 +98,41 @@ type item struct {
 	Weapon       weapon   `json:"weapon"`
 	Armor        armor    `json:"armor"`
 	StoryChapter int      `json:"story_chapter,omitempty"`
+	SideStoryID  int      `json:"side_story_id,omitempty"`
 }
 
 type monsterKind string
 
 const (
-	monsterRat         monsterKind = "Rat"
-	monsterSkeleton    monsterKind = "Skeleton"
-	monsterGoblin      monsterKind = "Goblin"
-	monsterOrc         monsterKind = "Orc"
-	monsterCultist     monsterKind = "Cultist"
-	monsterSlime       monsterKind = "Caustic Slime"
-	monsterSpider      monsterKind = "Web Spider"
-	monsterWraith      monsterKind = "Wraith"
-	monsterBlinker     monsterKind = "Blink Stalker"
-	monsterHexPriest   monsterKind = "Hex Priest"
-	monsterMirrorShade monsterKind = "Mirror Shade"
-	monsterBoneHound   monsterKind = "Bone Hound"
-	monsterGargoyle    monsterKind = "Stone Gargoyle"
-	monsterGraveKnight monsterKind = "Grave Knight"
-	monsterCinderDrake monsterKind = "Cinder Drake"
-	monsterVoidSeer    monsterKind = "Void Seer"
-	monsterSoulLeech   monsterKind = "Soul Leech"
-	monsterStormHerald monsterKind = "Storm Herald"
-	monsterBoss        monsterKind = "Dread Lich"
+	monsterRat             monsterKind = "Rat"
+	monsterSkeleton        monsterKind = "Skeleton"
+	monsterGoblin          monsterKind = "Goblin"
+	monsterOrc             monsterKind = "Orc"
+	monsterCultist         monsterKind = "Cultist"
+	monsterSlime           monsterKind = "Caustic Slime"
+	monsterSpider          monsterKind = "Web Spider"
+	monsterWraith          monsterKind = "Wraith"
+	monsterBlinker         monsterKind = "Blink Stalker"
+	monsterHexPriest       monsterKind = "Hex Priest"
+	monsterMirrorShade     monsterKind = "Mirror Shade"
+	monsterBoneHound       monsterKind = "Bone Hound"
+	monsterGargoyle        monsterKind = "Stone Gargoyle"
+	monsterGraveKnight     monsterKind = "Grave Knight"
+	monsterCinderDrake     monsterKind = "Cinder Drake"
+	monsterVoidSeer        monsterKind = "Void Seer"
+	monsterSoulLeech       monsterKind = "Soul Leech"
+	monsterStormHerald     monsterKind = "Storm Herald"
+	monsterBoss            monsterKind = "Dread Lich"
+	monsterAshBeetle       monsterKind = "Ash Beetle"
+	monsterChainImp        monsterKind = "Chain Imp"
+	monsterLanternWisp     monsterKind = "Lantern Wisp"
+	monsterChapelSentinel  monsterKind = "Chapel Sentinel"
+	monsterGloomArcher     monsterKind = "Gloom Archer"
+	monsterBellRevenant    monsterKind = "Bell Revenant"
+	monsterIronrootBrute   monsterKind = "Ironroot Brute"
+	monsterFrostHound      monsterKind = "Frostbound Hound"
+	monsterRiftWeaver      monsterKind = "Rift Weaver"
+	monsterCrownlessKnight monsterKind = "Crownless Knight"
 )
 
 var allMonsterKinds = []monsterKind{
@@ -140,6 +155,9 @@ var allMonsterKinds = []monsterKind{
 	monsterSoulLeech,
 	monsterStormHerald,
 	monsterBoss,
+	monsterAshBeetle, monsterChainImp, monsterLanternWisp, monsterChapelSentinel,
+	monsterGloomArcher, monsterBellRevenant, monsterIronrootBrute, monsterFrostHound,
+	monsterRiftWeaver, monsterCrownlessKnight,
 }
 
 var ghostDogStory = [...]string{
@@ -167,31 +185,36 @@ type monster struct {
 	Undead       bool        `json:"undead"`
 	Boss         bool        `json:"boss"`
 	FrozenTurns  int         `json:"frozen_turns,omitempty"`
+	StunnedTurns int         `json:"stunned_turns,omitempty"`
 	FleeTurns    int         `json:"flee_turns,omitempty"`
 	StoryChapter int         `json:"story_chapter,omitempty"`
+	ActionTurns  int         `json:"action_turns,omitempty"`
 }
 
 type player struct {
-	Pos                pos    `json:"pos"`
-	HP                 int    `json:"hp"`
-	MaxHP              int    `json:"max_hp"`
-	Weapon             weapon `json:"weapon"`
-	HeadArmor          armor  `json:"head_armor"`
-	BodyArmor          armor  `json:"body_armor"`
-	FeetArmor          armor  `json:"feet_armor"`
-	Potions            int    `json:"potions"`
-	FireScrolls        int    `json:"fire_scrolls"`
-	BlinkStones        int    `json:"blink_stones"`
-	WardingCharms      int    `json:"warding_charms"`
-	SunOrbs            int    `json:"sun_orbs"`
-	FrostCharms        int    `json:"frost_charms"`
-	StarfireOrbs       int    `json:"starfire_orbs"`
-	PhoenixAshes       int    `json:"phoenix_ashes"`
-	GhostRecallScrolls int    `json:"ghost_recall_scrolls,omitempty"`
-	StoryChapters      []int  `json:"story_chapters,omitempty"`
-	ShieldTurns        int    `json:"shield_turns"`
-	HexedTurns         int    `json:"hexed_turns"`
-	WebbedTurns        int    `json:"webbed_turns"`
+	Pos                pos      `json:"pos"`
+	HP                 int      `json:"hp"`
+	MaxHP              int      `json:"max_hp"`
+	Weapon             weapon   `json:"weapon"`
+	HeadArmor          armor    `json:"head_armor"`
+	BodyArmor          armor    `json:"body_armor"`
+	FeetArmor          armor    `json:"feet_armor"`
+	Potions            int      `json:"potions"`
+	FireScrolls        int      `json:"fire_scrolls"`
+	BlinkStones        int      `json:"blink_stones"`
+	WardingCharms      int      `json:"warding_charms"`
+	SunOrbs            int      `json:"sun_orbs"`
+	FrostCharms        int      `json:"frost_charms"`
+	StarfireOrbs       int      `json:"starfire_orbs"`
+	PhoenixAshes       int      `json:"phoenix_ashes"`
+	GhostRecallScrolls int      `json:"ghost_recall_scrolls,omitempty"`
+	StoryChapters      []int    `json:"story_chapters,omitempty"`
+	SideStories        []int    `json:"side_stories,omitempty"`
+	Weapons            []weapon `json:"weapons,omitempty"`
+	Armors             []armor  `json:"armors,omitempty"`
+	ShieldTurns        int      `json:"shield_turns"`
+	HexedTurns         int      `json:"hexed_turns"`
+	WebbedTurns        int      `json:"webbed_turns"`
 }
 
 type ghostDog struct {
@@ -226,9 +249,12 @@ type fountain struct {
 }
 
 type secretRoom struct {
-	Door     pos   `json:"door"`
-	Tiles    []pos `json:"tiles"`
-	Revealed bool  `json:"revealed"`
+	Door        pos         `json:"door"`
+	Tiles       []pos       `json:"tiles"`
+	Revealed    bool        `json:"revealed"`
+	Walls       []pos       `json:"walls,omitempty"`
+	Inner       *secretRoom `json:"inner,omitempty"`
+	SideStoryID int         `json:"side_story_id,omitempty"`
 }
 
 type room struct {
@@ -255,6 +281,8 @@ type saveState struct {
 	Won           bool          `json:"won"`
 	Quit          bool          `json:"quit"`
 	LevelTiles    []string      `json:"level_tiles"`
+	Stats         *runStats     `json:"stats,omitempty"`
+	RecordsFile   string        `json:"records_file,omitempty"`
 }
 
 type game struct {
@@ -272,6 +300,8 @@ type game struct {
 	turnDamage       map[*monster]int
 	won              bool
 	quit             bool
+	stats            runStats
+	recordsFile      string
 }
 
 func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
@@ -281,11 +311,12 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	saveFile := flags.String("save-file", "", "fixed path used by save/load commands; otherwise saves use a timestamped name")
 	loadFile := flags.String("load-file", "", "load this save file at startup")
 	loadSave := flags.Bool("load", false, "load the path supplied with --save-file (legacy form)")
+	recordsFile := flags.String("records-file", "", "challenge records path; defaults to ~/.ghost-dog-data.json")
 	flags.Usage = func() {
 		fmt.Fprintln(stderr, "Usage: ghostdog-dungeon [--seed N] [--save-file path] [--load-file path]")
 		fmt.Fprintln(stderr)
 		fmt.Fprintln(stderr, "Enter the dungeon, free the ghost dog, reach the tenth floor, and escape by finding the hidden way out beyond the Dread Lich.")
-		fmt.Fprintln(stderr, "Commands: w/a/s/d or arrows move, q/e/z/x diagonals, . wait, </> stairs, p potion, f fire, b ward, g blink, u sun, t frost, o starfire, n ash, r recall, v fountain, i inventory, c codex, m inspect, k search, S save, L load, Ctrl-C quit")
+		fmt.Fprintln(stderr, "Commands: wasd/arrows move, qezx diagonals, . wait, </> stairs, p f b g u t o n r items, v fountain, i inventory, E equipment, B book, j challenges, c codex, m inspect, k search, :equip NUMBER, :drop NUMBER, S save, L load, Ctrl-C quit")
 		flags.PrintDefaults()
 	}
 	if err := flags.Parse(args); err != nil {
@@ -320,6 +351,11 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	} else {
 		g = newGameWithSaveFile(*seed, *saveFile)
 	}
+	// Record storage belongs to the current user rather than a saved dungeon.
+	g.recordsFile = *recordsFile
+	if _, err := g.challengeRecordsPath(); err != nil {
+		return err
+	}
 	return g.loop(stdin, stdout)
 }
 
@@ -335,10 +371,11 @@ func newGameWithSaveFile(seed int64, saveFile string) *game {
 		saveFile:         saveFile,
 		timestampedSaves: saveFile == "",
 		knownMonsters:    map[monsterKind]bool{},
+		stats:            runStats{HistoryKnown: true},
 		player: player{
 			HP:            46,
 			MaxHP:         46,
-			Weapon:        weapon{Name: "Rusty Knife", Min: 3, Max: 6},
+			Weapon:        weapon{Name: "Rusty Knife", Min: 3, Max: 7},
 			HeadArmor:     armor{Name: "Padded Hood", Slot: slotHead, Defense: 1, Rarity: rarityCommon},
 			BodyArmor:     armor{Name: "Worn Coat", Slot: slotBody, Defense: 1, Rarity: rarityCommon},
 			FeetArmor:     armor{Name: "Frayed Boots", Slot: slotFeet, Defense: 0, Rarity: rarityCommon},
@@ -350,13 +387,39 @@ func newGameWithSaveFile(seed int64, saveFile string) *game {
 		},
 		dog: ghostDog{HP: 34, MaxHP: 34, Alive: true},
 	}
+	g.player.ensureCarriedEquipment()
 
+	requiredSecrets := map[int]bool{0: true, levelCount - 1: true}
+	optionalFloors := make([]int, 0, levelCount-2)
+	for i := 1; i < levelCount-1; i++ {
+		optionalFloors = append(optionalFloors, i)
+	}
+	for len(requiredSecrets) < (levelCount+1)/2 {
+		pick := g.rng.Intn(len(optionalFloors))
+		requiredSecrets[optionalFloors[pick]] = true
+		optionalFloors = append(optionalFloors[:pick], optionalFloors[pick+1:]...)
+	}
 	g.levels = make([]*level, levelCount)
 	for i := 0; i < levelCount; i++ {
-		tiles, start := makeFloorPlan(rng, i)
-		lvl := &level{Index: i, Tiles: tiles, Start: start}
-		g.levels[i] = lvl
-		g.populateLevel(lvl)
+		for {
+			tiles, start := makeFloorPlan(rng, i)
+			lvl := &level{Index: i, Tiles: tiles, Start: start}
+			g.levels[i] = lvl
+			switch i {
+			case 0:
+				g.addNestedSecretRoom(lvl)
+			case levelCount - 1:
+				g.addEscapeSanctum(lvl)
+			default:
+				g.addSecretRoom(lvl, requiredSecrets[i])
+			}
+			// Regenerate a required floor if its layout has no room for a hidden chamber.
+			if requiredSecrets[i] && lvl.Secret == nil {
+				continue
+			}
+			g.populateLevel(lvl)
+			break
+		}
 	}
 	g.player.Pos = g.levels[0].Start
 	g.placeFountains()
@@ -548,44 +611,12 @@ func roomsOverlap(a, b room, margin int) bool {
 	return a.X-margin < b.X+b.W && a.X+a.W+margin > b.X && a.Y-margin < b.Y+b.H && a.Y+a.H+margin > b.Y
 }
 
-func (g *game) addSecretRoom(lvl *level) {
-	if g.rng.Intn(100) >= 40 {
+func (g *game) addSecretRoom(lvl *level, required bool) {
+	if !required && g.rng.Intn(100) >= 40 {
 		return
 	}
-	dirs := []pos{{X: 1}, {X: -1}, {Y: 1}, {Y: -1}}
-	for tries := 0; tries < 240; tries++ {
-		base := pos{X: 1 + g.rng.Intn(mapWidth-2), Y: 1 + g.rng.Intn(mapHeight-2)}
-		if lvl.Tiles[base.Y][base.X] != '.' {
-			continue
-		}
-		dir := dirs[g.rng.Intn(len(dirs))]
-		door := pos{X: base.X + dir.X, Y: base.Y + dir.Y}
-		if !g.inBounds(door) || lvl.Tiles[door.Y][door.X] != '#' {
-			continue
-		}
-		w := 3 + g.rng.Intn(3)
-		h := 3 + g.rng.Intn(2)
-		x0, y0, x1, y1, ok := secretBounds(door, dir, w, h)
-		if !ok {
-			continue
-		}
-		tiles := make([]pos, 0, w*h)
-		valid := true
-		for y := y0; y <= y1 && valid; y++ {
-			for x := x0; x <= x1; x++ {
-				if lvl.Tiles[y][x] != '#' {
-					valid = false
-					break
-				}
-				tiles = append(tiles, pos{X: x, Y: y})
-			}
-		}
-		if !valid {
-			continue
-		}
-		lvl.Secret = &secretRoom{Door: door, Tiles: tiles}
+	if g.placeSecretRoom(lvl, 3+g.rng.Intn(3), 3+g.rng.Intn(2)) || (required && g.placeSecretRoom(lvl, 3, 3)) {
 		g.addSecretTreasure(lvl)
-		return
 	}
 }
 
@@ -614,7 +645,16 @@ func secretBounds(door, dir pos, w, h int) (int, int, int, int, bool) {
 }
 
 func (g *game) addSecretTreasure(lvl *level) {
-	if lvl.Secret == nil || len(lvl.Secret.Tiles) == 0 {
+	for _, hidden := range lvl.Secret.rooms() {
+		g.addRoomTreasure(lvl, hidden)
+	}
+	g.addSecretSideStory(lvl)
+	g.addSecretFountain(lvl)
+}
+
+func (g *game) addRoomTreasure(lvl *level, hidden *secretRoom) {
+	tiles := hidden.floorTiles()
+	if len(tiles) == 0 {
 		return
 	}
 	count := 1
@@ -631,8 +671,8 @@ func (g *game) addSecretTreasure(lvl *level) {
 		it := pool[idx]
 		pool = append(pool[:idx], pool[idx+1:]...)
 		for tries := 0; tries < 60; tries++ {
-			p := lvl.Secret.Tiles[g.rng.Intn(len(lvl.Secret.Tiles))]
-			if used[p] {
+			p := tiles[g.rng.Intn(len(tiles))]
+			if used[p] || g.itemAt(lvl, p) != nil || g.fountainAt(lvl, p) != nil || (lvl.HasEscapeStair && p == lvl.EscapeStairs) {
 				continue
 			}
 			it.Pos = p
@@ -649,6 +689,12 @@ func (g *game) filterFoundSecretEquipment(pool []item) []item {
 		g.player.HeadArmor.Name: true,
 		g.player.BodyArmor.Name: true,
 		g.player.FeetArmor.Name: true,
+	}
+	for _, carried := range g.player.Weapons {
+		found[carried.Name] = true
+	}
+	for _, carried := range g.player.Armors {
+		found[carried.Name] = true
 	}
 	for _, lvl := range g.levels {
 		if lvl == nil {
@@ -682,11 +728,11 @@ func (g *game) secretTreasurePool(depth int) []item {
 			item{Kind: itemSunOrb, Name: "sun orb", Glyph: '*'},
 			item{Kind: itemStarfireOrb, Name: "starfire orb", Glyph: '*'},
 			item{Kind: itemPhoenixAsh, Name: "phoenix ash", Glyph: '*'},
-			makeWeaponItem(weapon{Name: "Emberbrand", Min: 11, Max: 16, Magic: true}),
-			makeWeaponItem(weapon{Name: "Tempest Spear", Min: 12, Max: 17, Magic: true}),
-			makeWeaponItem(weapon{Name: "Voidglass Dagger", Min: 13, Max: 18, Magic: true}),
-			makeWeaponItem(weapon{Name: "Lichbane Greatsword", Min: 14, Max: 19, Magic: true}),
-			makeWeaponItem(weapon{Name: "Gravetide Maul", Min: 16, Max: 22, Magic: true}),
+			makeWeaponLoot(weapon{Name: "Emberbrand", Min: 11, Max: 16, Magic: true}),
+			makeWeaponLoot(weapon{Name: "Tempest Spear", Min: 9, Max: 13, Magic: true, Reach: 2}),
+			makeWeaponLoot(weapon{Name: "Voidglass Dagger", Min: 13, Max: 18, Magic: true}),
+			makeWeaponLoot(weapon{Name: "Lichbane Greatsword", Min: 14, Max: 19, Magic: true}),
+			makeWeaponLoot(weapon{Name: "Gravetide Maul", Min: 16, Max: 22, Magic: true}),
 			makeArmorItem(armor{Name: "Aegis of Echoes", Slot: slotBody, Defense: 6, Rarity: rarityLegendary}),
 			makeArmorItem(armor{Name: "Crown of the Hollow Star", Slot: slotHead, Defense: 6, Rarity: rarityLegendary}),
 			makeArmorItem(armor{Name: "Wraithstep Greaves", Slot: slotFeet, Defense: 6, Rarity: rarityLegendary}),
@@ -694,7 +740,7 @@ func (g *game) secretTreasurePool(depth int) []item {
 	}
 	if depth >= 7 {
 		pool = append(pool,
-			makeWeaponItem(weapon{Name: "Star-Eater Blade", Min: 18, Max: 24, Magic: true}),
+			makeWeaponLoot(weapon{Name: "Star-Eater Blade", Min: 18, Max: 24, Magic: true}),
 			makeArmorItem(armor{Name: "Voidheart Plate", Slot: slotBody, Defense: 7, Rarity: rarityLegendary}),
 		)
 	}
@@ -738,10 +784,10 @@ func (g *game) addEscapeSanctum(lvl *level) {
 			return
 		}
 	}
-	g.addSecretRoom(lvl)
-	if lvl.Secret != nil && len(lvl.Secret.Tiles) > 0 {
+	if g.placeSecretRoom(lvl, 3, 3) {
 		lvl.HasEscapeStair = true
 		lvl.EscapeStairs = lvl.Secret.Tiles[g.rng.Intn(len(lvl.Secret.Tiles))]
+		g.addSecretTreasure(lvl)
 	}
 }
 
@@ -771,16 +817,39 @@ func makeWeaponItem(w weapon) item {
 	return item{Kind: itemWeapon, Name: w.Name, Glyph: ')', Weapon: w}
 }
 
+func makeWeaponLoot(w weapon) item {
+	w.Max++
+	return makeWeaponItem(w)
+}
+
+func (g *game) addSecretFountain(lvl *level) {
+	for _, hidden := range lvl.Secret.rooms() {
+		g.addRoomFountain(lvl, hidden)
+	}
+}
+
+func (g *game) addRoomFountain(lvl *level, hidden *secretRoom) {
+	tiles := hidden.floorTiles()
+	for _, f := range lvl.Fountains {
+		for _, p := range tiles {
+			if f.Pos == p {
+				return
+			}
+		}
+	}
+	for _, p := range tiles {
+		if g.itemAt(lvl, p) == nil && g.monsterAt(lvl, p) == nil && (!lvl.HasEscapeStair || p != lvl.EscapeStairs) {
+			lvl.Fountains = append(lvl.Fountains, fountain{Pos: p})
+			return
+		}
+	}
+}
+
 func makeArmorItem(a armor) item {
 	return item{Kind: itemArmor, Name: a.Name, Glyph: '[', Armor: a}
 }
 
 func (g *game) populateLevel(lvl *level) {
-	if lvl.Index == levelCount-1 {
-		g.addEscapeSanctum(lvl)
-	} else {
-		g.addSecretRoom(lvl)
-	}
 	occupied := map[pos]bool{lvl.Start: true}
 	if lvl.Index > 0 {
 		lvl.HasUpStair = true
@@ -827,7 +896,7 @@ func (g *game) placeFountains() {
 		j := g.rng.Intn(i + 1)
 		order[i], order[j] = order[j], order[i]
 	}
-	count := 1 + g.rng.Intn(3)
+	count := 3 + g.rng.Intn(3)
 	for _, levelIndex := range order[:count] {
 		lvl := g.levels[levelIndex]
 		spots := make([]pos, 0, floorBudget(levelIndex))
@@ -836,7 +905,7 @@ func (g *game) placeFountains() {
 				p := pos{X: x, Y: y}
 				if lvl.Tiles[y][x] == '#' || p == lvl.Start || p == g.player.Pos ||
 					(lvl.HasStair && p == lvl.Stairs) || (lvl.HasUpStair && p == lvl.UpStairs) ||
-					(lvl.DogChain != nil && p == *lvl.DogChain) || g.monsterAt(lvl, p) != nil || g.itemAt(lvl, p) != nil {
+					(lvl.DogChain != nil && p == *lvl.DogChain) || g.monsterAt(lvl, p) != nil || g.itemAt(lvl, p) != nil || g.fountainAt(lvl, p) != nil {
 					continue
 				}
 				spots = append(spots, p)
@@ -860,7 +929,7 @@ func (g *game) itemsForLevel(depth int) []item {
 		{Name: "Short Sword", Min: 4, Max: 7},
 		{Name: "Chapel Mace", Min: 4, Max: 8},
 	}, {
-		{Name: "Iron Spear", Min: 5, Max: 8},
+		{Name: "Iron Spear", Min: 3, Max: 6, Reach: 2},
 		{Name: "Hooked Glaive", Min: 5, Max: 9},
 	}, {
 		{Name: "Battle Axe", Min: 6, Max: 10},
@@ -869,20 +938,20 @@ func (g *game) itemsForLevel(depth int) []item {
 		{Name: "Moonblade", Min: 7, Max: 11},
 		{Name: "Rune Saber", Min: 7, Max: 12},
 	}, {
-		{Name: "Dragontooth Pike", Min: 8, Max: 13},
+		{Name: "Dragontooth Pike", Min: 6, Max: 10, Reach: 2},
 		{Name: "Starforged Hammer", Min: 9, Max: 14},
 	}, {
 		{Name: "Gravecleaver", Min: 10, Max: 15},
-		{Name: "Hollowfang Spear", Min: 10, Max: 16},
+		{Name: "Hollowfang Spear", Min: 8, Max: 12, Reach: 2},
 	}, {
 		{Name: "Frostbite Axe", Min: 11, Max: 16},
 		{Name: "Gloomsteel Saber", Min: 12, Max: 16},
 	}, {
-		{Name: "Graveglass Halberd", Min: 12, Max: 17},
+		{Name: "Graveglass Halberd", Min: 10, Max: 14, Reach: 2},
 		{Name: "Stormcaller Blade", Min: 13, Max: 17},
 	}, {
 		{Name: "Wyrmheart Maul", Min: 13, Max: 18},
-		{Name: "Gloaming Pike", Min: 14, Max: 18},
+		{Name: "Gloaming Pike", Min: 11, Max: 15, Reach: 2},
 	}, {
 		{Name: "Dawnforged Greatsword", Min: 15, Max: 19},
 		{Name: "Kingsbane Axe", Min: 16, Max: 19},
@@ -918,8 +987,16 @@ func (g *game) itemsForLevel(depth int) []item {
 		{Name: "Starforged Cuirass", Slot: slotBody, Defense: 5, Rarity: rarityLegendary},
 		{Name: "Voidwalker Boots", Slot: slotFeet, Defense: 5, Rarity: rarityLegendary},
 	}}
-	items = append(items, makeWeaponItem(weaponPools[depth][g.rng.Intn(len(weaponPools[depth]))]))
-	items = append(items, makeArmorItem(armorPools[depth][g.rng.Intn(len(armorPools[depth]))]))
+	weapons := weaponPools[depth]
+	weapons = append(weapons, weapon{Name: reachWeaponNames[depth], Min: 3 + depth, Max: 5 + depth, Reach: 2})
+	items = append(items, makeWeaponLoot(weapons[g.rng.Intn(len(weapons))]))
+	armors := armorPools[depth]
+	slot := []armorSlot{slotHead, slotBody, slotFeet}[depth%3]
+	armors = append(armors,
+		armor{Name: "Runespun " + slotLabel(slot) + " armor", Slot: slot, Defense: 1 + depth/3, SpellWard: 2 + depth/4, Rarity: rarityRare},
+		armor{Name: "Hunter's " + slotLabel(slot) + " armor", Slot: slot, Defense: depth / 3, StrikeBonus: 1 + depth/4, Rarity: rarityRare},
+	)
+	items = append(items, makeArmorItem(armors[g.rng.Intn(len(armors))]))
 	switch depth {
 	case 0:
 		items = append(items, item{Kind: itemFireScroll, Name: "fire scroll", Glyph: '?'})
@@ -973,7 +1050,7 @@ func monsterPoolForLevel(depth int) []monster {
 	}, {
 		newMonster(monsterMirrorShade), newMonster(monsterCinderDrake), newMonster(monsterVoidSeer), newMonster(monsterGraveKnight), newMonster(monsterHexPriest), newMonster(monsterStormHerald), newMonster(monsterGargoyle), newMonster(monsterBoneHound), newMonster(monsterSoulLeech), newMonster(monsterBoss),
 	}}
-	return levels[depth]
+	return append(levels[depth], newMonster(newMonsterKindsByFloor[depth]))
 }
 
 func scaleMonsterForDepth(m monster, depth int) monster {
@@ -987,13 +1064,24 @@ func scaleMonsterForDepth(m monster, depth int) monster {
 
 func (g *game) monstersForLevel(depth int) []monster {
 	roster := monsterPoolForLevel(depth)
-	count := min(monsterCountForDepth(depth), len(roster))
-	var spawn []monster
+	count := monsterCountForDepth(depth)
+	var candidates []monster
+	for _, spec := range roster {
+		if !spec.Boss {
+			candidates = append(candidates, spec)
+		}
+	}
+	for i := len(candidates) - 1; i > 0; i-- {
+		j := g.rng.Intn(i + 1)
+		candidates[i], candidates[j] = candidates[j], candidates[i]
+	}
+	normalCount := count
 	if depth == levelCount-1 {
-		spawn = append([]monster(nil), roster[:count-1]...)
-		spawn = append(spawn, roster[len(roster)-1])
-	} else {
-		spawn = append([]monster(nil), roster[:count]...)
+		normalCount--
+	}
+	spawn := append([]monster(nil), candidates[:min(normalCount, len(candidates))]...)
+	if depth == levelCount-1 {
+		spawn = append(spawn, newMonster(monsterBoss))
 	}
 	for i := range spawn {
 		spawn[i] = scaleMonsterForDepth(spawn[i], depth)
@@ -1002,6 +1090,9 @@ func (g *game) monstersForLevel(depth int) []monster {
 }
 
 func newMonster(kind monsterKind) monster {
+	if spec, ok := newMonsterSpec(kind); ok {
+		return spec
+	}
 	switch kind {
 	case monsterRat:
 		return monster{Kind: kind, Name: "Dungeon Rat", Glyph: 'r', HP: 8, MaxHP: 8, MinDamage: 2, MaxDamage: 4}
@@ -1048,18 +1139,19 @@ func newMonster(kind monsterKind) monster {
 
 func (g *game) loop(stdin io.Reader, stdout io.Writer) error {
 	scanner := bufio.NewScanner(stdin)
-	var rawIn *os.File
+	var rawIn *rawInput
 	if f, ok := stdin.(*os.File); ok {
 		if restore, ok := enableRawMode(f); ok {
-			rawIn = f
+			rawIn = &rawInput{Reader: bufio.NewReader(f), file: f}
 			defer restore()
 		}
 	}
+	g.renderChallengeRecords(stdout)
 	g.render(stdout)
 	for !g.won && !g.quit && g.player.HP > 0 {
 		var cmd string
 		if rawIn != nil {
-			fmt.Fprintln(stdout, "  Keys act immediately: wasd/arrows, qezx, ., </>, p f b g u t o n r, v fountain, i inventory, c codex, m inspect, k search, S save, L load, Ctrl-C quit; type :command + Enter for words")
+			fmt.Fprintln(stdout, "  Keys act immediately: wasd/arrows, qezx, ., </>, p f b g u t o n r, v fountain, i inventory, E equipment, B book, j challenges, c codex, m inspect, k search, Esc map, S save, L load, Ctrl-C quit; type :equip NUMBER or :drop NUMBER + Enter")
 			value, eof, err := readRawCommand(rawIn, stdout)
 			if err != nil {
 				return err
@@ -1070,7 +1162,7 @@ func (g *game) loop(stdin io.Reader, stdout io.Writer) error {
 			}
 			cmd = normalizeCommand(strings.TrimSpace(strings.ToLower(value)))
 		} else {
-			fmt.Fprintln(stdout, "  Commands: wasd/arrows, q e z x, ., </>, p f b g u t o n r, v fountain, i inventory, c codex, m inspect, k search, save, load, quit")
+			fmt.Fprintln(stdout, "  Commands: wasd/arrows, q e z x, ., </>, p f b g u t o n r, v fountain, i inventory, equipment, equip NUMBER, drop NUMBER, book, challenges, c codex, m inspect, k search, map, save, load, quit")
 			fmt.Fprint(stdout, "\nCommand> ")
 			if !scanner.Scan() {
 				fmt.Fprintln(stdout, "\nThe dungeon waits in silence as you slip away.")
@@ -1082,6 +1174,9 @@ func (g *game) loop(stdin io.Reader, stdout io.Writer) error {
 			cmd = "."
 		}
 		switch cmd {
+		case "map":
+			g.render(stdout)
+			continue
 		case "i", "inventory":
 			g.renderInventory(stdout)
 			continue
@@ -1090,6 +1185,15 @@ func (g *game) loop(stdin io.Reader, stdout io.Writer) error {
 			continue
 		case "inspect", "look", "m":
 			g.renderInspect(stdout)
+			continue
+		case "book", "read", "read book":
+			g.renderBook(stdout)
+			continue
+		case "equipment", "equip":
+			g.renderEquipment(stdout)
+			continue
+		case "j", "challenges", "records":
+			g.renderChallenges(stdout)
 			continue
 		}
 		g.processCommand(cmd)
@@ -1101,12 +1205,22 @@ func (g *game) loop(stdin io.Reader, stdout io.Writer) error {
 	switch {
 	case g.won:
 		g.render(stdout)
-		fmt.Fprintln(stdout, "\nYou escaped the dungeon with your ghost dog. Victory!")
+		if g.dog.Freed && g.dog.Alive {
+			fmt.Fprintln(stdout, "\nYou escaped the dungeon with your ghost dog. Victory!")
+		} else {
+			fmt.Fprintln(stdout, "\nYou escaped the dungeon. Victory!")
+		}
 	case g.player.HP <= 0:
 		g.render(stdout)
 		fmt.Fprintln(stdout, "\nYou fall in the dark. The Dread Lich keeps the dungeon.")
 	case g.quit:
 		fmt.Fprintln(stdout, "You retreat before the dungeon can claim you.")
+	}
+	if g.won || g.player.HP <= 0 {
+		if err := g.recordChallenges(); err != nil {
+			fmt.Fprintf(stdout, "Could not save challenge records: %v\n", err)
+		}
+		g.renderChallenges(stdout)
 	}
 	return nil
 }
@@ -1145,7 +1259,12 @@ func setTermios(fd int, termios *syscall.Termios) error {
 	return nil
 }
 
-func readRawCommand(in *os.File, out io.Writer) (string, bool, error) {
+type rawInput struct {
+	*bufio.Reader
+	file *os.File
+}
+
+func readRawCommand(in *rawInput, out io.Writer) (string, bool, error) {
 	buf := ""
 	display := ""
 	textMode := false
@@ -1153,6 +1272,9 @@ func readRawCommand(in *os.File, out io.Writer) (string, bool, error) {
 	for {
 		var one [1]byte
 		n, err := in.Read(one[:])
+		if err == io.EOF {
+			return "", true, nil
+		}
 		if err != nil {
 			return "", false, err
 		}
@@ -1174,7 +1296,10 @@ func readRawCommand(in *os.File, out io.Writer) (string, bool, error) {
 				redrawRawPrompt(out, display)
 			}
 		case 27:
-			cmd, _ := readEscapeCommand(in)
+			cmd, _, err := readEscapeCommand(in)
+			if err != nil {
+				return "", false, err
+			}
 			if cmd != "" {
 				fmt.Fprintln(out)
 				return cmd, false, nil
@@ -1214,6 +1339,12 @@ func rawKeyCommand(key byte) (string, string, bool) {
 		return "inspect", "m", true
 	case 'k':
 		return "search", "k", true
+	case 'B':
+		return "book", "B", true
+	case 'E':
+		return "equipment", "E", true
+	case 'j':
+		return "challenges", "j", true
 	case 'S':
 		return "save", "S", true
 	case 'L':
@@ -1229,120 +1360,183 @@ func redrawRawPrompt(out io.Writer, display string) {
 	fmt.Fprintf(out, "\r\x1b[2KCommand> %s", display)
 }
 
-func readEscapeCommand(in *os.File) (string, string) {
+// Arrow keys send multiple bytes beginning with Esc. A short wait distinguishes
+// those sequences from a standalone Esc without blocking until another key.
+func (in *rawInput) escapeByteReady() (bool, error) {
+	if in.Buffered() > 0 {
+		return true, nil
+	}
+	deadline := time.Now().Add(50 * time.Millisecond)
+	for {
+		remaining := time.Until(deadline)
+		if remaining <= 0 {
+			return false, nil
+		}
+		fd := int(in.file.Fd())
+		var readFDs syscall.FdSet
+		if fd < 0 || fd >= len(readFDs.Bits)*64 {
+			return false, fmt.Errorf("terminal file descriptor %d cannot be selected", fd)
+		}
+		readFDs.Bits[fd/64] |= 1 << uint(fd%64)
+		timeout := syscall.NsecToTimeval(remaining.Nanoseconds())
+		n, err := syscall.Select(fd+1, &readFDs, nil, nil, &timeout)
+		if err == syscall.EINTR {
+			continue
+		}
+		return n > 0, err
+	}
+}
+
+func readEscapeCommand(in *rawInput) (string, string, error) {
 	seq := []byte{27}
-	var one [1]byte
 	for len(seq) < 6 {
-		n, err := in.Read(one[:])
-		if err != nil || n == 0 {
+		ready, err := in.escapeByteReady()
+		if err != nil {
+			return "", "", err
+		}
+		if !ready {
 			break
 		}
-		seq = append(seq, one[0])
-		if (one[0] >= 'A' && one[0] <= 'Z') || (one[0] >= 'a' && one[0] <= 'z') || one[0] == '~' {
+		next, err := in.Peek(1)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return "", "", err
+		}
+		// Preserve a following ordinary key for the next command.
+		if len(seq) == 1 && next[0] != '[' && next[0] != 'O' {
+			break
+		}
+		key, err := in.ReadByte()
+		if err != nil {
+			return "", "", err
+		}
+		seq = append(seq, key)
+		if len(seq) > 2 && ((key >= 'A' && key <= 'Z') || (key >= 'a' && key <= 'z') || key == '~') {
 			break
 		}
 	}
 	cmd := normalizeCommand(strings.ToLower(string(seq)))
 	switch cmd {
+	case "map":
+		return cmd, "Esc", nil
 	case "w":
-		return cmd, "↑"
+		return cmd, "↑", nil
 	case "s":
-		return cmd, "↓"
+		return cmd, "↓", nil
 	case "a":
-		return cmd, "←"
+		return cmd, "←", nil
 	case "d":
-		return cmd, "→"
+		return cmd, "→", nil
 	case "q":
-		return cmd, "↖"
+		return cmd, "↖", nil
 	case "e":
-		return cmd, "↗"
+		return cmd, "↗", nil
 	case "z":
-		return cmd, "↙"
+		return cmd, "↙", nil
 	case "x":
-		return cmd, "↘"
+		return cmd, "↘", nil
 	default:
-		return "", ""
+		return "", "", nil
 	}
 }
 
 func (g *game) processCommand(cmd string) {
+	if g.won || g.quit || g.player.HP <= 0 {
+		return
+	}
 	g.turnDamage = make(map[*monster]int)
 	if g.player.WebbedTurns > 0 && isMoveCommand(cmd) {
 		g.player.WebbedTurns--
 		g.addMessage("Sticky webs hold you in place for a turn.")
+		g.stats.Turns++
 		g.advanceEnemies()
 		return
 	}
 
 	acted := false
-	switch cmd {
-	case "w", "a", "s", "d", "q", "e", "z", "x":
-		acted = g.tryMove(cmd)
-	case ".":
-		acted = true
-		g.addMessage("You wait and let the dungeon move around you.")
-	case ">":
-		acted = g.tryDescend()
-	case "<":
-		acted = g.tryAscend()
-	case "p":
-		acted = g.usePotion()
-	case "f":
-		acted = g.useFireScroll()
-	case "b":
-		acted = g.useWardingCharm()
-	case "g":
-		acted = g.useBlinkStone()
-	case "u":
-		acted = g.useSunOrb()
-	case "t":
-		acted = g.useFrostCharm()
-	case "o":
-		acted = g.useStarfireOrb()
-	case "n":
-		acted = g.usePhoenixAsh()
-	case "r":
-		acted = g.useGhostRecallScroll()
-	case "v":
-		acted = g.drinkFromFountain()
-	case "k":
-		acted = g.search()
-	case "search":
-		acted = g.search()
-	case "save":
-		if err := g.save(); err != nil {
-			g.addMessage("Save failed: " + err.Error())
-		} else {
-			g.addMessage("Game saved to " + g.saveFile)
+	if strings.HasPrefix(cmd, "equip ") {
+		acted = g.equipCommand(cmd)
+	} else if cmd == "drop" || strings.HasPrefix(cmd, "drop ") {
+		acted = g.dropCommand(cmd)
+	} else {
+		switch cmd {
+		case "w", "a", "s", "d", "q", "e", "z", "x":
+			acted = g.tryMove(cmd)
+		case ".":
+			acted = true
+			g.addMessage("You wait and let the dungeon move around you.")
+		case ">":
+			acted = g.tryDescend()
+		case "<":
+			acted = g.tryAscend()
+		case "p":
+			acted = g.usePotion()
+		case "f":
+			acted = g.useFireScroll()
+		case "b":
+			acted = g.useWardingCharm()
+		case "g":
+			acted = g.useBlinkStone()
+		case "u":
+			acted = g.useSunOrb()
+		case "t":
+			acted = g.useFrostCharm()
+		case "o":
+			acted = g.useStarfireOrb()
+		case "n":
+			acted = g.usePhoenixAsh()
+		case "r":
+			acted = g.useGhostRecallScroll()
+		case "v":
+			acted = g.drinkFromFountain()
+		case "k":
+			acted = g.search()
+		case "search":
+			acted = g.search()
+		case "save":
+			if err := g.save(); err != nil {
+				g.addMessage("Save failed: " + err.Error())
+			} else {
+				g.addMessage("Game saved to " + g.saveFile)
+			}
+		case "load":
+			if g.saveFile == "" {
+				g.addMessage("No save file is selected; restart with --load-file path to load a run.")
+				break
+			}
+			loaded, err := loadGame(g.saveFile)
+			if err != nil {
+				g.addMessage("Load failed: " + err.Error())
+			} else {
+				recordsFile := g.recordsFile
+				*g = *loaded
+				g.recordsFile = recordsFile
+				g.dogFocus = nil
+				g.addMessage("Game loaded from " + g.saveFile)
+			}
+		case "h":
+			g.addMessage("Keys: wasd/arrows move, qezx diagonals, . wait, </> stairs, p/f/b/g/u/t/o/n items, r recall, v fountain, i inventory, E equipment, B Book of Ghost Dog, j challenges, c codex, m inspect, k search, Esc map, S save, L load. Type :equip NUMBER or :drop NUMBER + Enter; Ctrl-C quits.")
+		case "quit", "exit":
+			g.quit = true
+		default:
+			g.addMessage("Unknown command. Press h for help.")
 		}
-	case "load":
-		if g.saveFile == "" {
-			g.addMessage("No save file is selected; restart with --load-file path to load a run.")
-			break
-		}
-		loaded, err := loadGame(g.saveFile)
-		if err != nil {
-			g.addMessage("Load failed: " + err.Error())
-		} else {
-			*g = *loaded
-			g.dogFocus = nil
-			g.addMessage("Game loaded from " + g.saveFile)
-		}
-	case "h":
-		g.addMessage("Commands act on one key: wasd/arrows move, q/e/z/x diagonals, . wait, </> stairs, p/f/b/g/u/t/o/n items, r recall dog, v drink fountain, i inventory, c codex, m inspect, k search, S save, L load; Ctrl-C quits. Prefix a word with : and press Enter.")
-	case "quit", "exit":
-		g.quit = true
-	default:
-		g.addMessage("Unknown command. Press h for help.")
 	}
 
-	if acted && !g.won && g.player.HP > 0 {
-		g.advanceEnemies()
+	if acted {
+		g.stats.Turns++
+		if !g.won && g.player.HP > 0 {
+			g.advanceEnemies()
+		}
 	}
 }
 
 func normalizeCommand(cmd string) string {
 	switch cmd {
+	case "\x1b":
+		return "map"
 	case "[a", "up":
 		return "w"
 	case "[b", "down":
@@ -1411,6 +1605,16 @@ func (g *game) tryMove(cmd string) bool {
 		g.attackMonster(m)
 		return true
 	}
+	for step := 2; step <= g.player.Weapon.effectiveReach(); step++ {
+		target := pos{X: g.player.Pos.X + dx*step, Y: g.player.Pos.Y + dy*step}
+		if !g.inBounds(target) || lvl.Tiles[target.Y][target.X] == '#' {
+			break
+		}
+		if m := g.monsterAt(lvl, target); m != nil {
+			g.attackMonster(m)
+			return true
+		}
+	}
 	if g.dog.Freed && g.dog.Alive && g.dog.Pos == next {
 		if !g.stepDogAside(next, g.player.Pos) {
 			g.addMessage("Ghost dog has no space to drift aside.")
@@ -1459,30 +1663,35 @@ func (g *game) canDogOccupyAfterPlayerMove(p, futurePlayer pos) bool {
 
 func (g *game) search() bool {
 	lvl := g.current()
-	if lvl.Secret == nil || lvl.Secret.Revealed {
+	hidden := lvl.Secret.nextHiddenRoom()
+	if hidden == nil {
 		g.addMessage("You search the walls, but find no hidden seams.")
 		return true
 	}
-	if distance(g.player.Pos, lvl.Secret.Door) > 1 {
+	if distance(g.player.Pos, hidden.Door) > 1 {
 		g.addMessage("You search nearby stone, but uncover nothing unusual.")
 		return true
 	}
-	if lvl.HasEscapeStair && g.bossAlive(lvl) {
+	if hidden == lvl.Secret && lvl.HasEscapeStair && g.bossAlive(lvl) {
 		g.addMessage("Ancient death-magic locks the hidden seam tight. The Lich still binds it.")
 		return true
 	}
-	g.revealSecretRoom(lvl)
+	revealRoom(lvl, hidden)
 	g.addMessage("Your search finds a hollow seam. A secret door swings open.")
 	return true
 }
 
 func (g *game) revealSecretRoom(lvl *level) {
-	if lvl.Secret == nil || lvl.Secret.Revealed {
+	revealRoom(lvl, lvl.Secret)
+}
+
+func revealRoom(lvl *level, hidden *secretRoom) {
+	if hidden == nil || hidden.Revealed {
 		return
 	}
-	lvl.Secret.Revealed = true
-	lvl.Tiles[lvl.Secret.Door.Y][lvl.Secret.Door.X] = '.'
-	for _, p := range lvl.Secret.Tiles {
+	hidden.Revealed = true
+	lvl.Tiles[hidden.Door.Y][hidden.Door.X] = '.'
+	for _, p := range hidden.floorTiles() {
 		lvl.Tiles[p.Y][p.X] = '.'
 	}
 }
@@ -1492,6 +1701,9 @@ func (g *game) tryDescend() bool {
 	if !lvl.HasStair || g.player.Pos != lvl.Stairs {
 		g.addMessage("There are no stairs beneath your feet.")
 		return false
+	}
+	for i := range lvl.Fountains {
+		lvl.Fountains[i].Used = false
 	}
 	g.currentLevel++
 	nextLevel := g.current()
@@ -1513,6 +1725,9 @@ func (g *game) tryAscend() bool {
 	if !lvl.HasUpStair || g.player.Pos != lvl.UpStairs {
 		g.addMessage("There are no stairs leading up here.")
 		return false
+	}
+	for i := range lvl.Fountains {
+		lvl.Fountains[i].Used = false
 	}
 	g.currentLevel--
 	prevLevel := g.current()
@@ -1749,7 +1964,7 @@ func (g *game) drinkFromFountain() bool {
 	var nearby *fountain
 	for i := range g.current().Fountains {
 		f := &g.current().Fountains[i]
-		if !f.Used && distance(g.player.Pos, f.Pos) <= 1 {
+		if !f.Used && g.current().Tiles[f.Pos.Y][f.Pos.X] != '#' && distance(g.player.Pos, f.Pos) <= 1 {
 			nearby = f
 			break
 		}
@@ -1768,7 +1983,7 @@ func (g *game) drinkFromFountain() bool {
 	g.player.HP = min(g.player.MaxHP, g.player.HP+playerHeal)
 	actualPlayerHeal := g.player.HP - oldHP
 	if g.dog.Freed && g.dog.Alive {
-		dogHeal := g.randRange(4, 8)
+		dogHeal := g.randRange(8, 12)
 		oldDogHP := g.dog.HP
 		g.dog.HP = min(g.dog.MaxHP, g.dog.HP+dogHeal)
 		g.addMessage(fmt.Sprintf("The fountain restores %d health to Ghost Dog. (%d/%d)", g.dog.HP-oldDogHP, g.dog.HP, g.dog.MaxHP))
@@ -1778,7 +1993,7 @@ func (g *game) drinkFromFountain() bool {
 }
 
 func (g *game) attackMonster(m *monster) {
-	damage := g.randRange(g.player.Weapon.Min, g.player.Weapon.Max)
+	damage := g.randRange(g.player.Weapon.Min, g.player.Weapon.Max) + g.player.strikeBonus()
 	if g.player.Weapon.Magic && m.Undead {
 		damage += 2
 		g.addMessage(fmt.Sprintf("%s flares against the undead.", g.player.Weapon.Name))
@@ -1794,7 +2009,7 @@ func (g *game) attackMonster(m *monster) {
 	g.dogFocus = m
 	g.addMessage(fmt.Sprintf("You strike %s with %s for %d damage.", m.Name, g.player.Weapon.Name, damage))
 	g.damageMonster(m, damage, "hits")
-	if m.HP > 0 {
+	if m.HP > 0 && distance(g.player.Pos, m.Pos) <= 1 {
 		switch m.Kind {
 		case monsterMirrorShade:
 			g.hurtPlayer(g.randRange(2, 4), "Mirror Shade reflects your blow")
@@ -1808,6 +2023,10 @@ func (g *game) damageMonster(m *monster, damage int, verb string) {
 	if m.HP <= 0 {
 		return
 	}
+	if blocked := min(max(0, damage), monsterGuard(m.Kind)); blocked > 0 {
+		g.addMessage(fmt.Sprintf("%s's armor blocks %d damage.", m.Name, blocked))
+	}
+	damage = max(0, damage-monsterGuard(m.Kind))
 	g.knownMonsters[m.Kind] = true
 	if g.turnDamage == nil {
 		g.turnDamage = make(map[*monster]int)
@@ -1816,10 +2035,15 @@ func (g *game) damageMonster(m *monster, damage int, verb string) {
 	m.HP -= damage
 	g.turnDamage[m] += dealt
 	if m.HP > 0 {
-		g.addMessage(fmt.Sprintf("%s %s. (%d/%d)", capitalizeMonsterVerb(m.Name, verb), hpState(verb), m.HP, m.MaxHP))
+		reaction, stuns := monsterDamageReaction(m.Name, verb, dealt, m.MaxHP)
+		if stuns {
+			m.StunnedTurns = max(m.StunnedTurns, 1)
+		}
+		g.addMessage(fmt.Sprintf("%s %s. (%d/%d)", reaction, hpState(verb), m.HP, m.MaxHP))
 		return
 	}
 	m.HP = 0
+	g.stats.MonstersKilled++
 	g.addMessage(fmt.Sprintf("%s falls.", m.Name))
 	lvl := g.current()
 	if g.dogFocus == m {
@@ -1859,18 +2083,30 @@ func (g *game) restoreGhostDogAfterLichDeath() {
 	g.addMessage("The Dread Lich's death frees the Ghost Dog. It reappears at full hit points.")
 }
 
-func capitalizeMonsterVerb(name, verb string) string {
+func monsterDamageReaction(name, verb string, damage, maxHP int) (reaction string, stuns bool) {
 	switch verb {
 	case "burns":
-		return name + " burns"
+		return name + " burns", false
 	case "scorches":
-		return name + " scorches"
+		return name + " scorches", false
 	case "sears":
-		return name + " sears"
+		return name + " sears", false
 	case "freezes":
-		return name + " freezes"
+		return name + " freezes", false
 	default:
-		return name + " reels"
+		percent := max(0, damage) * 100 / max(1, maxHP)
+		switch {
+		case percent < 20:
+			return name + " barely flinches", false
+		case percent < 40:
+			return name + " recoils", false
+		case percent < 60:
+			return name + " staggers", false
+		case percent < 80:
+			return name + " reels in agony", false
+		default:
+			return name + " nearly collapses", true
+		}
 	}
 }
 
@@ -2046,6 +2282,11 @@ func (g *game) doorwayPenalty(p pos) int {
 
 func (g *game) monsterTurn(m *monster) {
 	g.knownMonsters[m.Kind] = true
+	if m.StunnedTurns > 0 {
+		m.StunnedTurns--
+		g.addMessage(fmt.Sprintf("%s is stunned and cannot act.", m.Name))
+		return
+	}
 	if m.FrozenTurns > 0 {
 		m.FrozenTurns--
 		g.addMessage(fmt.Sprintf("%s shudders inside the ice.", m.Name))
@@ -2063,12 +2304,22 @@ func (g *game) monsterTurn(m *monster) {
 		m.FleeTurns--
 		return
 	}
+	if m.Kind == monsterIronrootBrute {
+		m.ActionTurns++
+		if m.ActionTurns%2 == 0 {
+			g.addMessage("The Ironroot Brute pauses to pull its roots from the stone.")
+			return
+		}
+	}
 	if g.dog.Freed && g.dog.Alive && distance(m.Pos, g.dog.Pos) == 1 && distance(m.Pos, g.player.Pos) > 1 {
 		g.attackDog(m)
 		return
 	}
 	if distance(m.Pos, g.player.Pos) == 1 {
 		g.attackPlayer(m)
+		return
+	}
+	if g.newMonsterPower(m) {
 		return
 	}
 	switch m.Kind {
@@ -2093,7 +2344,7 @@ func (g *game) monsterTurn(m *monster) {
 	case monsterHexPriest:
 		if distance(m.Pos, g.player.Pos) <= 5 && g.rng.Intn(100) < 25 {
 			g.player.HexedTurns = 1
-			g.hurtPlayer(2, "The Hex Priest whispers a crooked curse")
+			g.hurtPlayerSpell(2, "The Hex Priest whispers a crooked curse")
 			return
 		}
 	case monsterBoneHound:
@@ -2108,25 +2359,25 @@ func (g *game) monsterTurn(m *monster) {
 		}
 	case monsterCinderDrake:
 		if distance(m.Pos, g.player.Pos) <= 4 && g.rng.Intn(100) < 30 {
-			g.hurtPlayer(g.randRange(3, 6), "The Cinder Drake breathes a cone of embers")
+			g.hurtPlayerSpell(g.randRange(3, 6), "The Cinder Drake breathes a cone of embers")
 			return
 		}
 	case monsterVoidSeer:
 		if distance(m.Pos, g.player.Pos) <= 5 && g.rng.Intn(100) < 28 {
 			g.player.HexedTurns = 1
-			g.hurtPlayer(g.randRange(2, 5), "The Void Seer tears at your thoughts")
+			g.hurtPlayerSpell(g.randRange(2, 5), "The Void Seer tears at your thoughts")
 			return
 		}
 	case monsterSoulLeech:
 		if distance(m.Pos, g.player.Pos) <= 4 && g.rng.Intn(100) < 30 {
-			g.hurtPlayer(g.randRange(3, 6), "The Soul Leech siphons you from a distance")
+			g.hurtPlayerSpell(g.randRange(3, 6), "The Soul Leech siphons you from a distance")
 			m.HP = min(m.MaxHP, m.HP+2)
 			g.addMessage("The Soul Leech drinks in the stolen vitality.")
 			return
 		}
 	case monsterStormHerald:
 		if distance(m.Pos, g.player.Pos) <= 4 && g.rng.Intn(100) < 30 {
-			g.hurtPlayer(g.randRange(3, 6), "The Storm Herald calls lightning down on you")
+			g.hurtPlayerSpell(g.randRange(3, 6), "The Storm Herald calls lightning down on you")
 			if g.dog.Freed && g.dog.Alive && distance(m.Pos, g.dog.Pos) <= 4 {
 				g.hurtDog(g.randRange(3, 6), "Lightning from the Storm Herald")
 			}
@@ -2135,7 +2386,7 @@ func (g *game) monsterTurn(m *monster) {
 	case monsterBoss:
 		if distance(m.Pos, g.player.Pos) <= 5 && g.rng.Intn(100) < 30 {
 			g.player.HexedTurns = 1
-			g.hurtPlayer(g.randRange(5, 8), "The Dread Lich hurls a bolt of grave-fire")
+			g.hurtPlayerSpell(g.randRange(5, 8), "The Dread Lich hurls a bolt of grave-fire")
 			return
 		}
 	}
@@ -2161,7 +2412,11 @@ func (g *game) fleeMonster(m *monster) {
 	}
 	if found {
 		m.Pos = best
-		g.addMessage(fmt.Sprintf("%s scrambles away from you and the Ghost Dog.", m.Name))
+		threats := "you"
+		if g.dog.Freed && g.dog.Alive {
+			threats += " and the Ghost Dog"
+		}
+		g.addMessage(fmt.Sprintf("%s scrambles away from %s.", m.Name, threats))
 	}
 }
 
@@ -2221,6 +2476,16 @@ func (g *game) attackPlayer(m *monster) {
 			g.player.HexedTurns = 1
 			source = "The Hex Priest strikes and brands you with a curse"
 		}
+	case monsterFrostHound:
+		if g.rng.Intn(100) < 30 {
+			g.player.WebbedTurns = 1
+			source = "The Frostbound Hound bites and freezes your feet"
+		}
+	case monsterCrownlessKnight:
+		if g.player.ShieldTurns > 0 {
+			g.player.ShieldTurns = 0
+			g.addMessage("The Crownless Knight shatters your warding charm.")
+		}
 	case monsterBoss:
 		if g.rng.Intn(100) < 30 {
 			g.player.HexedTurns = 1
@@ -2251,6 +2516,9 @@ func (g *game) attackDog(m *monster) {
 }
 
 func (g *game) hurtDog(damage int, source string) {
+	if !g.dog.Alive {
+		return
+	}
 	if g.player.ShieldTurns > 0 && g.dog.Freed && g.dog.Alive {
 		damage = max(0, damage-3)
 	}
@@ -2259,8 +2527,9 @@ func (g *game) hurtDog(damage int, source string) {
 	if g.dog.HP <= 0 {
 		g.dog.HP = 0
 		g.dog.Alive = false
+		g.stats.GhostDogFalls++
 		g.dogFocus = nil
-		g.addMessage("The Ghost Dog can only be freed now by killing the Dread Lich")
+		g.addMessage("The Ghost Dog can only be freed now by a magic spell or by killing the Dread Lich")
 	}
 }
 
@@ -2275,23 +2544,16 @@ func (g *game) collectItems() {
 		switch it.Kind {
 		case itemWeapon:
 			cmp := compareWeapon(it.Weapon, g.player.Weapon)
-			if weaponScore(it.Weapon) > weaponScore(g.player.Weapon) {
-				g.player.Weapon = it.Weapon
-				g.addMessage(fmt.Sprintf("You equip the %s (%d-%d). %s %s", it.Weapon.Name, it.Weapon.Min, it.Weapon.Max, cmp, weaponDescription(it.Weapon)))
-			} else {
-				g.addMessage(fmt.Sprintf("You find the %s (%d-%d), but keep %s. %s %s", it.Weapon.Name, it.Weapon.Min, it.Weapon.Max, g.player.Weapon.Name, cmp, weaponDescription(it.Weapon)))
-			}
+			g.player.ensureCarriedEquipment()
+			g.player.carryWeapon(it.Weapon)
+			g.addMessage(fmt.Sprintf("You pack %s (%d-%d, reach %d). %s Press i to choose equipment.", it.Weapon.Name, it.Weapon.Min, it.Weapon.Max, it.Weapon.effectiveReach(), cmp))
 		case itemArmor:
 			equipped := g.player.armorForSlot(it.Armor.Slot)
 			cmp := compareArmor(it.Armor, equipped)
 			candidateName := coloredArmorName(it.Armor)
-			currentName := coloredArmorName(equipped)
-			if it.Armor.Defense > equipped.Defense {
-				g.player.setArmor(it.Armor)
-				g.addMessage(fmt.Sprintf("You equip %s on your %s slot. %s %s", candidateName, slotLabel(it.Armor.Slot), cmp, armorDescription(it.Armor)))
-			} else {
-				g.addMessage(fmt.Sprintf("You find %s for your %s slot, but keep %s. %s %s", candidateName, slotLabel(it.Armor.Slot), currentName, cmp, armorDescription(it.Armor)))
-			}
+			g.player.ensureCarriedEquipment()
+			g.player.carryArmor(it.Armor)
+			g.addMessage(fmt.Sprintf("You pack %s for your %s slot. %s %s Press i to choose equipment.", candidateName, slotLabel(it.Armor.Slot), cmp, armorTraits(it.Armor)))
 		case itemPotion:
 			g.player.Potions++
 			g.addMessage("You stash a healing potion. Restores 12-18 health when used with p.")
@@ -2332,6 +2594,16 @@ func (g *game) collectItems() {
 					g.player.StoryChapters = append(g.player.StoryChapters, it.StoryChapter)
 				}
 				g.addMessage(fmt.Sprintf("Ghost Dog story scroll %d/10: %s", it.StoryChapter, ghostDogStory[it.StoryChapter-1]))
+				g.addMessage("The chapter is added to your Book of Ghost Dog. Press B to read it.")
+			}
+		case itemSideStoryScroll:
+			if id := it.SideStoryID; id >= 1 && id <= len(ghostDogSideStories) {
+				if !hasStoryID(g.player.SideStories, id) {
+					g.player.SideStories = append(g.player.SideStories, id)
+				}
+				story := ghostDogSideStories[id-1]
+				g.addMessage(fmt.Sprintf("Side story: %s. %s", story.Title, story.Text))
+				g.addMessage("The side story is added to your Book of Ghost Dog. Press B to read it.")
 			}
 		}
 	}
@@ -2343,6 +2615,7 @@ func (g *game) save() error {
 		g.saveFile = nextTimestampedSaveFile(time.Now())
 	}
 	state := saveState{RNGState: g.rng.State, Seed: g.seed, SaveFile: g.saveFile, Levels: g.levels, CurrentLevel: g.currentLevel, Player: g.player, Dog: g.dog, Messages: append([]string(nil), g.messages...), KnownMonsters: append([]monsterKind(nil), g.knownMonsterKinds()...), Won: g.won, Quit: g.quit, LevelTiles: make([]string, len(g.levels))}
+	state.Stats, state.RecordsFile = &g.stats, g.recordsFile
 	for i, lvl := range g.levels {
 		state.LevelTiles[i] = encodeTiles(lvl.Tiles)
 	}
@@ -2395,6 +2668,10 @@ func loadGame(path string) (*game, error) {
 		known[kind] = true
 	}
 	g := &game{rng: &simpleRNG{State: state.RNGState}, seed: state.Seed, saveFile: path, levels: state.Levels, currentLevel: state.CurrentLevel, player: state.Player, dog: state.Dog, messages: append([]string(nil), state.Messages...), knownMonsters: known, won: state.Won}
+	if state.Stats != nil {
+		g.stats = *state.Stats
+	}
+	g.recordsFile = state.RecordsFile
 	if g.player.HeadArmor.Name == "" {
 		g.player.HeadArmor = armor{Name: "Padded Hood", Slot: slotHead, Defense: 1, Rarity: rarityCommon}
 	}
@@ -2421,6 +2698,11 @@ func loadGame(path string) (*game, error) {
 	}
 	if countFountains(g.levels) == 0 {
 		g.placeFountains()
+	}
+	g.player.ensureCarriedEquipment()
+	for _, lvl := range g.levels {
+		g.addSecretSideStory(lvl)
+		g.addSecretFountain(lvl)
 	}
 	g.repairActorPositions()
 	return g, nil
@@ -2524,6 +2806,7 @@ func (g *game) render(w io.Writer) {
 	lvl := g.current()
 	fmt.Fprintf(w, "\n=== Ghost Dog Dungeon: Level %d/%d ===\n", g.currentLevel+1, levelCount)
 	fmt.Fprintf(w, "HP %d/%d  Weapon %s (%d-%d)  Armor %d (block %d)  Potions %d  Fire %d  Blink %d  Ward %d  Sun %d  Frost %d  Starfire %d  Ash %d  Recall %d  Story %d/10\n", g.player.HP, g.player.MaxHP, g.player.Weapon.Name, g.player.Weapon.Min, g.player.Weapon.Max, g.player.armorDefense(), g.player.armorBlock(), g.player.Potions, g.player.FireScrolls, g.player.BlinkStones, g.player.WardingCharms, g.player.SunOrbs, g.player.FrostCharms, g.player.StarfireOrbs, g.player.PhoenixAshes, g.player.GhostRecallScrolls, len(g.player.StoryChapters))
+	fmt.Fprintf(w, "Reach %d  Spell ward %d  Strike bonus %+d  Turns %d  Kills %d\n", g.player.Weapon.effectiveReach(), g.player.spellWard(), g.player.strikeBonus(), g.stats.Turns, g.stats.MonstersKilled)
 	if g.dog.Freed {
 		status := "gone"
 		if g.dog.Alive {
@@ -2559,9 +2842,9 @@ func (g *game) render(w io.Writer) {
 				ch = '<'
 			case lvl.HasEscapeStair && lvl.EscapeStairs == p && (lvl.Secret == nil || lvl.Secret.Revealed):
 				ch = '<'
-			case f != nil && !f.Used:
+			case ch != '#' && f != nil && !f.Used:
 				ch = 'F'
-			case f != nil:
+			case ch != '#' && f != nil:
 				ch = 'f'
 			case ch != '#' && it != nil:
 				ch = it.Glyph
@@ -2589,9 +2872,13 @@ func (g *game) renderInventory(w io.Writer) {
 	fmt.Fprintf(w, "Body: %s (+%d guard, %s)\n  %s\n", coloredArmorName(g.player.BodyArmor), g.player.BodyArmor.Defense, rarityLabel(g.player.BodyArmor.Rarity), armorDescription(g.player.BodyArmor))
 	fmt.Fprintf(w, "Feet: %s (+%d guard, %s)\n  %s\n", coloredArmorName(g.player.FeetArmor), g.player.FeetArmor.Defense, rarityLabel(g.player.FeetArmor.Rarity), armorDescription(g.player.FeetArmor))
 	fmt.Fprintf(w, "Total armor: %d guard, blocking %d damage from each hit before wards.\n", g.player.armorDefense(), g.player.armorBlock())
+	fmt.Fprintf(w, "Spell ward: blocks %d extra spell damage. Strike bonus: %+d weapon damage.\n", g.player.spellWard(), g.player.strikeBonus())
+	g.renderEquipment(w)
+	fmt.Fprintf(w, "\nBook of Ghost Dog: %d/10 chapters, %d side stories. Press B or type book to read at any time.\n", len(g.player.StoryChapters), len(g.player.SideStories))
+	fmt.Fprintf(w, "Optional challenges: %d turns, %d kills, %d Ghost Dog falls. Press j for records.\n", g.stats.Turns, g.stats.MonstersKilled, g.stats.GhostDogFalls)
 	fmt.Fprintln(w, "Consumables:")
-	for _, line := range g.inventoryLines() {
-		fmt.Fprintf(w, "- %s x%d\n  %s\n", line.name, line.count, line.description)
+	for i, line := range g.inventoryLines() {
+		fmt.Fprintf(w, "%d. %s x%d\n  %s\n", len(g.player.Weapons)+len(g.player.Armors)+i+1, line.name, *line.quantity, line.description)
 	}
 	companion := "The ghost dog is still chained somewhere below."
 	if g.dog.Freed && g.dog.Alive {
@@ -2636,7 +2923,7 @@ func (g *game) renderInspect(w io.Writer) {
 		fmt.Fprintf(w, "Hidden way out: %s.\n", relativeTo(g.player.Pos, g.current().EscapeStairs))
 	}
 	for _, f := range g.current().Fountains {
-		if distance(g.player.Pos, f.Pos) <= 6 {
+		if g.current().Tiles[f.Pos.Y][f.Pos.X] != '#' && distance(g.player.Pos, f.Pos) <= 6 {
 			status := "unused"
 			if f.Used {
 				status = "spent"
@@ -2693,9 +2980,9 @@ func inspectTileDescription(lvl *level, p pos) string {
 func inspectItemText(it item) string {
 	switch it.Kind {
 	case itemWeapon:
-		return fmt.Sprintf("weapon %s (%d-%d). %s", it.Weapon.Name, it.Weapon.Min, it.Weapon.Max, weaponDescription(it.Weapon))
+		return fmt.Sprintf("weapon %s (%d-%d, reach %d). %s", it.Weapon.Name, it.Weapon.Min, it.Weapon.Max, it.Weapon.effectiveReach(), weaponDescription(it.Weapon))
 	case itemArmor:
-		return fmt.Sprintf("%s armor for the %s slot (+%d guard, %s). %s", coloredArmorName(it.Armor), slotLabel(it.Armor.Slot), it.Armor.Defense, rarityLabel(it.Armor.Rarity), armorDescription(it.Armor))
+		return fmt.Sprintf("%s armor for the %s slot (+%d guard, %s). %s %s", coloredArmorName(it.Armor), slotLabel(it.Armor.Slot), it.Armor.Defense, rarityLabel(it.Armor.Rarity), armorTraits(it.Armor), armorDescription(it.Armor))
 	case itemPotion:
 		return "healing potion. Restores 12-18 health."
 	case itemFireScroll:
@@ -2719,6 +3006,11 @@ func inspectItemText(it item) string {
 			return fmt.Sprintf("Ghost Dog story scroll %d/10: %s", it.StoryChapter, ghostDogStory[it.StoryChapter-1])
 		}
 		return "Ghost Dog story scroll."
+	case itemSideStoryScroll:
+		if it.SideStoryID >= 1 && it.SideStoryID <= len(ghostDogSideStories) {
+			return "Side-story scroll: " + ghostDogSideStories[it.SideStoryID-1].Title + ". Adds a separate tale to your Book of Ghost Dog."
+		}
+		return "Ghost Dog side-story scroll."
 	default:
 		return it.Name
 	}
@@ -2779,22 +3071,32 @@ func relativeTo(origin, target pos) string {
 	return strings.Join(parts, ", ")
 }
 
-func (g *game) inventoryLines() []struct {
+type inventoryLine struct {
 	name        string
-	count       int
+	quantity    *int
 	description string
-} {
-	return []struct {
-		name        string
-		count       int
-		description string
-	}{{"Healing Potion", g.player.Potions, "Use p to restore 12-18 health instantly."}, {"Fire Scroll", g.player.FireScrolls, "Use f to blast the nearest monster within 6 tiles and scorch adjacent foes."}, {"Blink Stone", g.player.BlinkStones, "Use g to teleport to a nearby open tile when surrounded."}, {"Warding Charm", g.player.WardingCharms, "Use b to reduce incoming damage to you and your Ghost Dog for the next 3 enemy turns."}, {"Sun Orb", g.player.SunOrbs, "Use u to burn every undead monster on the current floor."}, {"Frost Charm", g.player.FrostCharms, "Use t to freeze and damage the nearest enemy for two turns."}, {"Starfire Orb", g.player.StarfireOrbs, "Use o to deal 18-24 damage to the nearest enemy within 6 tiles."}, {"Phoenix Ash", g.player.PhoenixAshes, "Use n to restore 22-30 health below full health."}, {"Ghost Dog Recall Scroll", g.player.GhostRecallScrolls, "Use r to summon a fallen Ghost Dog at full hit points."}, {"Ghost Dog Story Scrolls", len(g.player.StoryChapters), "Collected story chapters are preserved with your save."}}
+	kind        itemKind
+	glyph       rune
+}
+
+func (g *game) inventoryLines() []inventoryLine {
+	return []inventoryLine{
+		{"Healing Potion", &g.player.Potions, "Use p to restore 12-18 health instantly.", itemPotion, '!'},
+		{"Fire Scroll", &g.player.FireScrolls, "Use f to blast the nearest monster within 6 tiles and scorch adjacent foes.", itemFireScroll, '?'},
+		{"Blink Stone", &g.player.BlinkStones, "Use g to teleport to a nearby open tile when surrounded.", itemBlinkStone, '*'},
+		{"Warding Charm", &g.player.WardingCharms, "Use b to reduce incoming damage to you and your Ghost Dog for the next 3 enemy turns.", itemWardingCharm, '*'},
+		{"Sun Orb", &g.player.SunOrbs, "Use u to burn every undead monster on the current floor.", itemSunOrb, '*'},
+		{"Frost Charm", &g.player.FrostCharms, "Use t to freeze and damage the nearest enemy for two turns.", itemFrostCharm, '*'},
+		{"Starfire Orb", &g.player.StarfireOrbs, "Use o to deal 18-24 damage to the nearest enemy within 6 tiles.", itemStarfireOrb, '*'},
+		{"Phoenix Ash", &g.player.PhoenixAshes, "Use n to restore 22-30 health below full health.", itemPhoenixAsh, '*'},
+		{"Ghost Dog Recall Scroll", &g.player.GhostRecallScrolls, "Use r to summon a fallen Ghost Dog at full hit points.", itemGhostRecallScroll, '?'},
+	}
 }
 
 func (g *game) contextHint() string {
 	lvl := g.current()
 	for _, f := range lvl.Fountains {
-		if !f.Used && distance(g.player.Pos, f.Pos) <= 1 {
+		if !f.Used && lvl.Tiles[f.Pos.Y][f.Pos.X] != '#' && distance(g.player.Pos, f.Pos) <= 1 {
 			return "healing fountain nearby — press v to drink."
 		}
 	}
@@ -2807,8 +3109,8 @@ func (g *game) contextHint() string {
 	if lvl.HasStair && g.player.Pos == lvl.Stairs {
 		return "stairs down — press > to descend."
 	}
-	if lvl.Secret != nil && !lvl.Secret.Revealed && distance(g.player.Pos, lvl.Secret.Door) <= 1 {
-		if lvl.HasEscapeStair && g.bossAlive(lvl) {
+	if hidden := lvl.Secret.nextHiddenRoom(); hidden != nil && distance(g.player.Pos, hidden.Door) <= 1 {
+		if hidden == lvl.Secret && lvl.HasEscapeStair && g.bossAlive(lvl) {
 			return "a necromantic seal chills this wall — the Lich still holds it shut."
 		}
 		return "this wall feels strange — try search."
@@ -2817,6 +3119,9 @@ func (g *game) contextHint() string {
 }
 
 func weaponDescription(w weapon) string {
+	if w.effectiveReach() > 1 {
+		return fmt.Sprintf("Reach %d: strike along a clear movement direction without stepping closer. Trades close-range damage for distance.", w.effectiveReach())
+	}
 	switch w.Name {
 	case "Rusty Knife":
 		return "A chipped backup blade, quick but weak."
@@ -2878,6 +3183,9 @@ func weaponDescription(w weapon) string {
 }
 
 func armorDescription(a armor) string {
+	if a.SpellWard > 0 || a.StrikeBonus > 0 {
+		return armorTraits(a) + " Trades physical protection for its special benefit."
+	}
 	switch a.Name {
 	case "Padded Hood":
 		return "Thin padding for your skull; barely enough to stop a lucky scrape."
@@ -2939,11 +3247,11 @@ func armorDescription(a armor) string {
 }
 
 func compareWeapon(candidate, current weapon) string {
-	return fmt.Sprintf("Compare to %s: %+d min, %+d max damage.", current.Name, candidate.Min-current.Min, candidate.Max-current.Max)
+	return fmt.Sprintf("Compare to %s: %+d min, %+d max damage, %+d reach, %+d undead bonus.", current.Name, candidate.Min-current.Min, candidate.Max-current.Max, candidate.effectiveReach()-current.effectiveReach(), weaponUndeadBonus(candidate)-weaponUndeadBonus(current))
 }
 
 func compareArmor(candidate, current armor) string {
-	return fmt.Sprintf("Compare to %s: %+d guard in the %s slot.", current.Name, candidate.Defense-current.Defense, slotLabel(candidate.Slot))
+	return fmt.Sprintf("Compare to %s: %+d guard, %+d spell ward, %+d strike damage in the %s slot.", current.Name, candidate.Defense-current.Defense, candidate.SpellWard-current.SpellWard, candidate.StrikeBonus-current.StrikeBonus, slotLabel(candidate.Slot))
 }
 
 func rarityLabel(r rarity) string {
@@ -2988,14 +3296,6 @@ func coloredArmorName(a armor) string {
 	return prefix
 }
 
-func weaponScore(w weapon) int {
-	score := w.Min + w.Max
-	if w.Magic {
-		score += 3
-	}
-	return score
-}
-
 func slotLabel(slot armorSlot) string {
 	switch slot {
 	case slotHead:
@@ -3010,6 +3310,9 @@ func slotLabel(slot armorSlot) string {
 }
 
 func monsterSummary(kind monsterKind) string {
+	if description := newMonsterDescription(kind); description != "" {
+		return description
+	}
 	switch kind {
 	case monsterRat:
 		return "Fast vermin that harass you early and force bad positioning."
@@ -3055,6 +3358,9 @@ func monsterSummary(kind monsterKind) string {
 }
 
 func monsterPower(kind monsterKind) string {
+	if description := newMonsterDescription(kind); description != "" {
+		return description
+	}
 	switch kind {
 	case monsterRat:
 		return "No special power, but they swarm and waste your turns."
