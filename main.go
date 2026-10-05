@@ -50,7 +50,7 @@ type armorSlot string
 const (
 	slotHead armorSlot = "head"
 	slotBody armorSlot = "body"
-	slotFeet armorSlot = "feet"
+	slotLeg  armorSlot = "leg"
 )
 
 type rarity string
@@ -70,6 +70,23 @@ type armor struct {
 	Rarity      rarity    `json:"rarity"`
 	SpellWard   int       `json:"spell_ward,omitempty"`
 	StrikeBonus int       `json:"strike_bonus,omitempty"`
+}
+
+func (a *armor) UnmarshalJSON(data []byte) error {
+	type armorData armor
+	var saved armorData
+	if err := json.Unmarshal(data, &saved); err != nil {
+		return err
+	}
+	// Normalize the old slot and generated armor names throughout saved games.
+	if saved.Slot == "feet" {
+		saved.Slot = slotLeg
+	}
+	if saved.Slot == slotLeg {
+		saved.Name = strings.ReplaceAll(saved.Name, " feet armor", " leg armor")
+	}
+	*a = armor(saved)
+	return nil
 }
 
 type itemKind int
@@ -198,7 +215,7 @@ type player struct {
 	Weapon             weapon   `json:"weapon"`
 	HeadArmor          armor    `json:"head_armor"`
 	BodyArmor          armor    `json:"body_armor"`
-	FeetArmor          armor    `json:"feet_armor"`
+	LegArmor           armor    `json:"leg_armor"`
 	Potions            int      `json:"potions"`
 	FireScrolls        int      `json:"fire_scrolls"`
 	BlinkStones        int      `json:"blink_stones"`
@@ -215,6 +232,22 @@ type player struct {
 	ShieldTurns        int      `json:"shield_turns"`
 	HexedTurns         int      `json:"hexed_turns"`
 	WebbedTurns        int      `json:"webbed_turns"`
+}
+
+func (p *player) UnmarshalJSON(data []byte) error {
+	type playerData player
+	var saved struct {
+		playerData
+		LegacyLegArmor armor `json:"feet_armor"`
+	}
+	if err := json.Unmarshal(data, &saved); err != nil {
+		return err
+	}
+	*p = player(saved.playerData)
+	if p.LegArmor.Name == "" {
+		p.LegArmor = saved.LegacyLegArmor
+	}
+	return nil
 }
 
 type ghostDog struct {
@@ -378,7 +411,7 @@ func newGameWithSaveFile(seed int64, saveFile string) *game {
 			Weapon:        weapon{Name: "Rusty Knife", Min: 3, Max: 7},
 			HeadArmor:     armor{Name: "Padded Hood", Slot: slotHead, Defense: 1, Rarity: rarityCommon},
 			BodyArmor:     armor{Name: "Worn Coat", Slot: slotBody, Defense: 1, Rarity: rarityCommon},
-			FeetArmor:     armor{Name: "Frayed Boots", Slot: slotFeet, Defense: 0, Rarity: rarityCommon},
+			LegArmor:      armor{Name: "Frayed Boots", Slot: slotLeg, Defense: 0, Rarity: rarityCommon},
 			Potions:       3,
 			FireScrolls:   1,
 			BlinkStones:   0,
@@ -688,7 +721,7 @@ func (g *game) filterFoundSecretEquipment(pool []item) []item {
 		g.player.Weapon.Name:    true,
 		g.player.HeadArmor.Name: true,
 		g.player.BodyArmor.Name: true,
-		g.player.FeetArmor.Name: true,
+		g.player.LegArmor.Name:  true,
 	}
 	for _, carried := range g.player.Weapons {
 		found[carried.Name] = true
@@ -735,7 +768,7 @@ func (g *game) secretTreasurePool(depth int) []item {
 			makeWeaponLoot(weapon{Name: "Gravetide Maul", Min: 16, Max: 22, Magic: true}),
 			makeArmorItem(armor{Name: "Aegis of Echoes", Slot: slotBody, Defense: 6, Rarity: rarityLegendary}),
 			makeArmorItem(armor{Name: "Crown of the Hollow Star", Slot: slotHead, Defense: 6, Rarity: rarityLegendary}),
-			makeArmorItem(armor{Name: "Wraithstep Greaves", Slot: slotFeet, Defense: 6, Rarity: rarityLegendary}),
+			makeArmorItem(armor{Name: "Wraithstep Greaves", Slot: slotLeg, Defense: 6, Rarity: rarityLegendary}),
 		)
 	}
 	if depth >= 7 {
@@ -961,37 +994,37 @@ func (g *game) itemsForLevel(depth int) []item {
 		{Name: "Scout Cap", Slot: slotHead, Defense: 2, Rarity: rarityUncommon},
 	}, {
 		{Name: "Iron Helm", Slot: slotHead, Defense: 2, Rarity: rarityUncommon},
-		{Name: "Wolfhide Boots", Slot: slotFeet, Defense: 1, Rarity: rarityUncommon},
+		{Name: "Wolfhide Boots", Slot: slotLeg, Defense: 1, Rarity: rarityUncommon},
 	}, {
-		{Name: "Reinforced Greaves", Slot: slotFeet, Defense: 2, Rarity: rarityRare},
+		{Name: "Reinforced Greaves", Slot: slotLeg, Defense: 2, Rarity: rarityRare},
 		{Name: "Scale Coat", Slot: slotBody, Defense: 3, Rarity: rarityRare},
 	}, {
 		{Name: "Knight Mail", Slot: slotBody, Defense: 3, Rarity: rarityEpic},
-		{Name: "Nightstride Boots", Slot: slotFeet, Defense: 3, Rarity: rarityEpic},
+		{Name: "Nightstride Boots", Slot: slotLeg, Defense: 3, Rarity: rarityEpic},
 	}, {
 		{Name: "Warden Crown", Slot: slotHead, Defense: 3, Rarity: rarityLegendary},
 		{Name: "Sunplate Cuirass", Slot: slotBody, Defense: 4, Rarity: rarityLegendary},
 	}, {
 		{Name: "Dreadmark Mantle", Slot: slotBody, Defense: 4, Rarity: rarityEpic},
-		{Name: "Gloamrunner Boots", Slot: slotFeet, Defense: 3, Rarity: rarityEpic},
+		{Name: "Gloamrunner Boots", Slot: slotLeg, Defense: 3, Rarity: rarityEpic},
 	}, {
 		{Name: "Aetherweave Hood", Slot: slotHead, Defense: 4, Rarity: rarityEpic},
 		{Name: "Ashguard Coat", Slot: slotBody, Defense: 4, Rarity: rarityEpic},
 	}, {
-		{Name: "Stormscale Greaves", Slot: slotFeet, Defense: 4, Rarity: rarityEpic},
+		{Name: "Stormscale Greaves", Slot: slotLeg, Defense: 4, Rarity: rarityEpic},
 		{Name: "Graveward Helm", Slot: slotHead, Defense: 4, Rarity: rarityEpic},
 	}, {
 		{Name: "Ruinplate Vest", Slot: slotBody, Defense: 5, Rarity: rarityEpic},
 		{Name: "Mourner's Helm", Slot: slotHead, Defense: 5, Rarity: rarityEpic},
 	}, {
 		{Name: "Starforged Cuirass", Slot: slotBody, Defense: 5, Rarity: rarityLegendary},
-		{Name: "Voidwalker Boots", Slot: slotFeet, Defense: 5, Rarity: rarityLegendary},
+		{Name: "Voidwalker Boots", Slot: slotLeg, Defense: 5, Rarity: rarityLegendary},
 	}}
 	weapons := weaponPools[depth]
 	weapons = append(weapons, weapon{Name: reachWeaponNames[depth], Min: 3 + depth, Max: 5 + depth, Reach: 2})
 	items = append(items, makeWeaponLoot(weapons[g.rng.Intn(len(weapons))]))
 	armors := armorPools[depth]
-	slot := []armorSlot{slotHead, slotBody, slotFeet}[depth%3]
+	slot := []armorSlot{slotHead, slotBody, slotLeg}[depth%3]
 	armors = append(armors,
 		armor{Name: "Runespun " + slotLabel(slot) + " armor", Slot: slot, Defense: 1 + depth/3, SpellWard: 2 + depth/4, Rarity: rarityRare},
 		armor{Name: "Hunter's " + slotLabel(slot) + " armor", Slot: slot, Defense: depth / 3, StrikeBonus: 1 + depth/4, Rarity: rarityRare},
@@ -2724,8 +2757,8 @@ func loadGame(path string) (*game, error) {
 	if g.player.BodyArmor.Name == "" {
 		g.player.BodyArmor = armor{Name: "Worn Coat", Slot: slotBody, Defense: 1, Rarity: rarityCommon}
 	}
-	if g.player.FeetArmor.Name == "" {
-		g.player.FeetArmor = armor{Name: "Frayed Boots", Slot: slotFeet, Defense: 0, Rarity: rarityCommon}
+	if g.player.LegArmor.Name == "" {
+		g.player.LegArmor = armor{Name: "Frayed Boots", Slot: slotLeg, Defense: 0, Rarity: rarityCommon}
 	}
 	if g.player.HeadArmor.Rarity == "" {
 		g.player.HeadArmor.Rarity = rarityCommon
@@ -2733,8 +2766,8 @@ func loadGame(path string) (*game, error) {
 	if g.player.BodyArmor.Rarity == "" {
 		g.player.BodyArmor.Rarity = rarityCommon
 	}
-	if g.player.FeetArmor.Rarity == "" {
-		g.player.FeetArmor.Rarity = rarityCommon
+	if g.player.LegArmor.Rarity == "" {
+		g.player.LegArmor.Rarity = rarityCommon
 	}
 	if g.knownMonsters == nil {
 		g.knownMonsters = map[monsterKind]bool{}
@@ -2747,6 +2780,11 @@ func loadGame(path string) (*game, error) {
 	}
 	g.player.ensureCarriedEquipment()
 	for _, lvl := range g.levels {
+		for i := range lvl.Items {
+			if lvl.Items[i].Kind == itemArmor && lvl.Items[i].Armor.Slot == slotLeg {
+				lvl.Items[i].Name = lvl.Items[i].Armor.Name
+			}
+		}
 		g.addSecretSideStory(lvl)
 		g.addSecretFountain(lvl)
 	}
@@ -2916,7 +2954,7 @@ func (g *game) renderInventory(w io.Writer) {
 	fmt.Fprintf(w, "Weapon: %s (%d-%d)\n  %s\n", g.player.Weapon.Name, g.player.Weapon.Min, g.player.Weapon.Max, weaponDescription(g.player.Weapon))
 	fmt.Fprintf(w, "Head: %s (+%d guard, %s)\n  %s\n", coloredArmorName(g.player.HeadArmor), g.player.HeadArmor.Defense, rarityLabel(g.player.HeadArmor.Rarity), armorDescription(g.player.HeadArmor))
 	fmt.Fprintf(w, "Body: %s (+%d guard, %s)\n  %s\n", coloredArmorName(g.player.BodyArmor), g.player.BodyArmor.Defense, rarityLabel(g.player.BodyArmor.Rarity), armorDescription(g.player.BodyArmor))
-	fmt.Fprintf(w, "Feet: %s (+%d guard, %s)\n  %s\n", coloredArmorName(g.player.FeetArmor), g.player.FeetArmor.Defense, rarityLabel(g.player.FeetArmor.Rarity), armorDescription(g.player.FeetArmor))
+	fmt.Fprintf(w, "Leg: %s (+%d guard, %s)\n  %s\n", coloredArmorName(g.player.LegArmor), g.player.LegArmor.Defense, rarityLabel(g.player.LegArmor.Rarity), armorDescription(g.player.LegArmor))
 	fmt.Fprintf(w, "Total armor: %d guard, blocking %d damage from each hit before wards.\n", g.player.armorDefense(), g.player.armorBlock())
 	fmt.Fprintf(w, "Spell ward: blocks %d extra spell damage. Strike bonus: %+d weapon damage.\n", g.player.spellWard(), g.player.strikeBonus())
 	g.renderEquipment(w)
@@ -3348,8 +3386,8 @@ func slotLabel(slot armorSlot) string {
 		return "head"
 	case slotBody:
 		return "body"
-	case slotFeet:
-		return "feet"
+	case slotLeg:
+		return "leg"
 	default:
 		return string(slot)
 	}
@@ -3475,8 +3513,8 @@ func (p *player) armorForSlot(slot armorSlot) armor {
 		return p.HeadArmor
 	case slotBody:
 		return p.BodyArmor
-	case slotFeet:
-		return p.FeetArmor
+	case slotLeg:
+		return p.LegArmor
 	default:
 		return armor{}
 	}
@@ -3488,13 +3526,13 @@ func (p *player) setArmor(a armor) {
 		p.HeadArmor = a
 	case slotBody:
 		p.BodyArmor = a
-	case slotFeet:
-		p.FeetArmor = a
+	case slotLeg:
+		p.LegArmor = a
 	}
 }
 
 func (p *player) armorDefense() int {
-	return p.HeadArmor.Defense + p.BodyArmor.Defense + p.FeetArmor.Defense
+	return p.HeadArmor.Defense + p.BodyArmor.Defense + p.LegArmor.Defense
 }
 func (p *player) armorBlock() int { return p.armorDefense() / 2 }
 

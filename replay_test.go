@@ -214,7 +214,7 @@ func TestReachAttackRespectsRangeWallsAndNearbyTargets(t *testing.T) {
 func TestReachAvoidsContactRetaliation(t *testing.T) {
 	g := openArena()
 	g.player.Weapon = weapon{Min: 1, Max: 1, Reach: 2}
-	g.player.HeadArmor, g.player.BodyArmor, g.player.FeetArmor = armor{}, armor{}, armor{}
+	g.player.HeadArmor, g.player.BodyArmor, g.player.LegArmor = armor{}, armor{}, armor{}
 	m := newMonster(monsterSlime)
 	m.Pos = pos{7, 5}
 	g.current().Monsters = []*monster{&m}
@@ -257,7 +257,7 @@ func TestEquipChoicesCostOneTurnAndAreRetained(t *testing.T) {
 
 func TestArmorTradeoffsAffectCombat(t *testing.T) {
 	g := openArena()
-	g.player.HeadArmor, g.player.BodyArmor, g.player.FeetArmor = armor{}, armor{}, armor{}
+	g.player.HeadArmor, g.player.BodyArmor, g.player.LegArmor = armor{}, armor{}, armor{}
 	g.player.BodyArmor = armor{SpellWard: 3, StrikeBonus: 2}
 	g.hurtPlayerSpell(8, "a spell")
 	if g.player.HP != g.player.MaxHP-5 {
@@ -455,6 +455,63 @@ func TestSavePreservesNewFeaturesAndLegacySavesRemainPlayable(t *testing.T) {
 		if count != len(lvl.Secret.rooms()) {
 			t.Fatal("loading an older save should supply its secret rooms with side stories")
 		}
+	}
+}
+
+func TestLegacyLegArmorRemainsUsableAndSavesWithNewNames(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "armor.json")
+	g := openArena()
+	g.saveFile, g.timestampedSaves = path, false
+	g.player.LegArmor = armor{Name: "Runespun leg armor", Slot: slotLeg, Defense: 4, SpellWard: 2, Rarity: rarityRare}
+	g.player.ensureCarriedEquipment()
+	found := armor{Name: "Hunter's leg armor", Slot: slotLeg, Defense: 2, StrikeBonus: 3, Rarity: rarityRare}
+	loot := makeArmorItem(found)
+	loot.Pos = pos{6, 5}
+	g.current().Items = []item{loot}
+	if err := g.save(); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data = bytes.ReplaceAll(data, []byte("\"leg_armor\""), []byte("\"feet_armor\""))
+	data = bytes.ReplaceAll(data, []byte("\"slot\": \"leg\""), []byte("\"slot\": \"feet\""))
+	data = bytes.ReplaceAll(data, []byte(" leg armor"), []byte(" feet armor"))
+	if err := os.WriteFile(path, data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	loaded, err := loadGame(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(loaded.player, g.player) || loaded.player.armorDefense() != 6 || loaded.player.spellWard() != 2 || !reflect.DeepEqual(loaded.current().Items, g.current().Items) {
+		t.Fatal("old equipped, carried, and floor armor should retain their properties with the new leg names")
+	}
+	var stdout, stderr bytes.Buffer
+	commands := fmt.Sprintf("i\nd\nequip %d\ni\nsave\nquit\n", len(g.player.Weapons)+len(g.player.Armors)+1)
+	args := []string{"--load-file", path, "--records-file", filepath.Join(dir, "records.json")}
+	if err := run(args, strings.NewReader(commands), &stdout, &stderr); err != nil {
+		t.Fatalf("run legacy armor commands: %v\n%s", err, stderr.String())
+	}
+	output := stdout.String()
+	if !strings.Contains(output, "Leg:") || !strings.Contains(output, "You equip Hunter's leg armor") || strings.Contains(output, "Feet:") || strings.Contains(output, "feet armor") || strings.Contains(output, "feet slot") {
+		t.Fatal("inventory, pickup, and equip text should consistently use the leg armor name")
+	}
+	loaded, err = loadGame(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if loaded.player.LegArmor != found || loaded.player.strikeBonus() != 3 || loaded.stats.Turns != 2 {
+		t.Fatal("migrated floor armor should be collectable, equippable, and saveable in the leg slot")
+	}
+	data, err = os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(data, []byte("\"leg_armor\"")) || bytes.Contains(data, []byte("\"feet_armor\"")) || bytes.Contains(data, []byte("\"slot\": \"feet\"")) || bytes.Contains(data, []byte(" feet armor")) {
+		t.Fatal("new saves should write only the new armor field, slot, and names")
 	}
 }
 

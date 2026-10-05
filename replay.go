@@ -142,11 +142,11 @@ func weaponUndeadBonus(w weapon) int {
 }
 
 func (p *player) spellWard() int {
-	return p.HeadArmor.SpellWard + p.BodyArmor.SpellWard + p.FeetArmor.SpellWard
+	return p.HeadArmor.SpellWard + p.BodyArmor.SpellWard + p.LegArmor.SpellWard
 }
 
 func (p *player) strikeBonus() int {
-	return p.HeadArmor.StrikeBonus + p.BodyArmor.StrikeBonus + p.FeetArmor.StrikeBonus
+	return p.HeadArmor.StrikeBonus + p.BodyArmor.StrikeBonus + p.LegArmor.StrikeBonus
 }
 
 func (g *game) hurtPlayerSpell(damage int, source string) {
@@ -173,7 +173,7 @@ func (p *player) carryArmor(a armor) {
 
 func (p *player) ensureCarriedEquipment() {
 	p.carryWeapon(p.Weapon)
-	for _, a := range []armor{p.HeadArmor, p.BodyArmor, p.FeetArmor} {
+	for _, a := range []armor{p.HeadArmor, p.BodyArmor, p.LegArmor} {
 		p.carryArmor(a)
 	}
 }
