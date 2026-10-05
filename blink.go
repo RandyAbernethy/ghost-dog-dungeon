@@ -10,7 +10,7 @@ type blinkLanding struct {
 func (g *game) safestBlinkLanding() (blinkLanding, bool) {
 	lvl := g.current()
 	secret := map[pos]bool{}
-	for _, room := range lvl.Secret.rooms() {
+	for _, room := range lvl.secretRooms() {
 		secret[room.Door] = true
 		for _, p := range room.Tiles {
 			secret[p] = true

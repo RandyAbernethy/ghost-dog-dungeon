@@ -253,7 +253,7 @@ func TestWaitCommandAdvancesEnemies(t *testing.T) {
 }
 
 func TestDiagonalMoveLetsPlayerAttackDiagonally(t *testing.T) {
-	g := newGame(6)
+	g := openArena()
 	g.player.Pos = pos{X: 5, Y: 5}
 	g.current().Monsters = []*monster{{Kind: monsterRat, Name: "Dungeon Rat", Glyph: 'r', Pos: pos{X: 6, Y: 6}, HP: 1, MaxHP: 8, MinDamage: 2, MaxDamage: 4}}
 	if !g.tryMove("x") {
@@ -417,7 +417,7 @@ func TestDogPrefersNotToSitInDoorway(t *testing.T) {
 }
 
 func TestGhostDogStaysNearPlayerWhenPossible(t *testing.T) {
-	g := newGame(9)
+	g := openArena()
 	g.dog.Freed = true
 	g.dog.Alive = true
 	g.player.Pos = pos{X: 5, Y: 5}
@@ -430,7 +430,7 @@ func TestGhostDogStaysNearPlayerWhenPossible(t *testing.T) {
 }
 
 func TestMovingIntoGhostDogMovesDogAside(t *testing.T) {
-	g := newGame(4)
+	g := openArena()
 	g.dog.Freed = true
 	g.dog.Alive = true
 	g.player.Pos = pos{X: 5, Y: 5}
@@ -451,7 +451,7 @@ func TestMovingIntoGhostDogMovesDogAside(t *testing.T) {
 }
 
 func TestGhostDogIsTougherAndStaysClose(t *testing.T) {
-	g := newGame(2)
+	g := openArena()
 	if g.dog.HP != 34 || g.dog.MaxHP != 34 {
 		t.Fatalf("ghost dog hp = %d/%d, want 34/34", g.dog.HP, g.dog.MaxHP)
 	}

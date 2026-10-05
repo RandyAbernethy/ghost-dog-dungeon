@@ -8,17 +8,20 @@ import (
 	"testing"
 )
 
-func TestDungeonGuaranteesSecretFloorsAndNestedRoom(t *testing.T) {
+func TestDungeonSecretCountAndReachability(t *testing.T) {
 	for seed := int64(-1); seed <= 200; seed++ {
 		g := newGame(seed)
-		floors, nested := 0, 0
+		total := 0
 		for depth, lvl := range g.levels {
 			if lvl.Secret == nil {
 				continue
 			}
-			floors++
+			total += len(lvl.secretRooms())
+			if len(lvl.secretRooms()) > 3 {
+				t.Fatalf("seed %d floor %d has too many chambers", seed, depth+1)
+			}
 			g.currentLevel = depth
-			for _, hidden := range lvl.Secret.rooms() {
+			for _, hidden := range lvl.secretRooms() {
 				if hidden.Revealed || lvl.Tiles[hidden.Door.Y][hidden.Door.X] != '#' {
 					t.Fatalf("seed %d floor %d starts with a discovered room", seed, depth+1)
 				}
@@ -28,7 +31,6 @@ func TestDungeonGuaranteesSecretFloorsAndNestedRoom(t *testing.T) {
 					}
 				}
 				if inner := hidden.Inner; inner != nil {
-					nested++
 					inside := map[pos]bool{}
 					for _, p := range hidden.Tiles {
 						inside[p] = true
@@ -40,7 +42,7 @@ func TestDungeonGuaranteesSecretFloorsAndNestedRoom(t *testing.T) {
 					}
 				}
 			}
-			for _, hidden := range lvl.Secret.rooms() {
+			for _, hidden := range lvl.secretRooms() {
 				approach, ok := floorNextToDoor(g, hidden.Door)
 				if !ok || !reachable(lvl.Tiles, lvl.Start, approach) {
 					t.Fatalf("seed %d floor %d has an unreachable secret door", seed, depth+1)
@@ -53,14 +55,33 @@ func TestDungeonGuaranteesSecretFloorsAndNestedRoom(t *testing.T) {
 				}
 			}
 		}
-		if floors < (levelCount+1)/2 || nested < 1 {
-			t.Fatalf("seed %d: %d secret floors and %d nested rooms", seed, floors, nested)
+		if total < 5 || total > 8 {
+			t.Fatalf("seed %d: %d secret rooms, want 5-8", seed, total)
 		}
 	}
 }
 
+func nestedGameForTest(t *testing.T, path string) *game {
+	t.Helper()
+	for seed := int64(1); seed <= 100; seed++ {
+		g := newGameWithSaveFile(seed, path)
+		if g.generationError != nil {
+			t.Fatal(g.generationError)
+		}
+		for depth, lvl := range g.levels {
+			if lvl.Secret != nil && lvl.Secret.Inner != nil {
+				g.currentLevel = depth
+				g.player.Pos = lvl.Start
+				return g
+			}
+		}
+	}
+	t.Fatal("expected occasional nested chambers across seeds")
+	return nil
+}
+
 func TestNestedRoomDiscoveryRewardsAndFountainRenewal(t *testing.T) {
-	g := newGame(14)
+	g := nestedGameForTest(t, "")
 	lvl := g.current()
 	lvl.Monsters = nil
 	outer, inner := lvl.Secret, lvl.Secret.Inner
@@ -144,7 +165,7 @@ func TestNestedRoomSavePreservesSeparateDiscoveries(t *testing.T) {
 			name = "both rooms"
 		}
 		t.Run(name, func(t *testing.T) {
-			g := newGameWithSaveFile(14, filepath.Join(t.TempDir(), "nested.json"))
+			g := nestedGameForTest(t, filepath.Join(t.TempDir(), "nested.json"))
 			lvl := g.current()
 			g.revealSecretRoom(lvl)
 			if revealInner {

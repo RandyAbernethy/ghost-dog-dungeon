@@ -13,7 +13,7 @@ func TestFountainsIncludeOrdinaryFloorsAndEverySecretRoom(t *testing.T) {
 		ordinary := 0
 		for _, lvl := range g.levels {
 			secret := map[pos]bool{}
-			for _, hidden := range lvl.Secret.rooms() {
+			for _, hidden := range lvl.secretRooms() {
 				for _, p := range hidden.floorTiles() {
 					secret[p] = true
 				}
@@ -34,10 +34,10 @@ func TestFountainsIncludeOrdinaryFloorsAndEverySecretRoom(t *testing.T) {
 					}
 				}
 			}
-			if secretCount != len(lvl.Secret.rooms()) {
+			if secretCount != len(lvl.secretRooms()) {
 				t.Fatalf("seed %d floor %d has %d secret fountains", seed, lvl.Index+1, secretCount)
 			}
-			for _, hidden := range lvl.Secret.rooms() {
+			for _, hidden := range lvl.secretRooms() {
 				count := 0
 				for _, p := range hidden.floorTiles() {
 					if g.fountainAt(lvl, p) != nil {
@@ -129,7 +129,7 @@ func TestLoadedSecretRoomsGainFountainsAndKeepSpentState(t *testing.T) {
 		if lvl.Secret == nil {
 			continue
 		}
-		for _, hidden := range lvl.Secret.rooms() {
+		for _, hidden := range lvl.secretRooms() {
 			found := false
 			for i := range lvl.Fountains {
 				for _, p := range hidden.floorTiles() {

@@ -8,10 +8,24 @@ go build -o ghostdog .
 ./ghostdog
 ```
 
-Each run varies the dungeon, treasure, fountain locations, and monster groups. Search a room's walls to discover secret
-passages. Every floor has new monster types, while the Dread Lich is always on floor ten. Used fountains refill when you
-leave their floor, so you can return for more healing if you are willing to face the stairwell guardians. Drinking from
+Each run varies the dungeon, treasure, fountain locations, and monster groups. Floors can be winding caves, narrow
+crypt passages, connected chambers, or pillared halls, with a chapel, barracks, catacomb, or kennel theme. Themes favor
+different enemies and supplies within the floor's usual difficulty range. Monster groups can be scattered patrols,
+small packs, treasure guards, or a guard with a spellcaster.
+
+Search suspicious walls to discover secret passages. Each game has 5-8 secret chambers, including the escape sanctum
+and any nested chambers. Floors can have zero, one, two, or rarely three chambers. Some chambers are independent;
+occasionally one hides inside another, with no fixed floor for nesting. Every chamber contains a fountain and its own
+side-story scroll. Every floor has new monster types, while the Dread Lich is always on floor ten. Used fountains refill
+when you leave their floor, so you can return for more healing if you are willing to face the stairwell guardians. Drinking from
 a fountain restores 4-8 health to you and 8-12 health to Ghost Dog.
+
+Optional rooms include guarded armories, healing shrines, abandoned kennels, and treasure vaults. Look for friendly
+ghosts (**G**), shortcut levers (**+**), Ash's keepsakes (**&**), and shrines (**^**). Stand on or next to one and press
+**y** (or type `interact`) to interact. A friendly ghost offers either a healing potion or a Blink Stone; choose with
+`:choose 1` or `:choose 2` followed by Enter, or `choose 1` or `choose 2` in line-input mode. Reading the offer costs no turn;
+accepting a gift or activating another event spends one turn. Event rewards can be used once, and stay used after
+revisiting or loading. A keepsake needs a living Ghost Dog nearby. Shrines heal you and a living Ghost Dog once.
 
 Use **g** to spend a Blink Stone and teleport yourself and Ghost Dog away from monsters on the current floor.
 The stone chooses the safest available spot outside secret rooms. Secret rooms remain excluded after discovery.
