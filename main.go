@@ -1850,14 +1850,20 @@ func (g *game) useBlinkStone() bool {
 		g.addMessage("You have no blink stones.")
 		return false
 	}
-	targets := g.openNeighbors(g.player.Pos, false)
-	if len(targets) == 0 {
-		g.addMessage("The blink stone fizzles in the cramped corridor.")
+	landing, ok := g.safestBlinkLanding()
+	if !ok {
+		g.addMessage("The blink stone finds no room to land.")
 		return false
 	}
 	g.player.BlinkStones--
-	g.player.Pos = targets[g.rng.Intn(len(targets))]
-	g.addMessage("Space folds and drops you a few steps away.")
+	g.player.Pos = landing.player
+	g.dogFocus = nil
+	if g.dog.Freed && g.dog.Alive {
+		g.dog.Pos = landing.dog
+		g.addMessage("Space folds and carries you and Ghost Dog to the safest open spot on this floor.")
+	} else {
+		g.addMessage("Space folds and carries you to the safest open spot on this floor.")
+	}
 	g.collectItems()
 	return true
 }
@@ -2174,7 +2180,7 @@ func (g *game) dogAttack(target *monster) {
 }
 
 func (g *game) activeDogFocus() *monster {
-	if g.dogFocus != nil && g.dogFocus.HP > 0 && distance(g.player.Pos, g.dogFocus.Pos) <= 2 {
+	if g.dogFocus != nil && g.dogFocus.HP > 0 && (distance(g.player.Pos, g.dogFocus.Pos) <= 2 || distance(g.dog.Pos, g.dogFocus.Pos) == 1) {
 		return g.dogFocus
 	}
 	if target := g.adjacentMonster(g.player.Pos); target != nil {
@@ -2211,10 +2217,45 @@ func (g *game) moveDogToward(target pos) {
 			}
 		}
 	}
+	if distance(target, g.player.Pos) == 1 && g.stepDogTowardPlayersFight(target) {
+		return
+	}
 	g.moveActorToward(&g.dog.Pos, target, true)
 	if distance(g.dog.Pos, g.player.Pos) > 2 {
 		g.keepDogWithPlayer()
 	}
+}
+
+// Find one step toward the fight without crossing the player, walls, or other
+// monsters. Keep the detour within the companion's usual two-tile radius.
+func (g *game) stepDogTowardPlayersFight(target pos) bool {
+	type route struct {
+		position  pos
+		firstStep pos
+	}
+	start := g.dog.Pos
+	queue := []route{{position: start, firstStep: start}}
+	seen := map[pos]bool{start: true}
+	for len(queue) > 0 {
+		current := queue[0]
+		queue = queue[1:]
+		if distance(current.position, target) == 1 {
+			g.dog.Pos = current.firstStep
+			return true
+		}
+		for _, next := range g.openNeighbors(current.position, true) {
+			if seen[next] || distance(next, g.player.Pos) > 2 {
+				continue
+			}
+			seen[next] = true
+			firstStep := current.firstStep
+			if current.position == start {
+				firstStep = next
+			}
+			queue = append(queue, route{position: next, firstStep: firstStep})
+		}
+	}
+	return false
 }
 
 func (g *game) bestDogNeighborNearPlayer() *pos {
@@ -2448,7 +2489,12 @@ func (g *game) moveActorToward(from *pos, target pos, isDog bool) {
 }
 
 func (g *game) attackPlayer(m *monster) {
-	g.dogFocus = m
+	engaged := g.adjacentMonster(g.dog.Pos)
+	if !g.dog.Freed || !g.dog.Alive || engaged == nil {
+		g.dogFocus = m
+	} else if g.dogFocus == nil || g.dogFocus.HP <= 0 || distance(g.dog.Pos, g.dogFocus.Pos) != 1 {
+		g.dogFocus = engaged
+	}
 	damage := g.randRange(m.MinDamage, m.MaxDamage)
 	if m.Boss {
 		damage--
@@ -2562,7 +2608,7 @@ func (g *game) collectItems() {
 			g.addMessage("You pocket a fire scroll. It detonates near the closest foe when used with f.")
 		case itemBlinkStone:
 			g.player.BlinkStones++
-			g.addMessage("You take a blink stone. Use g to teleport to a nearby open tile.")
+			g.addMessage("You take a blink stone. Use g to teleport to the safest open spot on this floor.")
 		case itemWardingCharm:
 			g.player.WardingCharms++
 			g.addMessage("You take a warding charm. Use b to protect you and your Ghost Dog for 3 enemy turns.")
@@ -2988,7 +3034,7 @@ func inspectItemText(it item) string {
 	case itemFireScroll:
 		return "fire scroll. Blasts the nearest enemy within 6 tiles."
 	case itemBlinkStone:
-		return "blink stone. Teleports you to a nearby open tile."
+		return "blink stone. Teleports you and Ghost Dog far from monsters, outside secret rooms."
 	case itemWardingCharm:
 		return "warding charm. Reduces damage to you and your Ghost Dog for 3 enemy turns."
 	case itemSunOrb:
@@ -3083,7 +3129,7 @@ func (g *game) inventoryLines() []inventoryLine {
 	return []inventoryLine{
 		{"Healing Potion", &g.player.Potions, "Use p to restore 12-18 health instantly.", itemPotion, '!'},
 		{"Fire Scroll", &g.player.FireScrolls, "Use f to blast the nearest monster within 6 tiles and scorch adjacent foes.", itemFireScroll, '?'},
-		{"Blink Stone", &g.player.BlinkStones, "Use g to teleport to a nearby open tile when surrounded.", itemBlinkStone, '*'},
+		{"Blink Stone", &g.player.BlinkStones, "Use g to teleport you and Ghost Dog far from monsters, outside secret rooms.", itemBlinkStone, '*'},
 		{"Warding Charm", &g.player.WardingCharms, "Use b to reduce incoming damage to you and your Ghost Dog for the next 3 enemy turns.", itemWardingCharm, '*'},
 		{"Sun Orb", &g.player.SunOrbs, "Use u to burn every undead monster on the current floor.", itemSunOrb, '*'},
 		{"Frost Charm", &g.player.FrostCharms, "Use t to freeze and damage the nearest enemy for two turns.", itemFrostCharm, '*'},

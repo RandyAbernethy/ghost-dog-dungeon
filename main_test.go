@@ -276,8 +276,9 @@ func TestGhostDogTargetsPlayersFight(t *testing.T) {
 	if g.dogFocus != target {
 		t.Fatal("expected dog to focus the monster the player attacked")
 	}
+	beforeDogAttack := target.HP
 	g.dogTurn()
-	if target.HP >= 12 {
+	if target.HP >= beforeDogAttack {
 		t.Fatalf("expected dog to damage focused target, hp=%d", target.HP)
 	}
 }

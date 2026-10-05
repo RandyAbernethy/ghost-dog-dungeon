@@ -13,6 +13,9 @@ passages. Every floor has new monster types, while the Dread Lich is always on f
 leave their floor, so you can return for more healing if you are willing to face the stairwell guardians. Drinking from
 a fountain restores 4-8 health to you and 8-12 health to Ghost Dog.
 
+Use **g** to spend a Blink Stone and teleport yourself and Ghost Dog away from monsters on the current floor.
+The stone chooses the safest available spot outside secret rooms. Secret rooms remain excluded after discovery.
+
 Equipment is kept in your pack, press **i** for inventory or **E** for the equipment list. Equip a numbered item with
 `:equip NUMBER` followed by Enter in immediate-key mode, or `equip NUMBER` in line-input mode (while viewing inventory).
 Changing equipment spends one turn. Use `:drop NUMBER` (or `drop NUMBER` in line-input mode) to put an unequipped item
