@@ -18,6 +18,7 @@ func (g *game) processCommand(cmd string) {
 		return
 	}
 
+	previousLevel, previousPos := g.currentLevel, g.player.Pos
 	acted := false
 	if strings.HasPrefix(cmd, "equip ") {
 		acted = g.equipCommand(cmd)
@@ -60,7 +61,7 @@ func (g *game) processCommand(cmd string) {
 			acted = g.search()
 		case "y", "interact":
 			acted = g.interactEvent()
-		case "choose 1", "choose 2":
+		case "choose 1", "choose 2", "choose 3":
 			acted = g.chooseGhostGift(cmd[len(cmd)-1] - '0')
 		case "save":
 			if err := g.save(); err != nil {
@@ -84,7 +85,7 @@ func (g *game) processCommand(cmd string) {
 				g.addMessage("Game loaded from " + g.saveFile)
 			}
 		case "h":
-			g.addMessage("Keys: wasd/arrows move, qezx diagonals, . wait, </> stairs, p/f/b/g/u/t/o/n items, r recall, v fountain, y interact, i inventory, E equipment, B Book of Ghost Dog, j challenges, c codex, m inspect, k search, Esc map, S save, L load. Type :equip NUMBER, :drop NUMBER, or :choose 1/2 + Enter; Ctrl-C quits.")
+			g.addMessage("Keys: wasd/arrows move, qezx diagonals, . wait, </> stairs, p/f/b/g/u/t/o/n items, r recall, v fountain, y interact, i inventory, E equipment, B Book of Ghost Dog, j challenges, c codex, m inspect, k search, Esc map, S save, L load. Type :equip NUMBER, :drop NUMBER, or :choose 1/2/3 + Enter; Ctrl-C quits.")
 		case "quit", "exit":
 			g.quit = true
 		default:
@@ -94,6 +95,9 @@ func (g *game) processCommand(cmd string) {
 
 	if acted {
 		g.stats.Turns++
+		if g.currentLevel != previousLevel || g.player.Pos != previousPos {
+			g.describeNearbyObjects(previousLevel, previousPos)
+		}
 		if !g.won && g.player.HP > 0 {
 			g.advanceEnemies()
 		}

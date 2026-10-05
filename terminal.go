@@ -26,7 +26,7 @@ func (g *game) loop(stdin io.Reader, stdout io.Writer) error {
 	for !g.won && !g.quit && g.player.HP > 0 {
 		var cmd string
 		if rawIn != nil {
-			fmt.Fprintln(stdout, "  Keys act immediately: wasd/arrows, qezx, ., </>, p f b g u t o n r, v fountain, i inventory, E equipment, B book, j challenges, c codex, m inspect, k search, Esc map, S save, L load, Ctrl-C quit; type :equip NUMBER or :drop NUMBER + Enter")
+			fmt.Fprintln(stdout, "  Keys act immediately: wasd/arrows, qezx, ., </>, p f b g u t o n r, v fountain, y interact, i inventory, E equipment, B book, j challenges, c codex, m inspect, k search, Esc map, S save, L load, Ctrl-C quit; type :equip NUMBER, :drop NUMBER, or :choose 1/2/3 + Enter")
 			value, eof, err := readRawCommand(rawIn, stdout)
 			if err != nil {
 				return err
@@ -37,7 +37,7 @@ func (g *game) loop(stdin io.Reader, stdout io.Writer) error {
 			}
 			cmd = normalizeCommand(strings.TrimSpace(strings.ToLower(value)))
 		} else {
-			fmt.Fprintln(stdout, "  Commands: wasd/arrows, q e z x, ., </>, p f b g u t o n r, v fountain, y interact, choose 1/2, i inventory, equipment, equip NUMBER, drop NUMBER, book, challenges, c codex, m inspect, k search, map, save, load, quit")
+			fmt.Fprintln(stdout, "  Commands: wasd/arrows, q e z x, ., </>, p f b g u t o n r, v fountain, y interact, choose 1/2/3, i inventory, equipment, equip NUMBER, drop NUMBER, book, challenges, c codex, m inspect, k search, map, save, load, quit")
 			fmt.Fprint(stdout, "\nCommand> ")
 			if !scanner.Scan() {
 				fmt.Fprintln(stdout, "\nThe dungeon waits in silence as you slip away.")

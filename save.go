@@ -158,6 +158,7 @@ func loadGame(path string) (*game, error) {
 		}
 		g.addSecretSideStory(lvl)
 		g.addSecretFountain(lvl)
+		g.prepareGhostGifts(lvl)
 	}
 	g.repairActorPositions()
 	return g, nil

@@ -1,7 +1,5 @@
 package main
 
-import "fmt"
-
 type eventKind string
 
 const (
@@ -16,6 +14,7 @@ type floorEvent struct {
 	Pos      pos       `json:"pos"`
 	Used     bool      `json:"used,omitempty"`
 	Shortcut *pos      `json:"shortcut,omitempty"`
+	Gifts    []item    `json:"gifts,omitempty"`
 }
 
 func (e *floorEvent) glyph() rune {
@@ -119,7 +118,7 @@ func (g *game) interactEvent() bool {
 	}
 	switch e.Kind {
 	case eventGhost:
-		g.addMessage("The friendly ghost offers one gift: 1. a healing potion, or 2. a blink stone. Type :choose 1 or :choose 2 and Enter (choose 1 or choose 2 in line-input mode).")
+		g.describeGhostGifts(e)
 		return false
 	case eventShrine:
 		if g.player.HP == g.player.MaxHP && (!g.dog.Freed || !g.dog.Alive || g.dog.HP == g.dog.MaxHP) {
@@ -152,26 +151,31 @@ func (g *game) interactEvent() bool {
 	return true
 }
 
-func (g *game) chooseGhostGift(choice byte) bool {
-	e := g.nearbyEvent()
-	if e == nil || e.Kind != eventGhost || (choice != 1 && choice != 2) {
-		g.addMessage("A nearby friendly ghost must offer that gift.")
-		return false
+func (g *game) describeNearbyObjects(previousLevel int, previousPos pos) {
+	lvl := g.current()
+	arriving := func(p pos) bool {
+		return lvl.Tiles[p.Y][p.X] != '#' && distance(g.player.Pos, p) <= 1 &&
+			(previousLevel != g.currentLevel || distance(previousPos, p) > 1)
 	}
-	if choice == 1 {
-		g.player.Potions++
-		g.addMessage("The friendly ghost gives you one healing potion, then fades.")
-	} else {
-		g.player.BlinkStones++
-		g.addMessage("The friendly ghost gives you one blink stone, then fades.")
+	// Crossing an object's proximity boundary is enough to track visits, even after loading.
+	for _, e := range lvl.Events {
+		if e.Used || !arriving(e.Pos) {
+			continue
+		}
+		switch e.Kind {
+		case eventGhost:
+			g.addMessage("A friendly ghost offers a choice of three gifts. Press y (interact) to hear its offer.")
+		case eventShrine:
+			g.addMessage("A healing shrine glows nearby. Its one-use blessing heals you and a living Ghost Dog; press y (interact) to receive it.")
+		case eventKeepsake:
+			g.addMessage("Ash's keepsake, a faded collar, lies nearby. Bring a living Ghost Dog close to find a warding charm and restore his health; press y (interact).")
+		case eventLever:
+			g.addMessage("A shortcut lever stands nearby. Press y (interact) to open a passage through a stone wall.")
+		}
 	}
-	e.Used = true
-	return true
-}
-
-func (g *game) eventHint() string {
-	if e := g.nearbyEvent(); e != nil {
-		return fmt.Sprintf("%s nearby; press y to interact", e.Kind)
+	for _, f := range lvl.Fountains {
+		if !f.Used && arriving(f.Pos) {
+			g.addMessage("A healing fountain flows nearby. Press v to drink, healing you and a living Ghost Dog. It refills when you leave this floor.")
+		}
 	}
-	return ""
 }

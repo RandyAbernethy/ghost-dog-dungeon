@@ -77,6 +77,9 @@ func TestGenerationVarietyAndPlayableFeaturesAcrossSeeds(t *testing.T) {
 				}
 				occupied[e.Pos] = true
 				eventKinds[e.Kind] = true
+				if e.Kind == eventGhost && len(e.Gifts) != 3 {
+					t.Fatal("each generated friendly ghost should already have three saved gifts")
+				}
 				if e.Kind == eventLever && (e.Shortcut == nil || lvl.Tiles[e.Shortcut.Y][e.Shortcut.X] != '#' || lvl.secretFootprint(true)[*e.Shortcut]) {
 					t.Fatal("lever should open an ordinary wall without bypassing a secret room")
 				}

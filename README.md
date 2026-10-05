@@ -22,10 +22,15 @@ a fountain restores 4-8 health to you and 8-12 health to Ghost Dog.
 
 Optional rooms include guarded armories, healing shrines, abandoned kennels, and treasure vaults. Look for friendly
 ghosts (**G**), shortcut levers (**+**), Ash's keepsakes (**&**), and shrines (**^**). Stand on or next to one and press
-**y** (or type `interact`) to interact. A friendly ghost offers either a healing potion or a Blink Stone; choose with
-`:choose 1` or `:choose 2` followed by Enter, or `choose 1` or `choose 2` in line-input mode. Reading the offer costs no turn;
+**y** (or type `interact`) to interact. A friendly ghost offers three different, randomly chosen gifts: armor, a weapon,
+a potion, a Blink Stone, a Fire Scroll, a Warding Charm, a Sun Orb, a Frost Charm, a Starfire Orb, Phoenix Ash, or a Ghost
+Dog Recall Scroll. Equipment matches the floor's usual loot range. Accept one gift with `:choose 1`, `:choose 2`, or
+`:choose 3` followed by Enter (omit the colon in line-input mode). Each ghost keeps its choices when you return or load
+a save. Older saves receive three choices for any unused ghosts. Reading the offer costs no turn;
 accepting a gift or activating another event spends one turn. Event rewards can be used once, and stay used after
 revisiting or loading. A keepsake needs a living Ghost Dog nearby. Shrines heal you and a living Ghost Dog once.
+Approaching within one tile of an unused event or fountain shows its description and interaction key. The prompt
+repeats only after you move farther away and return, including when you arrive by stairs or a Blink Stone.
 
 Use **g** to spend a Blink Stone and teleport yourself and Ghost Dog away from monsters on the current floor.
 The stone chooses the safest available spot outside secret rooms. Secret rooms remain excluded after discovery.

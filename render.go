@@ -307,14 +307,6 @@ func (g *game) inventoryLines() []inventoryLine {
 
 func (g *game) contextHint() string {
 	lvl := g.current()
-	if hint := g.eventHint(); hint != "" {
-		return hint
-	}
-	for _, f := range lvl.Fountains {
-		if !f.Used && lvl.Tiles[f.Pos.Y][f.Pos.X] != '#' && distance(g.player.Pos, f.Pos) <= 1 {
-			return "healing fountain nearby — press v to drink."
-		}
-	}
 	if lvl.HasEscapeStair && lvl.Secret != nil && lvl.Secret.Revealed && g.player.Pos == lvl.EscapeStairs {
 		return "stairs up and out — press < to escape."
 	}

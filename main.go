@@ -28,7 +28,7 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		fmt.Fprintln(stderr, "Usage: ghostdog-dungeon [--seed N] [--save-file path] [--load-file path]")
 		fmt.Fprintln(stderr)
 		fmt.Fprintln(stderr, "Enter the dungeon, free the ghost dog, reach the tenth floor, and escape by finding the hidden way out beyond the Dread Lich.")
-		fmt.Fprintln(stderr, "Commands: wasd/arrows move, qezx diagonals, . wait, </> stairs, p f b g u t o n r items, v fountain, y interact, i inventory, E equipment, B book, j challenges, c codex, m inspect, k search, :equip NUMBER, :drop NUMBER, :choose 1/2, S save, L load, Ctrl-C quit")
+		fmt.Fprintln(stderr, "Commands: wasd/arrows move, qezx diagonals, . wait, </> stairs, p f b g u t o n r items, v fountain, y interact, i inventory, E equipment, B book, j challenges, c codex, m inspect, k search, :equip NUMBER, :drop NUMBER, :choose 1/2/3, S save, L load, Ctrl-C quit")
 		flags.PrintDefaults()
 	}
 	if err := flags.Parse(args); err != nil {

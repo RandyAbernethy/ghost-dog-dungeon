@@ -8,11 +8,19 @@ import (
 	"testing"
 )
 
+func testFriendlyGhost(p pos) floorEvent {
+	return floorEvent{Kind: eventGhost, Pos: p, Gifts: []item{
+		{Kind: itemPotion, Name: "healing potion", Glyph: '!'},
+		{Kind: itemBlinkStone, Name: "blink stone", Glyph: '*'},
+		{Kind: itemGhostRecallScroll, Name: "Ghost Dog recall scroll", Glyph: '?'},
+	}}
+}
+
 func TestFriendlyGhostOffersOneChoiceWithoutSpendingAReadingTurn(t *testing.T) {
-	for _, choice := range []string{"choose 1", "choose 2"} {
+	for _, choice := range []string{"choose 1", "choose 2", "choose 3"} {
 		g := openArena()
-		g.current().Events = []floorEvent{{Kind: eventGhost, Pos: pos{6, 5}}}
-		potions, stones := g.player.Potions, g.player.BlinkStones
+		g.current().Events = []floorEvent{testFriendlyGhost(pos{6, 5})}
+		potions, stones, recalls := g.player.Potions, g.player.BlinkStones, g.player.GhostRecallScrolls
 		g.processCommand("y")
 		if g.stats.Turns != 0 || g.current().Events[0].Used || !strings.Contains(strings.Join(g.messages, " "), "offers one gift") {
 			t.Fatal("reading the choice should be free")
@@ -21,7 +29,9 @@ func TestFriendlyGhostOffersOneChoiceWithoutSpendingAReadingTurn(t *testing.T) {
 		if g.stats.Turns != 1 || !g.current().Events[0].Used {
 			t.Fatal("accepting one gift should spend one turn")
 		}
-		if (choice == "choose 1" && (g.player.Potions != potions+1 || g.player.BlinkStones != stones)) || (choice == "choose 2" && (g.player.Potions != potions || g.player.BlinkStones != stones+1)) {
+		if (choice == "choose 1" && (g.player.Potions != potions+1 || g.player.BlinkStones != stones || g.player.GhostRecallScrolls != recalls)) ||
+			(choice == "choose 2" && (g.player.Potions != potions || g.player.BlinkStones != stones+1 || g.player.GhostRecallScrolls != recalls)) ||
+			(choice == "choose 3" && (g.player.Potions != potions || g.player.BlinkStones != stones || g.player.GhostRecallScrolls != recalls+1)) {
 			t.Fatal("the ghost should grant only the chosen gift")
 		}
 		before := g.player
@@ -158,23 +168,23 @@ func TestRunEventsAndMetadataSaveRoundTrip(t *testing.T) {
 	g := openArena()
 	g.saveFile, g.timestampedSaves = filepath.Join(dir, "event.json"), false
 	g.current().Layout, g.current().Theme = layoutHall, themeChapel
-	g.current().Events = []floorEvent{{Kind: eventGhost, Pos: pos{6, 5}}}
+	g.current().Events = []floorEvent{testFriendlyGhost(pos{6, 5})}
 	g.current().Special = &specialRoom{Kind: roomVault, Area: room{X: 4, Y: 4, W: 3, H: 3}, Pos: pos{6, 6}}
 	if err := g.save(); err != nil {
 		t.Fatal(err)
 	}
 	var stdout, stderr bytes.Buffer
-	if err := run([]string{"--load-file", g.saveFile, "--records-file", filepath.Join(dir, "records.json")}, strings.NewReader("y\nchoose 2\nsave\nload\ny\nsave\nquit\n"), &stdout, &stderr); err != nil {
+	if err := run([]string{"--load-file", g.saveFile, "--records-file", filepath.Join(dir, "records.json")}, strings.NewReader("y\nchoose 3\nsave\nload\ny\nsave\nquit\n"), &stdout, &stderr); err != nil {
 		t.Fatalf("run events: %v %s", err, stderr.String())
 	}
-	if !strings.Contains(stdout.String(), "ruined chapel — pillared halls") || !strings.Contains(stdout.String(), "offers one gift") || !strings.Contains(stdout.String(), "one blink stone") || !strings.Contains(stdout.String(), "nothing nearby") {
+	if !strings.Contains(stdout.String(), "ruined chapel — pillared halls") || !strings.Contains(stdout.String(), "offers one gift") || !strings.Contains(stdout.String(), "3. Ghost Dog recall scroll") || !strings.Contains(stdout.String(), "one Ghost Dog recall scroll") || !strings.Contains(stdout.String(), "nothing nearby") {
 		t.Fatal("the command flow should show theme, choices, and the event's completion")
 	}
 	loaded, err := loadGame(g.saveFile)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if loaded.player.BlinkStones != 1 || loaded.stats.Turns != 1 || !loaded.current().Events[0].Used || loaded.current().Layout != layoutHall || loaded.current().Theme != themeChapel || !reflect.DeepEqual(loaded.current().Special, g.current().Special) {
+	if loaded.player.GhostRecallScrolls != 1 || loaded.player.BlinkStones != 0 || loaded.stats.Turns != 1 || !loaded.current().Events[0].Used || loaded.current().Layout != layoutHall || loaded.current().Theme != themeChapel || !reflect.DeepEqual(loaded.current().Special, g.current().Special) {
 		t.Fatal("save/load should retain the floor identity, room, used event, gift, and turn count")
 	}
 	if cmd, _, ok := rawKeyCommand('y'); !ok || cmd != "y" {

@@ -100,7 +100,7 @@ func (g *game) describeSpecialRoom() {
 	case roomArmory:
 		g.addMessage("You enter a guarded armory. Old weapon racks line the stone walls.")
 	case roomShrine:
-		g.addMessage("A healing shrine glows in this chamber. Stand nearby and press y to receive its blessing.")
+		g.addMessage("You enter a shrine chamber. Gentle light spills across the stone walls.")
 	case roomKennel:
 		g.addMessage("You find an abandoned kennel. A worn dog blanket rests beside a forgotten supply cache.")
 	case roomVault:

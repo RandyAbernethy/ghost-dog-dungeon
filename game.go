@@ -56,6 +56,9 @@ func newGameWithSaveFile(seed int64, saveFile string) *game {
 	}
 	g.player.Pos = g.levels[0].Start
 	g.placeFountains()
+	for _, lvl := range g.levels {
+		g.prepareGhostGifts(lvl)
+	}
 
 	g.levels[0].Visited = true
 	g.messages = []string{

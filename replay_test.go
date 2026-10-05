@@ -643,7 +643,7 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 	eventSave := filepath.Join(dir, "event.json")
 	eventGame := openArena()
 	eventGame.saveFile, eventGame.timestampedSaves = eventSave, false
-	eventGame.current().Events = []floorEvent{{Kind: eventGhost, Pos: pos{6, 5}}}
+	eventGame.current().Events = []floorEvent{testFriendlyGhost(pos{8, 5})}
 	if err := eventGame.save(); err != nil {
 		t.Fatal(err)
 	}
@@ -651,16 +651,16 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 	stderr.Reset()
 	command = exec.Command(binary, "--load-file", eventSave)
 	command.Env = testEnv
-	command.Stdin = strings.NewReader("y\nchoose 2\nsave\nload\ny\nsave\nquit\n")
+	command.Stdin = strings.NewReader("d\nd\nmap\nbook\ny\nchoose 3\nsave\nload\ny\nsave\nquit\n")
 	command.Stdout, command.Stderr = &stdout, &stderr
 	if err := command.Run(); err != nil {
 		t.Fatalf("run executable event: %v\n%s", err, stderr.String())
 	}
-	if !strings.Contains(stdout.String(), "offers one gift") || !strings.Contains(stdout.String(), "one blink stone") || !strings.Contains(stdout.String(), "nothing nearby") {
+	if !strings.Contains(stdout.String(), "friendly ghost offers a choice") || !strings.Contains(stdout.String(), "Press y (interact)") || !strings.Contains(stdout.String(), "offers one gift") || !strings.Contains(stdout.String(), "3. Ghost Dog recall scroll") || !strings.Contains(stdout.String(), "one Ghost Dog recall scroll") || !strings.Contains(stdout.String(), "nothing nearby") {
 		t.Fatal("the executable did not complete the one-use event flow")
 	}
 	eventLoaded, err := loadGame(eventSave)
-	if err != nil || eventLoaded.player.BlinkStones != 1 || eventLoaded.stats.Turns != 1 || !eventLoaded.current().Events[0].Used {
-		t.Fatal("the executable should preserve the gift and its one-turn cost after loading")
+	if err != nil || eventLoaded.player.GhostRecallScrolls != 1 || eventLoaded.player.BlinkStones != 0 || eventLoaded.stats.Turns != 3 || !eventLoaded.current().Events[0].Used {
+		t.Fatal("the executable should preserve movement and the gift's one-turn cost after loading")
 	}
 }
