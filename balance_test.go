@@ -172,7 +172,8 @@ func TestWeaponLootGetsSmallBoostWithoutGrowingOnDrop(t *testing.T) {
 			found = it
 		}
 	}
-	wantMax := map[string]int{"Dragontooth Pike": 11, "Starforged Hammer": 15, "Ember Lance": 10}
+	wantMax := map[string]int{"Dragontooth Pike": 11, "Starforged Hammer": 15, "Ember Lance": 10,
+		"Dragonbone Partisan": 10, "Bellringer Hammer": 16, "Cinder Pike": 9}
 	if found.Weapon.Max != wantMax[found.Weapon.Name] {
 		t.Fatalf("weapon boost should be +1 maximum damage: %+v", found.Weapon)
 	}

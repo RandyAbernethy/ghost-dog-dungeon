@@ -8,37 +8,58 @@ func (g *game) attackMonster(m *monster) {
 	damage := g.randRange(g.player.Weapon.Min, g.player.Weapon.Max) + g.player.strikeBonus()
 	if g.player.Weapon.Magic && m.Undead {
 		damage += 2
-		g.addMessage(fmt.Sprintf("%s flares against the undead.", g.player.Weapon.Name))
 	}
-	if g.player.HexedTurns > 0 {
+	hexed := g.player.HexedTurns > 0
+	if hexed {
 		damage -= 3
 		if damage < 1 {
 			damage = 1
 		}
 		g.player.HexedTurns = 0
-		g.addMessage("The hex weakens your strike.")
 	}
 	g.dogFocus = m
 	g.addMessage(fmt.Sprintf("You strike %s with %s for %d damage.", m.Name, g.player.Weapon.Name, damage))
-	g.damageMonster(m, damage, "hits")
+	if g.player.Weapon.Magic && m.Undead {
+		g.addMessage(fmt.Sprintf("%s flares against the undead.", g.player.Weapon.Name))
+	}
+	if hexed {
+		g.addMessage("The hex weakens your strike.")
+	}
+	beforeHP := m.HP
+	piercing := 0
+	if g.player.Weapon.Power == powerShatter {
+		piercing = monsterGuard(m.Kind)
+	}
+	g.damageMonsterPiercing(m, damage, "hits", piercing)
+	g.applyWeaponPower(m, beforeHP-m.HP)
 	if m.HP > 0 && distance(g.player.Pos, m.Pos) <= 1 {
 		switch m.Kind {
 		case monsterMirrorShade:
 			g.hurtPlayer(g.randRange(2, 4), "Mirror Shade reflects your blow")
 		case monsterSlime:
 			g.hurtPlayer(1, "Acid splashes onto you")
+		case monsterHollowReaper:
+			g.hurtPlayer(12, "The Epic Hollow Reaper reflects your close-range strike")
 		}
 	}
 }
 
 func (g *game) damageMonster(m *monster, damage int, verb string) {
+	g.damageMonsterPiercing(m, damage, verb, 0)
+}
+
+func (g *game) damageMonsterPiercing(m *monster, damage int, verb string, piercing int) {
 	if m.HP <= 0 {
 		return
 	}
-	if blocked := min(max(0, damage), monsterGuard(m.Kind)); blocked > 0 {
+	if epicMonster(m.Kind) && damage > 0 {
+		g.awakenEpic(m)
+	}
+	guard := max(0, monsterGuard(m.Kind)-piercing)
+	if blocked := min(max(0, damage), guard); blocked > 0 {
 		g.addMessage(fmt.Sprintf("%s's armor blocks %d damage.", m.Name, blocked))
 	}
-	damage = max(0, damage-monsterGuard(m.Kind))
+	damage = max(0, damage-guard)
 	g.knownMonsters[m.Kind] = true
 	if g.turnDamage == nil {
 		g.turnDamage = make(map[*monster]int)
@@ -56,6 +77,7 @@ func (g *game) damageMonster(m *monster, damage int, verb string) {
 	}
 	m.HP = 0
 	g.stats.MonstersKilled++
+	g.stats.DifficultyDefeated += monsterDifficulty(*m)
 	g.addMessage(fmt.Sprintf("%s falls.", m.Name))
 	lvl := g.current()
 	if g.dogFocus == m {
@@ -171,6 +193,9 @@ func (g *game) monsterTurn(m *monster) {
 		m.FleeTurns--
 		return
 	}
+	if g.epicRest(m) {
+		return
+	}
 	if m.Kind == monsterIronrootBrute {
 		m.ActionTurns++
 		if m.ActionTurns%2 == 0 {
@@ -202,19 +227,19 @@ func (g *game) monsterTurn(m *monster) {
 				return
 			}
 		}
-	case monsterSpider:
+	case monsterSpider, monsterCaveCrawler:
 		if distance(m.Pos, g.player.Pos) <= 4 && g.rng.Intn(100) < 20 {
-			g.player.WebbedTurns = 1
-			g.addMessage("A Web Spider spits silk across your legs.")
+			g.entanglePlayer()
+			g.addMessage("A " + m.Name + " spits silk across your legs.")
 			return
 		}
 	case monsterHexPriest:
 		if distance(m.Pos, g.player.Pos) <= 5 && g.rng.Intn(100) < 25 {
-			g.player.HexedTurns = 1
+			g.hexPlayer()
 			g.hurtPlayerSpell(2, "The Hex Priest whispers a crooked curse")
 			return
 		}
-	case monsterBoneHound:
+	case monsterBoneHound, monsterEmberHound:
 		if distance(m.Pos, g.player.Pos) <= 5 && g.rng.Intn(100) < 30 {
 			g.moveMonster(m)
 			if distance(m.Pos, g.player.Pos) == 1 {
@@ -231,7 +256,7 @@ func (g *game) monsterTurn(m *monster) {
 		}
 	case monsterVoidSeer:
 		if distance(m.Pos, g.player.Pos) <= 5 && g.rng.Intn(100) < 28 {
-			g.player.HexedTurns = 1
+			g.hexPlayer()
 			g.hurtPlayerSpell(g.randRange(2, 5), "The Void Seer tears at your thoughts")
 			return
 		}
@@ -252,7 +277,7 @@ func (g *game) monsterTurn(m *monster) {
 		}
 	case monsterBoss:
 		if distance(m.Pos, g.player.Pos) <= 5 && g.rng.Intn(100) < 30 {
-			g.player.HexedTurns = 1
+			g.hexPlayer()
 			g.hurtPlayerSpell(g.randRange(5, 8), "The Dread Lich hurls a bolt of grave-fire")
 			return
 		}
@@ -332,25 +357,25 @@ func (g *game) attackPlayer(m *monster) {
 	}
 	source := m.Name + " hits you"
 	switch m.Kind {
-	case monsterWraith:
+	case monsterWraith, monsterHollowWarden:
 		m.HP = min(m.MaxHP, m.HP+2)
-		source = "The Wraith drains your warmth"
+		source = "The " + m.Name + " drains your warmth"
 	case monsterSoulLeech:
 		m.HP = min(m.MaxHP, m.HP+3)
 		source = "The Soul Leech drains your vitality"
-	case monsterSpider:
+	case monsterSpider, monsterCaveCrawler:
 		if g.rng.Intn(100) < 25 {
-			g.player.WebbedTurns = 1
-			source = "The Web Spider bites and tangles you"
+			g.entanglePlayer()
+			source = "The " + m.Name + " bites and tangles you"
 		}
 	case monsterHexPriest:
 		if g.rng.Intn(100) < 35 {
-			g.player.HexedTurns = 1
+			g.hexPlayer()
 			source = "The Hex Priest strikes and brands you with a curse"
 		}
 	case monsterFrostHound:
 		if g.rng.Intn(100) < 30 {
-			g.player.WebbedTurns = 1
+			g.entanglePlayer()
 			source = "The Frostbound Hound bites and freezes your feet"
 		}
 	case monsterCrownlessKnight:
@@ -360,23 +385,32 @@ func (g *game) attackPlayer(m *monster) {
 		}
 	case monsterBoss:
 		if g.rng.Intn(100) < 30 {
-			g.player.HexedTurns = 1
+			g.hexPlayer()
 			source = "The Dread Lich carves a rune of ruin into you"
 		}
 	}
+	if m.Kind == monsterIronColossus && g.player.ShieldTurns > 0 {
+		g.player.ShieldTurns = 0
+		g.addMessage("The Epic Iron Colossus crushes your warding charm.")
+	}
+	beforeHP := g.player.HP
 	g.hurtPlayer(damage, source)
+	g.epicMeleePower(m, beforeHP-g.player.HP)
+	g.godArmorReprisal(m, beforeHP)
 	if m.Kind == monsterSoulLeech {
 		g.addMessage("The Soul Leech knits itself together with your stolen strength.")
 	}
 }
 
 func (g *game) hurtPlayer(damage int, source string) {
-	damage -= g.player.armorBlock()
+	incoming := max(0, damage)
 	if g.player.ShieldTurns > 0 {
-		damage -= 3
+		incoming = max(0, incoming-3)
 	}
-	if damage < 0 {
-		damage = 0
+	damage = max(0, incoming-g.player.armorBlock())
+	// Divine protection is immense, but never makes physical blows harmless.
+	if g.player.hasGodArmor() && incoming > 0 {
+		damage = max(damage, (incoming+9)/10)
 	}
 	g.player.HP = max(0, g.player.HP-damage)
 	g.addMessage(fmt.Sprintf("%s for %d damage. (%d/%d)", source, damage, g.player.HP, g.player.MaxHP))
@@ -384,7 +418,9 @@ func (g *game) hurtPlayer(damage int, source string) {
 
 func (g *game) attackDog(m *monster) {
 	damage := g.randRange(max(1, m.MinDamage-1), max(1, m.MaxDamage-1))
+	beforeHP := g.dog.HP
 	g.hurtDog(damage, m.Name+" claws")
+	g.epicMeleePower(m, beforeHP-g.dog.HP)
 }
 
 func (g *game) hurtDog(damage int, source string) {
@@ -393,6 +429,9 @@ func (g *game) hurtDog(damage int, source string) {
 	}
 	if g.player.ShieldTurns > 0 && g.dog.Freed && g.dog.Alive {
 		damage = max(0, damage-3)
+	}
+	if g.dog.Freed && distance(g.player.Pos, g.dog.Pos) <= 2 && g.player.hasArmorPower(powerSanctuary) {
+		damage = max(0, damage-6)
 	}
 	g.dog.HP -= damage
 	g.addMessage(fmt.Sprintf("%s hits the ghost dog for %d damage. (%d/%d)", source, damage, max(g.dog.HP, 0), g.dog.MaxHP))

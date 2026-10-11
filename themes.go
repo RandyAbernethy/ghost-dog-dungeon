@@ -18,45 +18,11 @@ func themeFavors(theme floorTheme, m monster) bool {
 	case themeBarracks:
 		return monsterGuard(m.Kind) > 0 || m.Kind == monsterOrc || m.Kind == monsterGoblin || m.Kind == monsterGraveKnight || m.Kind == monsterCrownlessKnight
 	case themeOvergrown:
-		return m.Kind == monsterSpider || m.Kind == monsterSlime || m.Kind == monsterAshBeetle || m.Kind == monsterIronrootBrute
+		return m.Kind == monsterSpider || m.Kind == monsterCaveCrawler || m.Kind == monsterSlime || m.Kind == monsterAshBeetle || m.Kind == monsterIronrootBrute
 	case themeKennel:
-		return m.Kind == monsterRat || m.Kind == monsterBoneHound || m.Kind == monsterFrostHound
+		return m.Kind == monsterRat || m.Kind == monsterTunnelBat || m.Kind == monsterBoneHound || m.Kind == monsterEmberHound || m.Kind == monsterFrostHound
 	}
 	return false
-}
-
-func monsterThreat(m monster) int {
-	return m.MaxHP + 2*(m.MinDamage+m.MaxDamage) + 3*monsterGuard(m.Kind)
-}
-
-// Themes change only a few picks, with a capped aggregate threat budget.
-func (g *game) themedMonsters(lvl *level) []monster {
-	monsters := g.monstersForLevel(lvl.Index)
-	baseline := 0
-	for _, m := range monsters {
-		baseline += monsterThreat(m)
-	}
-	total := baseline
-	changed := 0
-	for i, m := range monsters {
-		if m.Boss || themeFavors(lvl.Theme, m) || changed >= max(1, len(monsters)/3) {
-			continue
-		}
-		choices := []monster{}
-		for _, candidate := range monsterPoolForLevel(lvl.Index) {
-			candidate = scaleMonsterForDepth(candidate, lvl.Index)
-			newTotal := total - monsterThreat(m) + monsterThreat(candidate)
-			if !candidate.Boss && themeFavors(lvl.Theme, candidate) && newTotal <= baseline*110/100 && newTotal >= baseline*90/100 {
-				choices = append(choices, candidate)
-			}
-		}
-		if len(choices) > 0 {
-			monsters[i] = choices[g.rng.Intn(len(choices))]
-			total += monsterThreat(monsters[i]) - monsterThreat(m)
-			changed++
-		}
-	}
-	return monsters
 }
 
 func (g *game) themedItems(lvl *level) []item {

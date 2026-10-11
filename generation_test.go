@@ -179,19 +179,20 @@ func TestThemesPreserveFloorDifficultyAndSeedReproduction(t *testing.T) {
 	for depth := 0; depth < levelCount; depth++ {
 		for _, theme := range floorThemes {
 			for seed := int64(1); seed <= 30; seed++ {
-				base := (&game{rng: newSimpleRNG(seed)}).monstersForLevel(depth)
 				g := &game{rng: newSimpleRNG(seed)}
-				actual := g.themedMonsters(&level{Index: depth, Theme: theme})
+				lvl := &level{Index: depth, Theme: theme}
+				actual, err := g.monstersForLevel(lvl)
+				if err != nil {
+					t.Fatal(err)
+				}
 				allowed := map[monsterKind]bool{}
-				for _, m := range monsterPoolForLevel(depth) {
-					allowed[m.Kind] = true
+				for _, c := range encounterPool(depth, theme) {
+					allowed[c.Spec.Kind] = true
 				}
-				baseThreat, actualThreat, bosses := 0, 0, 0
-				for _, m := range base {
-					baseThreat += monsterThreat(m)
-				}
+				allowed[monsterBoss] = depth == levelCount-1
+				actualThreat, bosses := 0, 0
 				for _, m := range actual {
-					actualThreat += monsterThreat(m)
+					actualThreat += monsterDifficulty(m)
 					if m.Boss {
 						bosses++
 					}
@@ -199,7 +200,8 @@ func TestThemesPreserveFloorDifficultyAndSeedReproduction(t *testing.T) {
 						t.Fatal("theme changed monster stats or exceeded the floor's pool")
 					}
 				}
-				if len(actual) != len(base) || actualThreat > baseThreat*110/100 || actualThreat < baseThreat*90/100 || (depth == levelCount-1 && bosses != 1) || (depth < levelCount-1 && bosses != 0) {
+				low, high := floorDifficultyBounds(depth)
+				if actualThreat < low || actualThreat > high || (depth == levelCount-1 && bosses != 1) || (depth < levelCount-1 && bosses != 0) {
 					t.Fatal("theme changed the encounter budget or boss count")
 				}
 			}

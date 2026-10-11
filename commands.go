@@ -9,6 +9,12 @@ func (g *game) processCommand(cmd string) {
 	if g.won || g.quit || g.player.HP <= 0 {
 		return
 	}
+	if g.processFreeCommand(cmd) {
+		return
+	}
+	// Stage the action's messages so failed actions can keep the current turn visible.
+	previousMessages := g.messages
+	g.messages = nil
 	g.turnDamage = make(map[*monster]int)
 	if g.player.WebbedTurns > 0 && isMoveCommand(cmd) {
 		g.player.WebbedTurns--
@@ -63,31 +69,6 @@ func (g *game) processCommand(cmd string) {
 			acted = g.interactEvent()
 		case "choose 1", "choose 2", "choose 3":
 			acted = g.chooseGhostGift(cmd[len(cmd)-1] - '0')
-		case "save":
-			if err := g.save(); err != nil {
-				g.addMessage("Save failed: " + err.Error())
-			} else {
-				g.addMessage("Game saved to " + g.saveFile)
-			}
-		case "load":
-			if g.saveFile == "" {
-				g.addMessage("No save file is selected; restart with --load-file path to load a run.")
-				break
-			}
-			loaded, err := loadGame(g.saveFile)
-			if err != nil {
-				g.addMessage("Load failed: " + err.Error())
-			} else {
-				recordsFile := g.recordsFile
-				*g = *loaded
-				g.recordsFile = recordsFile
-				g.dogFocus = nil
-				g.addMessage("Game loaded from " + g.saveFile)
-			}
-		case "h":
-			g.addMessage("Keys: wasd/arrows move, qezx diagonals, . wait, </> stairs, p/f/b/g/u/t/o/n items, r recall, v fountain, y interact, i inventory, E equipment, B Book of Ghost Dog, j challenges, c codex, m inspect, k search, Esc map, S save, L load. Type :equip NUMBER, :drop NUMBER, or :choose 1/2/3 + Enter; Ctrl-C quits.")
-		case "quit", "exit":
-			g.quit = true
 		default:
 			g.addMessage("Unknown command. Press h for help.")
 		}
@@ -101,7 +82,42 @@ func (g *game) processCommand(cmd string) {
 		if !g.won && g.player.HP > 0 {
 			g.advanceEnemies()
 		}
+	} else {
+		g.messages = append(previousMessages, g.messages...)
 	}
+}
+
+func (g *game) processFreeCommand(cmd string) bool {
+	switch cmd {
+	case "save":
+		if err := g.save(); err != nil {
+			g.addMessage("Save failed: " + err.Error())
+		} else {
+			g.addMessage("Game saved to " + g.saveFile)
+		}
+	case "load":
+		if g.saveFile == "" {
+			g.addMessage("No save file is selected; restart with --load-file path to load a run.")
+			return true
+		}
+		loaded, err := loadGame(g.saveFile)
+		if err != nil {
+			g.addMessage("Load failed: " + err.Error())
+		} else {
+			recordsFile := g.recordsFile
+			*g = *loaded
+			g.recordsFile = recordsFile
+			g.dogFocus = nil
+			g.addMessage("Game loaded from " + g.saveFile)
+		}
+	case "h":
+		g.addMessage("Keys: wasd/arrows move, qezx diagonals, . wait, </> stairs, p/f/b/g/u/t/o/n items, r recall, v fountain, y interact, i inventory, E equipment, B Book of Ghost Dog, j challenges, c codex, m inspect, k search, Esc map, S save, L load. Type :equip NUMBER, :drop NUMBER, or :choose 1/2/3 + Enter; Ctrl-C quits.")
+	case "quit", "exit":
+		g.quit = true
+	default:
+		return false
+	}
+	return true
 }
 
 func normalizeCommand(cmd string) string {
@@ -161,6 +177,28 @@ func moveDelta(cmd string) (int, int, bool) {
 	}
 }
 
+func moveDirection(cmd string) string {
+	switch cmd {
+	case "w":
+		return "north"
+	case "a":
+		return "west"
+	case "s":
+		return "south"
+	case "d":
+		return "east"
+	case "q":
+		return "northwest"
+	case "e":
+		return "northeast"
+	case "z":
+		return "southwest"
+	case "x":
+		return "southeast"
+	}
+	return ""
+}
+
 func (g *game) tryMove(cmd string) bool {
 	dx, dy, ok := moveDelta(cmd)
 	if !ok {
@@ -192,11 +230,13 @@ func (g *game) tryMove(cmd string) bool {
 			return false
 		}
 		g.player.Pos = next
+		g.addMessage("You move " + moveDirection(cmd) + ".")
 		g.addMessage("Ghost dog drifts aside and keeps pace with you.")
 		g.collectItems()
 		return true
 	}
 	g.player.Pos = next
+	g.addMessage("You move " + moveDirection(cmd) + ".")
 	if lvl.DogChain != nil && *lvl.DogChain == next && !g.dog.Freed {
 		g.dog.Freed = true
 		g.placeDogNearPlayer()
@@ -311,6 +351,7 @@ func (g *game) tryAscend() bool {
 }
 
 func (g *game) afterFloorTransition(message string, healDog bool) {
+	g.addMessage(message)
 	if g.dog.Freed && g.dog.Alive {
 		if healDog {
 			heal := g.randRange(2, 3)
@@ -319,14 +360,13 @@ func (g *game) afterFloorTransition(message string, healDog bool) {
 		}
 		g.placeDogNearPlayer()
 	}
-	g.addMessage(message)
 }
 
 func (g *game) regenerateStairGuardians(lvl *level) {
 	if !lvl.HasStair {
 		return
 	}
-	want := 2 + g.rng.Intn(2)
+	want := 3
 	spots := make([]pos, 0, want)
 	for radius := 1; radius <= 2 && len(spots) < want; radius++ {
 		for y := lvl.Stairs.Y - radius; y <= lvl.Stairs.Y+radius && len(spots) < want; y++ {
@@ -336,27 +376,25 @@ func (g *game) regenerateStairGuardians(lvl *level) {
 					(!g.dog.Freed && lvl.DogChain != nil && p == *lvl.DogChain) {
 					continue
 				}
-				if g.monsterAt(lvl, p) != nil || g.itemAt(lvl, p) != nil || (g.dog.Freed && g.dog.Alive && g.dog.Pos == p) {
+				if g.monsterAt(lvl, p) != nil || g.itemAt(lvl, p) != nil || g.fountainAt(lvl, p) != nil || lvl.eventAt(p) != nil || (g.dog.Freed && g.dog.Alive && g.dog.Pos == p) {
 					continue
 				}
 				spots = append(spots, p)
 			}
 		}
 	}
-	pool := monsterPoolForLevel(lvl.Index)
-	if len(spots) == 0 || len(pool) == 0 {
+	if len(spots) == 0 {
 		return
 	}
-	count := min(want, len(spots))
-	for i := 0; i < count; i++ {
+	roster, err := g.stairGuardianRoster(lvl.Index, len(spots))
+	if err != nil {
+		g.addMessage("Stairwell guardians could not return: " + err.Error())
+		return
+	}
+	for _, spawn := range roster {
 		spotIndex := g.rng.Intn(len(spots))
 		spawnPos := spots[spotIndex]
 		spots = append(spots[:spotIndex], spots[spotIndex+1:]...)
-		spec := pool[g.rng.Intn(len(pool))]
-		for spec.Boss && len(pool) > 1 {
-			spec = pool[g.rng.Intn(len(pool))]
-		}
-		spawn := scaleMonsterForDepth(spec, lvl.Index)
 		spawn.Pos = spawnPos
 		lvl.Monsters = append(lvl.Monsters, &spawn)
 	}

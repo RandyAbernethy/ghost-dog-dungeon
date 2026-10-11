@@ -23,12 +23,9 @@ var allMonsterKinds = []monsterKind{
 	monsterAshBeetle, monsterChainImp, monsterLanternWisp, monsterChapelSentinel,
 	monsterGloomArcher, monsterBellRevenant, monsterIronrootBrute, monsterFrostHound,
 	monsterRiftWeaver, monsterCrownlessKnight,
-}
-
-func monsterCountForDepth(depth int) int {
-	// The floor generator fills exactly this many walkable tiles, so quota is
-	// one monster per roughly 30 tiles (level one remains a single encounter).
-	return max(1, floorBudget(depth)/30)
+	monsterTunnelBat, monsterCaveCrawler, monsterRustGuard, monsterBarrowArcher,
+	monsterGraveAcolyte, monsterEmberHound, monsterObsidianGuard, monsterHollowWarden,
+	monsterIronColossus, monsterGraveTitan, monsterAshenWyrm, monsterHollowReaper,
 }
 
 func monsterPoolForLevel(depth int) []monster {
@@ -53,7 +50,13 @@ func monsterPoolForLevel(depth int) []monster {
 	}, {
 		newMonster(monsterMirrorShade), newMonster(monsterCinderDrake), newMonster(monsterVoidSeer), newMonster(monsterGraveKnight), newMonster(monsterHexPriest), newMonster(monsterStormHerald), newMonster(monsterGargoyle), newMonster(monsterBoneHound), newMonster(monsterSoulLeech), newMonster(monsterBoss),
 	}}
-	return append(levels[depth], newMonster(newMonsterKindsByFloor[depth]))
+	pool := append(levels[depth], newMonster(newMonsterKindsByFloor[depth]))
+	for _, extra := range additionalMonsters {
+		if depth >= extra.FirstFloor && depth <= extra.FirstFloor+3 {
+			pool = append(pool, newMonster(extra.Kind))
+		}
+	}
+	return pool
 }
 
 func scaleMonsterForDepth(m monster, depth int) monster {
@@ -63,33 +66,6 @@ func scaleMonsterForDepth(m monster, depth int) monster {
 	m.MinDamage += damageBonus
 	m.MaxDamage += damageBonus
 	return m
-}
-
-func (g *game) monstersForLevel(depth int) []monster {
-	roster := monsterPoolForLevel(depth)
-	count := monsterCountForDepth(depth)
-	var candidates []monster
-	for _, spec := range roster {
-		if !spec.Boss {
-			candidates = append(candidates, spec)
-		}
-	}
-	for i := len(candidates) - 1; i > 0; i-- {
-		j := g.rng.Intn(i + 1)
-		candidates[i], candidates[j] = candidates[j], candidates[i]
-	}
-	normalCount := count
-	if depth == levelCount-1 {
-		normalCount--
-	}
-	spawn := append([]monster(nil), candidates[:min(normalCount, len(candidates))]...)
-	if depth == levelCount-1 {
-		spawn = append(spawn, newMonster(monsterBoss))
-	}
-	for i := range spawn {
-		spawn[i] = scaleMonsterForDepth(spawn[i], depth)
-	}
-	return spawn
 }
 
 func newMonster(kind monsterKind) monster {
@@ -284,7 +260,10 @@ func newMonsterSpec(kind monsterKind) (monster, bool) {
 	case monsterCrownlessKnight:
 		m = monster{Glyph: 'K', MaxHP: 32, MinDamage: 5, MaxDamage: 8, Undead: true}
 	default:
-		return monster{}, false
+		if m, ok := additionalMonsterSpec(kind); ok {
+			return m, true
+		}
+		return epicMonsterSpec(kind)
 	}
 	m.Kind, m.Name, m.HP = kind, string(kind), m.MaxHP
 	return m, true
@@ -296,7 +275,7 @@ func (g *game) newMonsterPower(m *monster) bool {
 	switch m.Kind {
 	case monsterChainImp:
 		if d <= 3 && g.rng.Intn(100) < 25 {
-			g.player.WebbedTurns = 1
+			g.entanglePlayer()
 			g.addMessage("A Chain Imp hooks your ankles with a silver chain.")
 			return true
 		}
@@ -305,15 +284,15 @@ func (g *game) newMonsterPower(m *monster) bool {
 			g.hurtPlayerSpell(g.randRange(2, 4), "The Lantern Wisp casts a pale spark")
 			return true
 		}
-	case monsterGloomArcher:
+	case monsterGloomArcher, monsterBarrowArcher:
 		if d <= 5 && g.rng.Intn(100) < 40 {
-			g.hurtPlayer(g.randRange(m.MinDamage, m.MaxDamage), "The Gloom Archer fires a barbed arrow")
+			g.hurtPlayer(g.randRange(m.MinDamage, m.MaxDamage), "The "+m.Name+" fires a barbed arrow")
 			return true
 		}
-	case monsterBellRevenant:
+	case monsterBellRevenant, monsterGraveAcolyte:
 		if d <= 4 && g.rng.Intn(100) < 30 {
-			g.player.HexedTurns = 1
-			g.hurtPlayerSpell(2, "The Bell Revenant tolls a broken bell")
+			g.hexPlayer()
+			g.hurtPlayerSpell(2, "The "+m.Name+" voices a hollow curse")
 			return true
 		}
 	case monsterRiftWeaver:
@@ -321,7 +300,7 @@ func (g *game) newMonsterPower(m *monster) bool {
 			spots := g.openNeighbors(g.player.Pos, false)
 			if len(spots) > 0 {
 				m.Pos = spots[g.rng.Intn(len(spots))]
-				g.player.WebbedTurns = 1
+				g.entanglePlayer()
 				g.addMessage("A Rift Weaver steps through a tear in the air and binds your feet.")
 				return true
 			}
@@ -332,12 +311,20 @@ func (g *game) newMonsterPower(m *monster) bool {
 
 func monsterGuard(kind monsterKind) int {
 	switch kind {
-	case monsterAshBeetle:
+	case monsterAshBeetle, monsterRustGuard:
 		return 1
-	case monsterChapelSentinel:
+	case monsterChapelSentinel, monsterObsidianGuard:
 		return 2
 	case monsterIronrootBrute:
 		return 3
+	case monsterIronColossus:
+		return 9
+	case monsterGraveTitan:
+		return 6
+	case monsterAshenWyrm:
+		return 5
+	case monsterHollowReaper:
+		return 4
 	default:
 		return 0
 	}
@@ -366,6 +353,9 @@ func newMonsterDescription(kind monsterKind) string {
 	case monsterCrownlessKnight:
 		return "Undead; its melee strike shatters an active warding charm."
 	default:
-		return ""
+		if description := additionalMonsterDescription(kind); description != "" {
+			return description
+		}
+		return epicMonsterDescription(kind)
 	}
 }

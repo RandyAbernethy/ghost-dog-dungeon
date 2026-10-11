@@ -102,7 +102,7 @@ func TestStunPreventsMovementPowersAndDogAttacks(t *testing.T) {
 
 func TestPendingStunSurvivesSaveAndExpiresAfterOneAction(t *testing.T) {
 	g := openArena()
-	g.saveFile = filepath.Join(t.TempDir(), "stun.json")
+	g.saveFile, g.timestampedSaves = filepath.Join(t.TempDir(), "stun.json"), false
 	g.timestampedSaves = false
 	m := newMonster(monsterOrc)
 	m.HP, m.MaxHP, m.Pos = 100, 100, pos{6, 5}

@@ -32,16 +32,16 @@ func openArena() *game {
 func TestMonsterGroupsVaryWithinFloorPools(t *testing.T) {
 	for depth := 0; depth < levelCount; depth++ {
 		groups := map[string]bool{}
-		seenNew := false
 		allowed := map[monsterKind]bool{}
-		for _, spec := range monsterPoolForLevel(depth) {
-			allowed[spec.Kind] = true
+		for _, candidate := range encounterPool(depth, "") {
+			allowed[candidate.Spec.Kind] = true
 		}
+		allowed[monsterBoss] = depth == levelCount-1
 		for seed := int64(1); seed <= 100; seed++ {
 			g := &game{rng: newSimpleRNG(seed)}
-			monsters := g.monstersForLevel(depth)
-			if len(monsters) != monsterCountForDepth(depth) {
-				t.Fatalf("floor %d monster quota changed", depth+1)
+			monsters, err := g.monstersForLevel(&level{Index: depth})
+			if err != nil {
+				t.Fatal(err)
 			}
 			kinds, bosses := []string{}, 0
 			for _, m := range monsters {
@@ -51,7 +51,6 @@ func TestMonsterGroupsVaryWithinFloorPools(t *testing.T) {
 				if m.Boss {
 					bosses++
 				}
-				seenNew = seenNew || m.Kind == newMonsterKindsByFloor[depth]
 				kinds = append(kinds, string(m.Kind))
 			}
 			if (depth == levelCount-1 && bosses != 1) || (depth < levelCount-1 && bosses != 0) {
@@ -59,13 +58,16 @@ func TestMonsterGroupsVaryWithinFloorPools(t *testing.T) {
 			}
 			sort.Strings(kinds)
 			groups[strings.Join(kinds, ",")] = true
-			repeat := (&game{rng: newSimpleRNG(seed)}).monstersForLevel(depth)
+			repeat, err := (&game{rng: newSimpleRNG(seed)}).monstersForLevel(&level{Index: depth})
+			if err != nil {
+				t.Fatal(err)
+			}
 			if !reflect.DeepEqual(monsters, repeat) {
 				t.Fatal("a seed should reproduce its encounters")
 			}
 		}
-		if len(groups) < 2 || !seenNew {
-			t.Fatalf("floor %d lacks variation or its new monster: groups=%d new=%t", depth+1, len(groups), seenNew)
+		if len(groups) < 2 {
+			t.Fatalf("floor %d lacks variation: groups=%d", depth+1, len(groups))
 		}
 	}
 }
@@ -120,7 +122,7 @@ func TestEverySecretRoomAddsOneSideStory(t *testing.T) {
 
 func TestBookCollectsOnlyFoundStoriesAndSurvivesSave(t *testing.T) {
 	g := openArena()
-	g.saveFile = filepath.Join(t.TempDir(), "book.json")
+	g.saveFile, g.timestampedSaves = filepath.Join(t.TempDir(), "book.json"), false
 	g.timestampedSaves = false
 	for _, chapter := range []int{3, 1, 3} {
 		g.current().Items = []item{{Pos: g.player.Pos, Kind: itemStoryScroll, StoryChapter: chapter}}
@@ -337,7 +339,7 @@ func TestRunCountersCountActionsKillsAndPermanentDogFalls(t *testing.T) {
 	rat = newMonster(monsterRat)
 	rat.HP = 1
 	g.dogAttack(&rat)
-	if g.stats.MonstersKilled != 2 {
+	if g.stats.MonstersKilled != 2 || g.stats.DifficultyDefeated != 2*monsterDifficulty(rat) {
 		t.Fatal("kills should count once, including Ghost Dog's kills")
 	}
 	g.dog.Freed, g.dog.HP = true, 1
@@ -535,7 +537,7 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 	g.placeDogNearPlayer()
 	g.player.StoryChapters, g.player.SideStories = []int{1, 3}, []int{2}
 	g.player.carryWeapon(weapon{Name: "Test Spear", Min: 3, Max: 5, Reach: 2})
-	g.stats = runStats{Turns: 23, MonstersKilled: 7, HistoryKnown: true}
+	g.stats = runStats{Turns: 23, MonstersKilled: 7, HistoryKnown: true, DifficultyKnown: true, DifficultyDefeated: 250}
 	if err := g.save(); err != nil {
 		t.Fatal(err)
 	}
@@ -552,7 +554,7 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 	if err := command.Run(); err != nil {
 		t.Fatalf("run executable: %v\n%s", err, stderr.String())
 	}
-	for _, want := range []string{"=== Book of Ghost Dog ===", ghostDogStory[0], ghostDogSideStories[1].Text, "You equip Test Spear", "Victory!", "Fewest turns record: 25", "Ghost Dog safe escape record: achieved", "Most monsters killed record: 7"} {
+	for _, want := range []string{"=== Book of Ghost Dog ===", ghostDogStory[0], ghostDogSideStories[1].Text, "You equip Test Spear", "Victory!", "Fewest turns record: 25", "Ghost Dog safe escape record: achieved", "Most monsters killed record: 7", "Most difficulty defeated record: 250 points"} {
 		if !strings.Contains(stdout.String(), want) {
 			t.Fatalf("game CLI did not show %q", want)
 		}
@@ -567,7 +569,7 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 		t.Fatal("personal records should appear at startup and after victory")
 	}
 	records, err := readChallengeRecords(recordsPath)
-	if err != nil || records.FewestTurns == nil || records.FewestTurns.Turns != 25 {
+	if err != nil || records.FewestTurns == nil || records.FewestTurns.Turns != 25 || records.MostDifficulty == nil || records.MostDifficulty.Difficulty != 250 {
 		t.Fatalf("victory did not persist its final action: records=%+v err=%v", records, err)
 	}
 	for key, want := range map[byte]string{'B': "book", 'E': "equipment", 'j': "challenges"} {
@@ -599,7 +601,7 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 	if err != nil || fresh.player.Potions != 2 || fresh.stats.Turns != 1 {
 		t.Fatalf("drop command did not survive the CLI save: err=%v", err)
 	}
-	if !strings.Contains(output, "Fewest turns record: 25") || strings.Count(output, "=== Personal Records ===") != 1 {
+	if !strings.Contains(output, "Fewest turns record: 25") || !strings.Contains(output, "Most difficulty defeated record: 250 points") || strings.Count(output, "=== Personal Records ===") != 1 {
 		t.Fatal("a new game should show the previous game's records at startup")
 	}
 	unchanged, err := readChallengeRecords(recordsPath)
@@ -612,7 +614,7 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 	// An older save's record path must not override the current user's home.
 	death.recordsFile = filepath.Join(dir, "ghostdog-records.json")
 	death.player.HP = 1
-	death.stats = runStats{Turns: 10, MonstersKilled: 12, HistoryKnown: true}
+	death.stats = runStats{Turns: 10, MonstersKilled: 12, HistoryKnown: true, DifficultyKnown: true, DifficultyDefeated: 275}
 	attacker := newMonster(monsterOrc)
 	attacker.Pos, attacker.MinDamage, attacker.MaxDamage = pos{6, 5}, 5, 5
 	death.current().Monsters = []*monster{&attacker}
@@ -630,11 +632,11 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 	}
 	output = stdout.String()
 	deathIndex := strings.Index(output, "You fall in the dark.")
-	if deathIndex < 0 || strings.Count(output, "=== Personal Records ===") != 2 || strings.LastIndex(output, "Most monsters killed record: 12") < deathIndex {
+	if deathIndex < 0 || strings.Count(output, "=== Personal Records ===") != 2 || strings.LastIndex(output, "Most monsters killed record: 12") < deathIndex || strings.LastIndex(output, "Most difficulty defeated record: 275 points") < deathIndex {
 		t.Fatal("death should automatically show the updated personal records")
 	}
 	records, err = readChallengeRecords(recordsPath)
-	if err != nil || records.MostKills == nil || records.MostKills.Kills != 12 || records.MostKills.Turns != 11 || records.MostKills.Escaped || records.FewestTurns.Turns != 25 {
+	if err != nil || records.MostKills == nil || records.MostKills.Kills != 12 || records.MostKills.Turns != 11 || records.MostKills.Escaped || records.FewestTurns.Turns != 25 || records.MostDifficulty == nil || records.MostDifficulty.Difficulty != 275 {
 		t.Fatalf("death should automatically update home-directory records: %+v, err=%v", records, err)
 	}
 	if _, err := os.Stat(death.recordsFile); !os.IsNotExist(err) {

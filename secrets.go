@@ -30,6 +30,7 @@ func (g *game) addSecretTreasure(lvl *level) {
 	}
 	g.addSecretSideStory(lvl)
 	g.addSecretFountain(lvl)
+	g.addNestedRelic(lvl)
 }
 
 func (g *game) addRoomTreasure(lvl *level, hidden *secretRoom) {

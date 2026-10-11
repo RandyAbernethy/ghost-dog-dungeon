@@ -85,22 +85,18 @@ func TestDungeonGenerationCreatesRoomsAndReachableStairs(t *testing.T) {
 	}
 }
 
-func TestMonsterCountsScaleWithWalkableFloorArea(t *testing.T) {
+func TestMonsterDifficultyIncreasesWhileCountsCanVary(t *testing.T) {
 	g := newGame(21)
-	previousCount := 0
+	previousBudget, previousDifficulty := 0, 0
 	for depth, lvl := range g.levels {
-		want := max(1, countFloorTiles(lvl.Tiles)/30)
-		got := len(lvl.Monsters)
-		if got != want {
-			t.Fatalf("level %d monsters = %d, want %d from %d walkable tiles", depth+1, got, want, countFloorTiles(lvl.Tiles))
+		if lvl.DifficultyBudget <= previousBudget || lvl.InitialDifficulty <= previousDifficulty {
+			t.Fatalf("floor %d difficulty did not increase", depth+1)
 		}
-		if depth > 0 && got <= previousCount {
-			t.Fatalf("level %d should have more monsters than level %d: got %d and %d", depth+1, depth, got, previousCount)
+		low, high := floorDifficultyBounds(depth)
+		if lvl.InitialDifficulty < low || lvl.InitialDifficulty > high {
+			t.Fatalf("floor %d exceeds its difficulty band", depth+1)
 		}
-		previousCount = got
-	}
-	if got := len(g.levels[0].Monsters); got != 1 {
-		t.Fatalf("level 1 monsters = %d, want 1", got)
+		previousBudget, previousDifficulty = lvl.DifficultyBudget, lvl.InitialDifficulty
 	}
 }
 
@@ -570,9 +566,15 @@ func TestContentPoolsExposeNewMonstersWeaponsArmorAndMagic(t *testing.T) {
 	seenMonsters := map[monsterKind]bool{}
 	seenItems := map[string]bool{}
 	for depth := 0; depth < levelCount; depth++ {
-		g := newGame(int64(100 + depth))
-		for _, m := range g.monstersForLevel(depth) {
-			seenMonsters[m.Kind] = true
+		for seed := int64(1); seed <= 100; seed++ {
+			g := &game{rng: newSimpleRNG(seed)}
+			roster, err := g.monstersForLevel(&level{Index: depth})
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, m := range roster {
+				seenMonsters[m.Kind] = true
+			}
 		}
 	}
 	for seed := int64(1); seed <= 30; seed++ {

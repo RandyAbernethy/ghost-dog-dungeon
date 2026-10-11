@@ -16,7 +16,7 @@ func TestGhostGiftsVaryAcrossAllCategoriesWithinFloorLootRanges(t *testing.T) {
 	}
 	for depth := 0; depth < levelCount; depth++ {
 		weapons, armors := map[weapon]bool{}, map[armor]bool{}
-		for seed := int64(1); seed <= 80; seed++ {
+		for seed := int64(1); seed <= 800; seed++ {
 			g := &game{rng: newSimpleRNG(seed)}
 			for _, loot := range g.itemsForLevel(depth) {
 				if loot.Kind == itemWeapon {

@@ -20,6 +20,8 @@ func TestEscapeReturnsToMapFromCommandScreensForFree(t *testing.T) {
 			g := openArena()
 			g.player.WebbedTurns, g.player.HexedTurns, g.player.ShieldTurns = 1, 2, 3
 			g.stats.Turns = 12
+			g.messages = []string{"You strike an enemy.", "The enemy recoils."}
+			beforeLog := append([]string(nil), g.messages...)
 			rat := newMonster(monsterRat)
 			rat.Pos = pos{6, 5}
 			g.current().Monsters = []*monster{&rat}
@@ -31,7 +33,7 @@ func TestEscapeReturnsToMapFromCommandScreensForFree(t *testing.T) {
 			if strings.Count(out.String(), "=== Ghost Dog Dungeon:") != 2 || strings.Contains(out.String(), "Unknown command") {
 				t.Fatal("Esc should redraw the map after the command screen")
 			}
-			if !reflect.DeepEqual(g.player, beforePlayer) || rat != beforeRat || g.stats != beforeStats || g.rng.State != beforeRNG {
+			if !reflect.DeepEqual(g.player, beforePlayer) || rat != beforeRat || g.stats != beforeStats || g.rng.State != beforeRNG || !reflect.DeepEqual(g.messages, beforeLog) {
 				t.Fatal("returning to the map must not spend a turn, advance monsters, or change status effects")
 			}
 		})
@@ -96,6 +98,8 @@ func TestStandaloneEscapeInRawTerminalReturnsWithoutAnotherKey(t *testing.T) {
 	g := openArena()
 	g.player.WebbedTurns, g.player.HexedTurns, g.player.ShieldTurns = 1, 2, 3
 	g.stats.Turns = 17
+	g.messages = []string{"You strike an enemy.", "The enemy recoils."}
+	beforeLog := append([]string(nil), g.messages...)
 	rat := newMonster(monsterRat)
 	rat.Pos = pos{6, 5}
 	g.current().Monsters = []*monster{&rat}
@@ -134,7 +138,7 @@ func TestStandaloneEscapeInRawTerminalReturnsWithoutAnotherKey(t *testing.T) {
 	if strings.Count(out.String(), "=== Ghost Dog Dungeon:") != 3 || !strings.Contains(out.String(), "=== Inventory & Equipment ===") {
 		t.Fatal("each standalone Esc should display the map immediately")
 	}
-	if !reflect.DeepEqual(g.player, beforePlayer) || rat != beforeRat || g.stats != beforeStats || g.rng.State != beforeRNG || len(g.current().Items) != 0 {
+	if !reflect.DeepEqual(g.player, beforePlayer) || rat != beforeRat || g.stats != beforeStats || g.rng.State != beforeRNG || len(g.current().Items) != 0 || !reflect.DeepEqual(g.messages, beforeLog) {
 		t.Fatal("Esc must cancel the pending drop and leave game time and state unchanged")
 	}
 }

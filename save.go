@@ -27,6 +27,19 @@ func (a *armor) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (it *item) UnmarshalJSON(data []byte) error {
+	type itemData item
+	var saved itemData
+	if err := json.Unmarshal(data, &saved); err != nil {
+		return err
+	}
+	if saved.Kind == itemArmor && saved.Armor.Slot == slotLeg {
+		saved.Name = strings.ReplaceAll(saved.Name, " feet armor", " leg armor")
+	}
+	*it = item(saved)
+	return nil
+}
+
 func (p *player) UnmarshalJSON(data []byte) error {
 	type playerData player
 	var saved struct {

@@ -94,10 +94,13 @@ func (g *game) buildDungeon() error {
 			nextStory++
 		}
 		g.addSecretTreasure(built)
-		g.populateLevel(built)
+		if err := g.populateLevel(built); err != nil {
+			return fmt.Errorf("seed %d: %w", g.seed, err)
+		}
 		g.addSpecialRoom(built)
 		g.arrangeEncounters(built)
 		g.addFloorEvent(built)
+		g.addEpicEncounter(built)
 	}
 	return nil
 }

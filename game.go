@@ -32,7 +32,7 @@ func newGameWithSaveFile(seed int64, saveFile string) *game {
 		saveFile:         saveFile,
 		timestampedSaves: saveFile == "",
 		knownMonsters:    map[monsterKind]bool{},
-		stats:            runStats{HistoryKnown: true},
+		stats:            runStats{HistoryKnown: true, DifficultyKnown: true},
 		player: player{
 			HP:            46,
 			MaxHP:         46,
@@ -70,9 +70,6 @@ func newGameWithSaveFile(seed int64, saveFile string) *game {
 
 func (g *game) addMessage(msg string) {
 	g.messages = append(g.messages, msg)
-	if len(g.messages) > 8 {
-		g.messages = g.messages[len(g.messages)-8:]
-	}
 }
 
 func (g *game) current() *level { return g.levels[g.currentLevel] }

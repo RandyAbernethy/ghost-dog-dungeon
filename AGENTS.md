@@ -24,8 +24,11 @@ user when breaking changes in the Save files are desirable for simplicity.
 - `model.go`, `game.go`, `world.go`: data types, game initialization, common spatial helpers and seeded randomness.
 - `dungeon.go`, `layouts.go`, `generation.go`: dungeon plans, geometry, placement, and fountains.
 - `secrets.go`: independent and nested secret rooms, discovery geometry, rewards, and escape sanctum.
-- `themes.go`, `encounters.go`, `features.go`, `events.go`: floor identity, balanced encounters, optional rooms, and interactive events.
+- `themes.go`, `difficulty.go`, `rosters.go`, `encounters.go`, `features.go`, `events.go`: floor identity, difficulty budgets,
+  balanced encounters, optional rooms, and interactive events.
 - `combat.go`, `monsters.go`, `companion.go`, `consumables.go`, `blink.go`: combat, monster definitions, Ghost Dog, and usable items.
+- `monster_variety.go`, `equipment_variety.go`: additional depth-specific monster and equipment choices.
+- `relics.go`, `relic_powers.go`, `epic_monsters.go`: rare nested-room relics, equipped powers, and optional Epic encounters.
 - `equipment.go`, `loot.go`, `stories.go`, `records.go`: equipment, collection, discovered stories, and personal records.
 - `commands.go`, `terminal.go`, `render.go`, `save.go`: actions, terminal input, presentation, and persistence.
 
@@ -54,14 +57,28 @@ Keep related behavior together in this package. Add a package or abstraction onl
 - Keep ordinary terrain connected, stairs and rewards reachable, unrelated secret rooms separate, and undiscovered
   chambers concealed. Inner chambers require separate discovery after their parent is opened.
 - Every secret chamber has its own fountain and side-story scroll. The Book of Ghost Dog shows only collected stories.
-- Keep monster counts and depth-specific stat ranges stable when changing themes or formations. Keep entry tiles clear
-  and avoid crowding newly arrived players. Reserve a distant guard position for the Dread Lich.
+- Ordinary monster counts vary within calibrated floor difficulty budgets. Keep ordinary budgets and encounter totals strictly
+  increasing, preserve the previous health and damage averages, and cap ranged attackers, disabling powers, and
+  duplicate species. Ordinary equipment variety must preserve average damage, reach, and armor trait averages. Use saved RNG for all
+  selection; new types and items may be absent from a run. Keep entry tiles clear and avoid crowding newly arrived
+  players. Reserve one distant guard position for the Dread Lich.
+- God armor and Artifact weapons are explicit rare exceptions to ordinary loot balance: only generate them in inner
+  secret chambers on floors 7–9, with a 25% chance per eligible chamber and at most one relic per dungeon. Replace
+  ordinary treasure so fountains and side-story scrolls still fit. Never roll relics on discovery, revisiting, or loading.
+- Optional Epic monsters only occur on floors 7–9, with at most one per dungeon, outside ordinary difficulty budgets
+  and guardian pools. Keep their initial position bypassable and distant from stairs; they act once every three turns.
+  Gear powers require equipped pieces and must not revive Ghost Dog. God protection is powerful but not invulnerability.
+- Award kill count and defeated difficulty once per dead monster, including companion, consumable, and stairwell
+  guardian kills. Only finished runs submit records. Old saves lacking complete difficulty history cannot set that
+  record; loading must preserve their dungeon without rerolling it.
 - Ghost Dog accompanies the player only when freed and alive. Preserve his existing combat behavior; revival belongs to
   explicit revival mechanics.
 - Blink Stones exclude all secret chambers, including discovered and additional rooms, and move active companions together.
 - Fountains refill on leaving their floor. Event gifts and shrine blessings are one-use and stay used after revisiting or loading.
 - Successful gameplay actions spend one turn. Reading event choices, reading the book, escaping a command screen,
   saving, and failed actions do not.
+- Keep the complete current turn's event log in action order, beginning with the player's action. Replace it when
+  another action spends a turn; reading screens, saving, and failed actions preserve it. Never truncate busy turns.
 
 
 ## Verification

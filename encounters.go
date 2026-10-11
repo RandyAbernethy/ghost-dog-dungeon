@@ -89,6 +89,7 @@ func (g *game) arrangeEncounters(lvl *level) {
 			}
 		}
 	}
+	var dangerousInPack [2]int
 	for i, m := range lvl.Monsters {
 		if m.Boss {
 			continue
@@ -101,6 +102,17 @@ func (g *game) arrangeEncounters(lvl *level) {
 		grouped := i < groupLimit
 		if lvl.Encounter == encounterEscort {
 			grouped = escort[m]
+		}
+		if grouped && (rangedMonster(m.Kind) || controllingMonster(m.Kind)) {
+			pack := 0
+			if lvl.Encounter == encounterPacks {
+				pack = i % 2
+			}
+			if dangerousInPack[pack] >= 1 {
+				grouped = false
+			} else {
+				dangerousInPack[pack]++
+			}
 		}
 		if lvl.Encounter != encounterScatter && grouped {
 			target := anchor
@@ -149,7 +161,7 @@ func (g *game) encounterPosition(lvl *level, occupied map[pos]bool, near *pos) p
 
 func rangedMonster(kind monsterKind) bool {
 	switch kind {
-	case monsterCultist, monsterLanternWisp, monsterGloomArcher, monsterHexPriest, monsterBellRevenant, monsterCinderDrake, monsterVoidSeer, monsterSoulLeech, monsterStormHerald:
+	case monsterLanternWisp, monsterGloomArcher, monsterBarrowArcher, monsterHexPriest, monsterBellRevenant, monsterGraveAcolyte, monsterCinderDrake, monsterVoidSeer, monsterSoulLeech, monsterStormHerald:
 		return true
 	}
 	return false

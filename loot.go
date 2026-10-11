@@ -18,6 +18,11 @@ func makeArmorItem(a armor) item {
 }
 
 func (g *game) weaponLootForLevel(depth int) item {
+	weapons := weaponPoolForLevel(depth)
+	return makeWeaponLoot(weapons[g.rng.Intn(len(weapons))])
+}
+
+func weaponPoolForLevel(depth int) []weapon {
 	weaponPools := [][]weapon{{
 		{Name: "Short Sword", Min: 4, Max: 7},
 		{Name: "Chapel Mace", Min: 4, Max: 8},
@@ -51,10 +56,15 @@ func (g *game) weaponLootForLevel(depth int) item {
 	}}
 	weapons := weaponPools[depth]
 	weapons = append(weapons, weapon{Name: reachWeaponNames[depth], Min: 3 + depth, Max: 5 + depth, Reach: 2})
-	return makeWeaponLoot(weapons[g.rng.Intn(len(weapons))])
+	return expandedWeapons(depth, weapons)
 }
 
 func (g *game) armorLootForLevel(depth int) item {
+	armors := armorPoolForLevel(depth)
+	return makeArmorItem(armors[g.rng.Intn(len(armors))])
+}
+
+func armorPoolForLevel(depth int) []armor {
 	armorPools := [][]armor{{
 		{Name: "Leather Jerkin", Slot: slotBody, Defense: 2, Rarity: rarityUncommon},
 		{Name: "Scout Cap", Slot: slotHead, Defense: 2, Rarity: rarityUncommon},
@@ -92,7 +102,7 @@ func (g *game) armorLootForLevel(depth int) item {
 		armor{Name: "Runespun " + slotLabel(slot) + " armor", Slot: slot, Defense: 1 + depth/3, SpellWard: 2 + depth/4, Rarity: rarityRare},
 		armor{Name: "Hunter's " + slotLabel(slot) + " armor", Slot: slot, Defense: depth / 3, StrikeBonus: 1 + depth/4, Rarity: rarityRare},
 	)
-	return makeArmorItem(armors[g.rng.Intn(len(armors))])
+	return expandedArmor(depth, armors)
 }
 
 func (g *game) itemsForLevel(depth int) []item {
@@ -149,7 +159,10 @@ func (g *game) collectItem(it item) {
 		cmp := compareWeapon(it.Weapon, g.player.Weapon)
 		g.player.ensureCarriedEquipment()
 		g.player.carryWeapon(it.Weapon)
-		g.addMessage(fmt.Sprintf("You pack %s (%d-%d, reach %d). %s Press i to choose equipment.", it.Weapon.Name, it.Weapon.Min, it.Weapon.Max, it.Weapon.effectiveReach(), cmp))
+		g.addMessage(fmt.Sprintf("You pack %s (%d-%d, reach %d). %s Press i to choose equipment.", coloredWeaponName(it.Weapon), it.Weapon.Min, it.Weapon.Max, it.Weapon.effectiveReach(), cmp))
+		if it.Weapon.Power != "" {
+			g.addMessage(gearPowerDescription(it.Weapon.Power))
+		}
 	case itemArmor:
 		equipped := g.player.armorForSlot(it.Armor.Slot)
 		cmp := compareArmor(it.Armor, equipped)

@@ -8,6 +8,9 @@ import (
 )
 
 func weaponDescription(w weapon) string {
+	if w.Rarity == rarityArtifact {
+		return "Artifact: exceptional magical damage. " + gearPowerDescription(w.Power)
+	}
 	if w.effectiveReach() > 1 {
 		return fmt.Sprintf("Reach %d: strike along a clear movement direction without stepping closer. Trades close-range damage for distance.", w.effectiveReach())
 	}
@@ -72,6 +75,9 @@ func weaponDescription(w weapon) string {
 }
 
 func armorDescription(a armor) string {
+	if a.Rarity == rarityGod {
+		return "God armor: immense physical and spell protection. " + armorTraits(a) + " Physical protection stops at 90%, so blows can still wound you."
+	}
 	if a.SpellWard > 0 || a.StrikeBonus > 0 {
 		return armorTraits(a) + " Trades physical protection for its special benefit."
 	}
@@ -129,7 +135,7 @@ func armorDescription(a armor) string {
 	case "Wraithstep Greaves":
 		return "Secret greaves that protect without slowing a careful retreat."
 	case "Voidheart Plate":
-		return "The dungeon's rarest armor, hidden where the oldest powers sleep."
+		return "Legendary plate, hidden where the oldest powers sleep."
 	default:
 		return fmt.Sprintf("Protective gear for your %s slot worth %d guard.", slotLabel(a.Slot), a.Defense)
 	}
@@ -155,6 +161,10 @@ func rarityLabel(r rarity) string {
 		return "epic"
 	case rarityLegendary:
 		return "legendary"
+	case rarityGod:
+		return "god"
+	case rarityArtifact:
+		return "artifact"
 	default:
 		return string(r)
 	}
@@ -172,6 +182,10 @@ func rarityColor(r rarity) string {
 		return "\x1b[35m"
 	case rarityLegendary:
 		return "\x1b[33m"
+	case rarityGod:
+		return "\x1b[1;97m"
+	case rarityArtifact:
+		return "\x1b[1;36m"
 	default:
 		return ""
 	}
@@ -183,6 +197,13 @@ func coloredArmorName(a armor) string {
 		return color + prefix + ansiReset
 	}
 	return prefix
+}
+
+func coloredWeaponName(w weapon) string {
+	if w.Rarity == "" {
+		return w.Name
+	}
+	return rarityColor(w.Rarity) + strings.Title(rarityLabel(w.Rarity)) + " " + w.Name + ansiReset
 }
 
 func slotLabel(slot armorSlot) string {
@@ -294,7 +315,10 @@ func (g *game) equipCommand(cmd string) bool {
 			return false
 		}
 		g.player.Weapon = w
-		g.addMessage(fmt.Sprintf("You equip %s: %d-%d damage, reach %d. Swapping equipment takes a turn.", w.Name, w.Min, w.Max, w.effectiveReach()))
+		g.addMessage(fmt.Sprintf("You equip %s: %d-%d damage, reach %d. Swapping equipment takes a turn.", coloredWeaponName(w), w.Min, w.Max, w.effectiveReach()))
+		if w.Power != "" {
+			g.addMessage(gearPowerDescription(w.Power))
+		}
 	} else {
 		a := g.player.Armors[n-len(g.player.Weapons)-1]
 		if g.player.armorForSlot(a.Slot) == a {
@@ -302,6 +326,9 @@ func (g *game) equipCommand(cmd string) bool {
 			return false
 		}
 		g.player.setArmor(a)
+		if g.player.hasArmorPower(powerClearMind) {
+			g.player.HexedTurns, g.player.WebbedTurns = 0, 0
+		}
 		g.addMessage(fmt.Sprintf("You equip %s. %s Swapping equipment takes a turn.", a.Name, armorTraits(a)))
 	}
 	return true
@@ -368,7 +395,10 @@ func (g *game) renderEquipment(w io.Writer) {
 		if carried.Magic {
 			magic = ", +2 damage against undead"
 		}
-		fmt.Fprintf(w, "%d. %s: %d-%d damage, reach %d%s%s\n", i+1, carried.Name, carried.Min, carried.Max, carried.effectiveReach(), magic, active)
+		fmt.Fprintf(w, "%d. %s: %d-%d damage, reach %d%s%s\n", i+1, coloredWeaponName(carried), carried.Min, carried.Max, carried.effectiveReach(), magic, active)
+		if carried.Power != "" {
+			fmt.Fprintln(w, "  "+gearPowerDescription(carried.Power))
+		}
 	}
 	for i, carried := range g.player.Armors {
 		active := ""
@@ -381,5 +411,9 @@ func (g *game) renderEquipment(w io.Writer) {
 }
 
 func armorTraits(a armor) string {
-	return fmt.Sprintf("%d guard, %d spell ward, %+d strike damage.", a.Defense, a.SpellWard, a.StrikeBonus)
+	traits := fmt.Sprintf("%d guard, %d spell ward, %+d strike damage.", a.Defense, a.SpellWard, a.StrikeBonus)
+	if a.Power != "" {
+		traits += " " + gearPowerDescription(a.Power)
+	}
+	return traits
 }

@@ -86,6 +86,7 @@ func (g *game) useSunOrb() bool {
 		return false
 	}
 	g.player.SunOrbs--
+	g.addMessage("You unleash the sun orb's fire.")
 	hit := 0
 	for _, m := range g.current().Monsters {
 		if m.HP > 0 && m.Undead {
@@ -200,12 +201,12 @@ func (g *game) drinkFromFountain() bool {
 	oldHP := g.player.HP
 	g.player.HP = min(g.player.MaxHP, g.player.HP+playerHeal)
 	actualPlayerHeal := g.player.HP - oldHP
+	g.addMessage(fmt.Sprintf("You drink from the fountain and recover %d health. (%d/%d)", actualPlayerHeal, g.player.HP, g.player.MaxHP))
 	if g.dog.Freed && g.dog.Alive {
 		dogHeal := g.randRange(8, 12)
 		oldDogHP := g.dog.HP
 		g.dog.HP = min(g.dog.MaxHP, g.dog.HP+dogHeal)
 		g.addMessage(fmt.Sprintf("The fountain restores %d health to Ghost Dog. (%d/%d)", g.dog.HP-oldDogHP, g.dog.HP, g.dog.MaxHP))
 	}
-	g.addMessage(fmt.Sprintf("You drink from the fountain and recover %d health. (%d/%d)", actualPlayerHeal, g.player.HP, g.player.MaxHP))
 	return true
 }

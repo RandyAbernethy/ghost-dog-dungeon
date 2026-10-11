@@ -14,8 +14,8 @@ func (g *game) render(w io.Writer) {
 	if lvl.Layout != "" {
 		fmt.Fprintf(w, "%s — %s\n", lvl.Theme, lvl.Layout)
 	}
-	fmt.Fprintf(w, "HP %d/%d  Weapon %s (%d-%d)  Armor %d (block %d)  Potions %d  Fire %d  Blink %d  Ward %d  Sun %d  Frost %d  Starfire %d  Ash %d  Recall %d  Story %d/10\n", g.player.HP, g.player.MaxHP, g.player.Weapon.Name, g.player.Weapon.Min, g.player.Weapon.Max, g.player.armorDefense(), g.player.armorBlock(), g.player.Potions, g.player.FireScrolls, g.player.BlinkStones, g.player.WardingCharms, g.player.SunOrbs, g.player.FrostCharms, g.player.StarfireOrbs, g.player.PhoenixAshes, g.player.GhostRecallScrolls, len(g.player.StoryChapters))
-	fmt.Fprintf(w, "Reach %d  Spell ward %d  Strike bonus %+d  Turns %d  Kills %d\n", g.player.Weapon.effectiveReach(), g.player.spellWard(), g.player.strikeBonus(), g.stats.Turns, g.stats.MonstersKilled)
+	fmt.Fprintf(w, "HP %d/%d  Weapon %s (%d-%d)  Armor %d (block %d)  Potions %d  Fire %d  Blink %d  Ward %d  Sun %d  Frost %d  Starfire %d  Ash %d  Recall %d  Story %d/10\n", g.player.HP, g.player.MaxHP, coloredWeaponName(g.player.Weapon), g.player.Weapon.Min, g.player.Weapon.Max, g.player.armorDefense(), g.player.armorBlock(), g.player.Potions, g.player.FireScrolls, g.player.BlinkStones, g.player.WardingCharms, g.player.SunOrbs, g.player.FrostCharms, g.player.StarfireOrbs, g.player.PhoenixAshes, g.player.GhostRecallScrolls, len(g.player.StoryChapters))
+	fmt.Fprintf(w, "Reach %d  Spell ward %d  Strike bonus %+d  Turns %d  Kills %d  Difficulty defeated %d\n", g.player.Weapon.effectiveReach(), g.player.spellWard(), g.player.strikeBonus(), g.stats.Turns, g.stats.MonstersKilled, g.stats.DifficultyDefeated)
 	if g.dog.Freed {
 		status := "gone"
 		if g.dog.Alive {
@@ -71,7 +71,11 @@ func (g *game) render(w io.Writer) {
 	if note := g.contextHint(); note != "" {
 		fmt.Fprintln(w, "Here: "+note)
 	}
-	fmt.Fprintln(w, "Recent events:")
+	if g.stats.Turns == 0 {
+		fmt.Fprintln(w, "Dungeon events:")
+	} else {
+		fmt.Fprintf(w, "Turn %d events:\n", g.stats.Turns)
+	}
 	for _, msg := range g.messages {
 		fmt.Fprintln(w, "- "+msg)
 	}
@@ -79,11 +83,14 @@ func (g *game) render(w io.Writer) {
 
 func (g *game) renderInventory(w io.Writer) {
 	fmt.Fprintln(w, "\n=== Inventory & Equipment ===")
-	fmt.Fprintf(w, "Weapon: %s (%d-%d)\n  %s\n", g.player.Weapon.Name, g.player.Weapon.Min, g.player.Weapon.Max, weaponDescription(g.player.Weapon))
+	fmt.Fprintf(w, "Weapon: %s (%d-%d)\n  %s\n", coloredWeaponName(g.player.Weapon), g.player.Weapon.Min, g.player.Weapon.Max, weaponDescription(g.player.Weapon))
 	fmt.Fprintf(w, "Head: %s (+%d guard, %s)\n  %s\n", coloredArmorName(g.player.HeadArmor), g.player.HeadArmor.Defense, rarityLabel(g.player.HeadArmor.Rarity), armorDescription(g.player.HeadArmor))
 	fmt.Fprintf(w, "Body: %s (+%d guard, %s)\n  %s\n", coloredArmorName(g.player.BodyArmor), g.player.BodyArmor.Defense, rarityLabel(g.player.BodyArmor.Rarity), armorDescription(g.player.BodyArmor))
 	fmt.Fprintf(w, "Leg: %s (+%d guard, %s)\n  %s\n", coloredArmorName(g.player.LegArmor), g.player.LegArmor.Defense, rarityLabel(g.player.LegArmor.Rarity), armorDescription(g.player.LegArmor))
 	fmt.Fprintf(w, "Total armor: %d guard, blocking %d damage from each hit before wards.\n", g.player.armorDefense(), g.player.armorBlock())
+	if g.player.hasGodArmor() {
+		fmt.Fprintln(w, "God armor can absorb up to 90% of a physical blow; even divine protection can be worn down.")
+	}
 	fmt.Fprintf(w, "Spell ward: blocks %d extra spell damage. Strike bonus: %+d weapon damage.\n", g.player.spellWard(), g.player.strikeBonus())
 	g.renderEquipment(w)
 	fmt.Fprintf(w, "\nBook of Ghost Dog: %d/10 chapters, %d side stories. Press B or type book to read at any time.\n", len(g.player.StoryChapters), len(g.player.SideStories))
@@ -113,7 +120,7 @@ func (g *game) renderCodex(w io.Writer) {
 	}
 	for _, kind := range known {
 		m := newMonster(kind)
-		fmt.Fprintf(w, "- %c %s  HP %d  Damage %d-%d\n", m.Glyph, m.Name, m.MaxHP, m.MinDamage, m.MaxDamage)
+		fmt.Fprintf(w, "- %c %s  HP %d  Damage %d-%d  Base difficulty %d\n", m.Glyph, m.Name, m.MaxHP, m.MinDamage, m.MaxDamage, monsterDifficulty(m))
 		fmt.Fprintln(w, "  "+monsterSummary(kind))
 		fmt.Fprintln(w, "  Trick: "+monsterPower(kind))
 	}
@@ -149,7 +156,7 @@ func (g *game) renderInspect(w io.Writer) {
 		fmt.Fprintln(w, "- None close enough to matter right now.")
 	} else {
 		for _, m := range threats {
-			fmt.Fprintf(w, "- %s: %s (%c) HP %d/%d damage %d-%d. %s\n", relativeTo(g.player.Pos, m.Pos), m.Name, m.Glyph, m.HP, m.MaxHP, m.MinDamage, m.MaxDamage, monsterPower(m.Kind))
+			fmt.Fprintf(w, "- %s: %s (%c) HP %d/%d damage %d-%d difficulty %d. %s\n", relativeTo(g.player.Pos, m.Pos), m.Name, m.Glyph, m.HP, m.MaxHP, m.MinDamage, m.MaxDamage, monsterDifficulty(*m), monsterPower(m.Kind))
 		}
 	}
 	fmt.Fprintln(w, "Nearby loot:")
@@ -192,7 +199,7 @@ func inspectTileDescription(lvl *level, p pos) string {
 func inspectItemText(it item) string {
 	switch it.Kind {
 	case itemWeapon:
-		return fmt.Sprintf("weapon %s (%d-%d, reach %d). %s", it.Weapon.Name, it.Weapon.Min, it.Weapon.Max, it.Weapon.effectiveReach(), weaponDescription(it.Weapon))
+		return fmt.Sprintf("weapon %s (%d-%d, reach %d). %s", coloredWeaponName(it.Weapon), it.Weapon.Min, it.Weapon.Max, it.Weapon.effectiveReach(), weaponDescription(it.Weapon))
 	case itemArmor:
 		return fmt.Sprintf("%s armor for the %s slot (+%d guard, %s). %s %s", coloredArmorName(it.Armor), slotLabel(it.Armor.Slot), it.Armor.Defense, rarityLabel(it.Armor.Rarity), armorTraits(it.Armor), armorDescription(it.Armor))
 	case itemPotion:

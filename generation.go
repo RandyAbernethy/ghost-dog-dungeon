@@ -64,7 +64,7 @@ func roomsOverlap(a, b room, margin int) bool {
 	return a.X-margin < b.X+b.W && a.X+a.W+margin > b.X && a.Y-margin < b.Y+b.H && a.Y+a.H+margin > b.Y
 }
 
-func (g *game) populateLevel(lvl *level) {
+func (g *game) populateLevel(lvl *level) error {
 	occupied := map[pos]bool{lvl.Start: true}
 	if lvl.Index > 0 {
 		lvl.HasUpStair = true
@@ -93,7 +93,11 @@ func (g *game) populateLevel(lvl *level) {
 		occupied[it.Pos] = true
 		lvl.Items = append(lvl.Items, it)
 	}
-	for _, spec := range g.themedMonsters(lvl) {
+	roster, err := g.monstersForLevel(lvl)
+	if err != nil {
+		return err
+	}
+	for _, spec := range roster {
 		if spec.Boss {
 			spec.StoryChapter = levelCount
 			if bossPlaced {
@@ -108,6 +112,7 @@ func (g *game) populateLevel(lvl *level) {
 		m := spec
 		lvl.Monsters = append(lvl.Monsters, &m)
 	}
+	return nil
 }
 
 func (g *game) placeFountains() {

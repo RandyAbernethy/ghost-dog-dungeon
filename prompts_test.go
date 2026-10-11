@@ -8,6 +8,16 @@ import (
 	"testing"
 )
 
+func arrivalPrompts(messages []string) []string {
+	var prompts []string
+	for _, message := range messages {
+		if strings.Contains(message, "(interact)") || strings.Contains(message, "A healing fountain flows nearby.") {
+			prompts = append(prompts, message)
+		}
+	}
+	return prompts
+}
+
 func TestObjectPromptsRepeatOnlyAfterLeavingAndReturning(t *testing.T) {
 	for _, tc := range []struct {
 		name string
@@ -84,13 +94,15 @@ func TestNearbyObjectsPromptIndependently(t *testing.T) {
 	g.processCommand("d")
 	g.messages = nil
 	g.processCommand("d")
-	if len(g.messages) != 2 || !strings.Contains(g.messages[0], "friendly ghost") || !strings.Contains(g.messages[1], "healing fountain") {
+	prompts := arrivalPrompts(g.messages)
+	if len(prompts) != 2 || !strings.Contains(prompts[0], "friendly ghost") || !strings.Contains(prompts[1], "healing fountain") {
 		t.Fatalf("each newly nearby object should prompt: %v", g.messages)
 	}
 	g.messages = nil
 	g.processCommand("w") // Leave only the fountain's area.
 	g.processCommand("s")
-	if len(g.messages) != 1 || !strings.Contains(g.messages[0], "healing fountain") {
+	prompts = arrivalPrompts(g.messages)
+	if len(prompts) != 1 || !strings.Contains(prompts[0], "healing fountain") {
 		t.Fatalf("returning to one object should not repeat another's prompt: %v", g.messages)
 	}
 }
@@ -106,14 +118,15 @@ func TestHiddenObjectsDoNotPromptUntilApproachedAfterDiscovery(t *testing.T) {
 	g.processCommand("d")
 	g.messages = nil
 	g.processCommand("e") // Diagonally beside the concealed fountain.
-	if len(g.messages) != 0 {
+	if len(arrivalPrompts(g.messages)) != 0 {
 		t.Fatalf("concealed objects should not be announced: %v", g.messages)
 	}
 	g.processCommand("a")
 	g.processCommand("search")
 	g.messages = nil
 	g.processCommand("d")
-	if len(g.messages) != 1 || !strings.Contains(g.messages[0], "healing fountain") {
+	prompts := arrivalPrompts(g.messages)
+	if len(prompts) != 1 || !strings.Contains(prompts[0], "healing fountain") {
 		t.Fatalf("approaching a revealed fountain should prompt: %v", g.messages)
 	}
 }
@@ -184,13 +197,14 @@ func TestObjectPromptsStayQuietAcrossScreensAndSaveLoad(t *testing.T) {
 	loaded.messages = nil
 	loaded.processCommand("d")
 	loaded.processCommand("w")
-	if len(loaded.messages) != 0 || loaded.stats.Turns != 4 {
+	if len(arrivalPrompts(loaded.messages)) != 0 || loaded.stats.Turns != 4 {
 		t.Fatal("loading and moving within the area should preserve prompt suppression")
 	}
 	loaded.processCommand("a")
 	loaded.processCommand("a")
 	loaded.processCommand("d")
-	if len(loaded.messages) != 1 || !strings.Contains(loaded.messages[0], "friendly ghost offers a choice") {
+	prompts := arrivalPrompts(loaded.messages)
+	if len(prompts) != 1 || !strings.Contains(prompts[0], "friendly ghost offers a choice") {
 		t.Fatal("leaving and returning after loading should prompt again")
 	}
 }
