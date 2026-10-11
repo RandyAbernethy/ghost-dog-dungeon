@@ -4,9 +4,31 @@ A nethack like way to waste time in 10 levels
 Build and play:
 
 ```sh
-go build -o ghostdog .
-./ghostdog
+go build -o bin/ghostdog ./src
+./bin/ghostdog
 ```
+
+The repository keeps module metadata, documentation, and the Makefile at the root:
+
+```text
+src/      Game source and tests that exercise private game state
+tests/    Black-box tests of the compiled executable
+bin/      Local build output (ignored by Git)
+go.mod    Go module definition
+```
+
+Go's package tests live beside the source they exercise. Tests in `tests/` build the game and run it from temporary
+directories with isolated saves and home directories. Run all checks from the repository root:
+
+```sh
+go test ./...
+go vet ./...
+git diff --check
+```
+
+The optional Makefile provides `make build`, `make run`, `make test`, `make vet`, `make fmt`, and `make check`.
+Generated saves and personal records are ignored. For an explicit save directory, create `saves/` and pass a path
+with `--save-file saves/run.json`.
 
 Each run varies the dungeon, treasure, fountain locations, and monster groups. Floors can be winding caves, narrow
 crypt passages, connected chambers, or pillared halls, with a chapel, barracks, catacomb, or kennel theme. Themes favor
@@ -120,6 +142,6 @@ saves retain their dungeon and existing records. Runs begun before difficulty sc
 record because their earlier kills have no recorded score; start a new run to compete for it.
 
 ```sh
-./ghostdog --seed 42 --save-file run.json
-./ghostdog --load-file run.json
+./bin/ghostdog --seed 42 --save-file run.json
+./bin/ghostdog --load-file run.json
 ```

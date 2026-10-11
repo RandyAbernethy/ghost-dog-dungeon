@@ -20,6 +20,11 @@ user when breaking changes in the Save files are desirable for simplicity.
 
 ## Source organization
 
+Keep `go.mod`, documentation, and the Makefile at the root. All game source and tests that need private game state
+live in `src/`, in the same Go package. Use `tests/` for black-box executable tests that do not import game internals.
+Keep local build output in ignored `bin/`; do not move or overwrite a user's existing executable or save files.
+The file map below is relative to `src/`.
+
 - `main.go`: entry point, flags, startup errors.
 - `model.go`, `game.go`, `world.go`: data types, game initialization, common spatial helpers and seeded randomness.
 - `dungeon.go`, `layouts.go`, `generation.go`: dungeon plans, geometry, placement, and fountains.
@@ -87,6 +92,7 @@ Run the applicable checks from the repository root:
 
 ```sh
 gofmt -w <changed Go files>
+go build -o <temporary binary path> ./src
 go test ./...
 go vet ./...
 git diff --check
@@ -98,6 +104,8 @@ git diff --check
   distribution, actual geometric variety, difficulty bounds, and seed reproduction.
 - Exercise new commands through the command loop and save/load. Keep regression coverage for the real compiled
   executable and raw terminal keys.
+- Build the game with `go build -o bin/ghostdog ./src` from the repository root. Package-level tests in `src/` may
+  build `.` from their package directory. Black-box tests in `tests/` must build `./src` from the repository root.
 - Use `t.TempDir()` for saves and records. Give executable tests a temporary home directory; never overwrite the
   player's real records or saves.
 - Once relevant checks pass, avoid repeating or expanding them without a new change, failure, or unresolved concern.
