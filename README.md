@@ -231,7 +231,10 @@ still kill its wearer. Carrying a piece does not activate its power; equip it fi
 All Artifacts are magical and receive the usual bonus against undead. Powers, rarity, and generated rewards survive
 save/load; returning to a room cannot reroll its treasure.
 
-Floors 7–9 can also have one rare **Epic** encounter:
+
+## Epic Encounters
+
+Deep floors can have a rare **Epic** encounter:
 
 - Iron Colossus
 - Grave Titan
@@ -251,6 +254,9 @@ Orb, a Sun Orb, Phoenix Ash, or a Ghost Dog Recall Scroll. The reward uses the s
 carried, equipped, or lying elsewhere in the dungeon. Kills by Ghost Dog, magic items, and gear powers earn the same
 reward. Walk onto the tile to collect it; equipment still needs to be equipped. Drops persist through save/load and
 are never rerolled or awarded again for the same dead monster.
+
+
+## Book of Ghost Dog and Records
 
 Your inventory includes the **Book of Ghost Dog** from the start. Press **B** or type `book` in line-input mode to read
 collected chapters and side stories without spending a turn. The ten numbered chapters tell Ash's main story.
