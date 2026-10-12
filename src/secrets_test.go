@@ -13,7 +13,7 @@ func TestDungeonSecretCountAndReachability(t *testing.T) {
 		g := newGame(seed)
 		total := 0
 		for depth, lvl := range g.levels {
-			if lvl.Secret == nil {
+			if lvl.primarySecret() == nil {
 				continue
 			}
 			total += len(lvl.secretRooms())
@@ -64,12 +64,12 @@ func TestDungeonSecretCountAndReachability(t *testing.T) {
 func nestedGameForTest(t *testing.T, path string) *game {
 	t.Helper()
 	for seed := int64(1); seed <= 100; seed++ {
-		g := newGameWithSaveFile(seed, path)
+		g := newGameWithSaveDir(seed, filepath.Dir(path))
 		if g.generationError != nil {
 			t.Fatal(g.generationError)
 		}
 		for depth, lvl := range g.levels {
-			if lvl.Secret != nil && lvl.Secret.Inner != nil {
+			if lvl.primarySecret() != nil && lvl.primarySecret().Inner != nil {
 				g.currentLevel = depth
 				g.player.Pos = lvl.Start
 				return g
@@ -84,7 +84,7 @@ func TestNestedRoomDiscoveryRewardsAndFountainRenewal(t *testing.T) {
 	g := nestedGameForTest(t, "")
 	lvl := g.current()
 	lvl.Monsters = nil
-	outer, inner := lvl.Secret, lvl.Secret.Inner
+	outer, inner := lvl.primarySecret(), lvl.primarySecret().Inner
 	approach, ok := floorNextToDoor(g, outer.Door)
 	if !ok {
 		t.Fatal("outer door has no approach")
@@ -169,7 +169,7 @@ func TestNestedRoomSavePreservesSeparateDiscoveries(t *testing.T) {
 			lvl := g.current()
 			g.revealSecretRoom(lvl)
 			if revealInner {
-				revealRoom(lvl, lvl.Secret.Inner)
+				revealRoom(lvl, lvl.primarySecret().Inner)
 			}
 			for i := range lvl.Fountains {
 				lvl.Fountains[i].Used = true
@@ -181,17 +181,17 @@ func TestNestedRoomSavePreservesSeparateDiscoveries(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !reflect.DeepEqual(lvl.Secret, loaded.current().Secret) || !reflect.DeepEqual(lvl.Tiles, loaded.current().Tiles) || !reflect.DeepEqual(lvl.Items, loaded.current().Items) || !reflect.DeepEqual(lvl.Fountains, loaded.current().Fountains) {
+			if !reflect.DeepEqual(lvl.primarySecret(), loaded.current().primarySecret()) || !reflect.DeepEqual(lvl.Tiles, loaded.current().Tiles) || !reflect.DeepEqual(lvl.Items, loaded.current().Items) || !reflect.DeepEqual(lvl.Fountains, loaded.current().Fountains) {
 				t.Fatal("save/load must preserve each door, hidden tiles, rewards, and spent fountains")
 			}
 			if !revealInner {
-				approach, ok := floorNextToDoor(loaded, loaded.current().Secret.Inner.Door)
+				approach, ok := floorNextToDoor(loaded, loaded.current().primarySecret().Inner.Door)
 				if !ok {
 					t.Fatal("loading should preserve access to the inner door")
 				}
 				loaded.player.Pos = approach
 				loaded.search()
-				if !loaded.current().Secret.Inner.Revealed {
+				if !loaded.current().primarySecret().Inner.Revealed {
 					t.Fatal("the inner chamber should remain discoverable after loading")
 				}
 			}

@@ -2,7 +2,7 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -150,7 +150,7 @@ func TestFallbackRostersAndStairGuardiansFitTheirBudgets(t *testing.T) {
 }
 
 func TestDifficultyAndRosterSurviveSavingWithoutReroll(t *testing.T) {
-	g := newGameWithSaveFile(42, filepath.Join(t.TempDir(), "dungeon.json"))
+	g := newGameWithSaveDir(42, t.TempDir())
 	g.stats.DifficultyDefeated = 75
 	g.current().Monsters[0].HP = 1
 	if err := g.save(); err != nil {
@@ -163,56 +163,11 @@ func TestDifficultyAndRosterSurviveSavingWithoutReroll(t *testing.T) {
 	if !reflect.DeepEqual(g.levels, loaded.levels) || g.rng.State != loaded.rng.State || g.stats != loaded.stats {
 		t.Fatal("loading must preserve budgets, roster, wounds, score, and RNG")
 	}
-	data, err := os.ReadFile(g.saveFile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var legacy map[string]json.RawMessage
-	if err = json.Unmarshal(data, &legacy); err != nil {
-		t.Fatal(err)
-	}
-	var stats map[string]json.RawMessage
-	if err = json.Unmarshal(legacy["stats"], &stats); err != nil {
-		t.Fatal(err)
-	}
-	delete(stats, "difficulty_known")
-	delete(stats, "difficulty_defeated")
-	var levels []map[string]json.RawMessage
-	if err = json.Unmarshal(legacy["levels"], &levels); err != nil {
-		t.Fatal(err)
-	}
-	for i := range levels {
-		delete(levels[i], "difficulty_budget")
-		delete(levels[i], "initial_difficulty")
-		g.levels[i].DifficultyBudget, g.levels[i].InitialDifficulty = 0, 0
-	}
-	legacy["levels"], err = json.Marshal(levels)
-	if err != nil {
-		t.Fatal(err)
-	}
-	legacy["stats"], err = json.Marshal(stats)
-	if err != nil {
-		t.Fatal(err)
-	}
-	data, err = json.Marshal(legacy)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err = os.WriteFile(g.saveFile, data, 0600); err != nil {
-		t.Fatal(err)
-	}
-	loaded, err = loadGame(g.saveFile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if loaded.stats.DifficultyKnown || !loaded.stats.HistoryKnown || !reflect.DeepEqual(g.levels, loaded.levels) {
-		t.Fatal("older challenge saves keep their dungeon and old records without claiming a complete new score")
-	}
 }
 
 func TestDifficultyScoreCountsEachDeathAndPersistsBestFinishedRun(t *testing.T) {
 	g := openArena()
-	g.stats = runStats{HistoryKnown: true, DifficultyKnown: true}
+	g.stats = runStats{}
 	m := newMonster(monsterHollowWarden)
 	m.Pos = pos{6, 5}
 	g.current().Monsters = []*monster{&m}
@@ -242,18 +197,9 @@ func TestDifficultyScoreCountsEachDeathAndPersistsBestFinishedRun(t *testing.T) 
 	if err != nil || records.MostDifficulty == nil || records.MostDifficulty.Difficulty != want || records.MostKills.Kills != 2 {
 		t.Fatalf("weighted and raw kill records should keep their own best run: %+v err=%v", records, err)
 	}
-	g.stats.DifficultyKnown = false
-	g.stats.DifficultyDefeated = 9999
-	if err := g.recordChallenges(); err != nil {
-		t.Fatal(err)
-	}
-	records, err = readChallengeRecords(g.recordsFile)
-	if err != nil || records.MostDifficulty.Difficulty != want {
-		t.Fatal("partial scores from old saves must not replace records")
-	}
 	var out bytes.Buffer
 	g.renderChallenges(&out)
-	if !strings.Contains(out.String(), "older save has no complete difficulty score") || !strings.Contains(out.String(), "Most difficulty defeated record:") {
-		t.Fatal("challenge screen should explain score eligibility and show the saved record")
+	if !strings.Contains(out.String(), fmt.Sprintf("Difficulty defeated: %d points.", g.stats.DifficultyDefeated)) || !strings.Contains(out.String(), "Most difficulty defeated record:") {
+		t.Fatal("challenge screen should show the run's score and saved record")
 	}
 }

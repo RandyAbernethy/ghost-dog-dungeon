@@ -131,18 +131,18 @@ func (g *game) secretTreasurePool(depth int) []item {
 func (g *game) addEscapeSanctum(lvl *level) {
 	if g.placeSecretRoom(lvl, 3+g.rng.Intn(3), 3+g.rng.Intn(2)) || g.placeSecretRoom(lvl, 3, 3) {
 		lvl.HasEscapeStair = true
-		lvl.EscapeStairs = lvl.Secret.Tiles[g.rng.Intn(len(lvl.Secret.Tiles))]
+		lvl.EscapeStairs = lvl.primarySecret().Tiles[g.rng.Intn(len(lvl.primarySecret().Tiles))]
 	}
 }
 
 func (g *game) bossGuardPosition(lvl *level, occupied map[pos]bool) (pos, bool) {
-	if lvl.Secret == nil {
+	if lvl.primarySecret() == nil {
 		return pos{}, false
 	}
 	best := pos{}
 	bestDist := -1
 	for _, d := range []pos{{X: 1}, {X: -1}, {Y: 1}, {Y: -1}} {
-		p := pos{X: lvl.Secret.Door.X + d.X, Y: lvl.Secret.Door.Y + d.Y}
+		p := pos{X: lvl.primarySecret().Door.X + d.X, Y: lvl.primarySecret().Door.Y + d.Y}
 		if !g.inBounds(p) || lvl.Tiles[p.Y][p.X] != '.' || occupied[p] {
 			continue
 		}
@@ -193,7 +193,7 @@ func (g *game) placeSecretRoom(lvl *level, w, h int) bool {
 			}
 			for _, dir := range dirs {
 				door := pos{X: x + dir.X, Y: y + dir.Y}
-				if lvl.Tiles[door.Y][door.X] != '#' || reserved[door] || (lvl.Index == levelCount-1 && lvl.Secret == nil && distance(door, lvl.Start) < 11) {
+				if lvl.Tiles[door.Y][door.X] != '#' || reserved[door] || (lvl.Index == levelCount-1 && lvl.primarySecret() == nil && distance(door, lvl.Start) < 11) {
 					continue
 				}
 				x0, y0, x1, y1, ok := secretBounds(door, dir, w, h)
@@ -220,11 +220,7 @@ func (g *game) placeSecretRoom(lvl *level, w, h int) bool {
 		return false
 	}
 	hidden := candidates[g.rng.Intn(len(candidates))]
-	if lvl.Secret == nil {
-		lvl.Secret = hidden
-	} else {
-		lvl.ExtraSecrets = append(lvl.ExtraSecrets, hidden)
-	}
+	lvl.Secrets = append(lvl.Secrets, hidden)
 	return true
 }
 
@@ -233,7 +229,7 @@ func (g *game) addNestedSecretRoom(lvl *level) {
 	if !g.placeSecretRoom(lvl, size, size) {
 		return
 	}
-	outer := lvl.Secret
+	outer := lvl.primarySecret()
 	corner := outer.Tiles[0]
 	center := pos{X: corner.X + size/2, Y: corner.Y + size/2}
 	last := 2
@@ -258,10 +254,16 @@ func (g *game) addNestedSecretRoom(lvl *level) {
 	outer.Inner = inner
 }
 
-// Secret remains the primary root for compatibility with existing save files.
+func (lvl *level) primarySecret() *secretRoom {
+	if len(lvl.Secrets) == 0 {
+		return nil
+	}
+	return lvl.Secrets[0]
+}
+
 func (lvl *level) secretRooms() []*secretRoom {
-	rooms := lvl.Secret.rooms()
-	for _, root := range lvl.ExtraSecrets {
+	var rooms []*secretRoom
+	for _, root := range lvl.Secrets {
 		rooms = append(rooms, root.rooms()...)
 	}
 	return rooms
@@ -287,7 +289,7 @@ func (lvl *level) secretFootprint(margin bool) map[pos]bool {
 }
 
 func (lvl *level) hiddenRoomNear(p pos) *secretRoom {
-	roots := append([]*secretRoom{lvl.Secret}, lvl.ExtraSecrets...)
+	roots := lvl.Secrets
 	for _, root := range roots {
 		if hidden := root.nextHiddenRoom(); hidden != nil && distance(p, hidden.Door) <= 1 {
 			return hidden

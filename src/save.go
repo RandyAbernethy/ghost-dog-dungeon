@@ -4,62 +4,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
 
-func (a *armor) UnmarshalJSON(data []byte) error {
-	type armorData armor
-	var saved armorData
-	if err := json.Unmarshal(data, &saved); err != nil {
-		return err
-	}
-	// Normalize the old slot and generated armor names throughout saved games.
-	if saved.Slot == "feet" {
-		saved.Slot = slotLeg
-	}
-	if saved.Slot == slotLeg {
-		saved.Name = strings.ReplaceAll(saved.Name, " feet armor", " leg armor")
-	}
-	*a = armor(saved)
-	return nil
-}
-
-func (it *item) UnmarshalJSON(data []byte) error {
-	type itemData item
-	var saved itemData
-	if err := json.Unmarshal(data, &saved); err != nil {
-		return err
-	}
-	if saved.Kind == itemArmor && saved.Armor.Slot == slotLeg {
-		saved.Name = strings.ReplaceAll(saved.Name, " feet armor", " leg armor")
-	}
-	*it = item(saved)
-	return nil
-}
-
-func (p *player) UnmarshalJSON(data []byte) error {
-	type playerData player
-	var saved struct {
-		playerData
-		LegacyLegArmor armor `json:"feet_armor"`
-	}
-	if err := json.Unmarshal(data, &saved); err != nil {
-		return err
-	}
-	*p = player(saved.playerData)
-	if p.LegArmor.Name == "" {
-		p.LegArmor = saved.LegacyLegArmor
-	}
-	return nil
-}
+const saveFormatVersion = 1
 
 type saveState struct {
+	FormatVersion int           `json:"format_version"`
 	RNGState      uint64        `json:"rng_state"`
 	Seed          int64         `json:"seed"`
-	SaveFile      string        `json:"save_file"`
 	Levels        []*level      `json:"levels"`
 	CurrentLevel  int           `json:"current_level"`
 	Player        player        `json:"player"`
@@ -67,51 +23,92 @@ type saveState struct {
 	Messages      []string      `json:"messages"`
 	KnownMonsters []monsterKind `json:"known_monsters"`
 	Won           bool          `json:"won"`
-	Quit          bool          `json:"quit"`
 	LevelTiles    []string      `json:"level_tiles"`
-	Stats         *runStats     `json:"stats,omitempty"`
-	RecordsFile   string        `json:"records_file,omitempty"`
+	Stats         runStats      `json:"stats"`
+}
+
+func prepareSaveDirectory(path string) (string, error) {
+	if path == "" {
+		return "", errors.New("--save-file-path must name a directory")
+	}
+	dir, err := filepath.Abs(path)
+	if err != nil {
+		return "", fmt.Errorf("resolve save directory %q: %w", path, err)
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", fmt.Errorf("create save directory %q for --save-file-path: %w", dir, err)
+	}
+	info, err := os.Stat(dir)
+	if err != nil {
+		return "", fmt.Errorf("inspect save directory %q: %w", dir, err)
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("--save-file-path %q is not a directory", dir)
+	}
+	return dir, nil
 }
 
 func (g *game) save() error {
-	if g.timestampedSaves || g.saveFile == "" {
-		g.saveFile = nextTimestampedSaveFile(time.Now())
+	state := saveState{
+		FormatVersion: saveFormatVersion,
+		RNGState:      g.rng.State, Seed: g.seed, Levels: g.levels,
+		CurrentLevel: g.currentLevel, Player: g.player, Dog: g.dog,
+		Messages:      append([]string(nil), g.messages...),
+		KnownMonsters: g.knownMonsterKinds(), Won: g.won, Stats: g.stats,
+		LevelTiles: make([]string, len(g.levels)),
 	}
-	state := saveState{RNGState: g.rng.State, Seed: g.seed, SaveFile: g.saveFile, Levels: g.levels, CurrentLevel: g.currentLevel, Player: g.player, Dog: g.dog, Messages: append([]string(nil), g.messages...), KnownMonsters: append([]monsterKind(nil), g.knownMonsterKinds()...), Won: g.won, Quit: g.quit, LevelTiles: make([]string, len(g.levels))}
-	state.Stats, state.RecordsFile = &g.stats, g.recordsFile
 	for i, lvl := range g.levels {
 		state.LevelTiles[i] = encodeTiles(lvl.Tiles)
 	}
 	data, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {
+		return fmt.Errorf("encode saved game: %w", err)
+	}
+	f, err := createTimestampedSaveFile(g.saveDir, time.Now())
+	if err != nil {
 		return err
 	}
-	return os.WriteFile(g.saveFile, data, 0o644)
+	_, writeErr := f.Write(data)
+	closeErr := f.Close()
+	if err := errors.Join(writeErr, closeErr); err != nil {
+		removeErr := os.Remove(f.Name())
+		return fmt.Errorf("write save file %q: %w", f.Name(), errors.Join(err, removeErr))
+	}
+	g.saveFile = f.Name()
+	return nil
 }
 
-func nextTimestampedSaveFile(now time.Time) string {
+func createTimestampedSaveFile(dir string, now time.Time) (*os.File, error) {
 	base := defaultSavePrefix + "-" + now.Format("20060102-150405")
-	path := base + ".json"
-	for suffix := 1; ; suffix++ {
-		_, err := os.Stat(path)
-		if errors.Is(err, os.ErrNotExist) {
-			return path
+	for suffix := 0; ; suffix++ {
+		name := base + ".json"
+		if suffix > 0 {
+			name = fmt.Sprintf("%s-%02d.json", base, suffix)
+		}
+		path := filepath.Join(dir, name)
+		// Exclusive creation keeps repeated saves and concurrent runs from overwriting each other.
+		f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+		if errors.Is(err, os.ErrExist) {
+			continue
 		}
 		if err != nil {
-			return path
+			return nil, fmt.Errorf("create timestamped save in %q: %w", dir, err)
 		}
-		path = fmt.Sprintf("%s-%02d.json", base, suffix)
+		return f, nil
 	}
 }
 
 func loadGame(path string) (*game, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read save file %q: %w", path, err)
 	}
 	var state saveState
 	if err := json.Unmarshal(data, &state); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("decode save file %q: %w", path, err)
+	}
+	if state.FormatVersion != saveFormatVersion {
+		return nil, fmt.Errorf("unsupported save format %d in %q; this release requires format %d, so start a new game", state.FormatVersion, path, saveFormatVersion)
 	}
 	if len(state.Levels) != levelCount || len(state.LevelTiles) != levelCount {
 		return nil, errors.New("save file is missing dungeon levels")
@@ -119,10 +116,16 @@ func loadGame(path string) (*game, error) {
 	if state.CurrentLevel < 0 || state.CurrentLevel >= levelCount {
 		return nil, fmt.Errorf("save file has invalid current level %d", state.CurrentLevel+1)
 	}
+	if state.RNGState == 0 {
+		return nil, errors.New("save file has an invalid random state")
+	}
 	for i, lvl := range state.Levels {
+		if lvl == nil {
+			return nil, fmt.Errorf("save file is missing floor %d", i+1)
+		}
 		tiles, err := decodeTiles(state.LevelTiles[i])
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("decode floor %d: %w", i+1, err)
 		}
 		lvl.Tiles = tiles
 	}
@@ -130,120 +133,13 @@ func loadGame(path string) (*game, error) {
 	for _, kind := range state.KnownMonsters {
 		known[kind] = true
 	}
-	g := &game{rng: &simpleRNG{State: state.RNGState}, seed: state.Seed, saveFile: path, levels: state.Levels, currentLevel: state.CurrentLevel, player: state.Player, dog: state.Dog, messages: append([]string(nil), state.Messages...), knownMonsters: known, won: state.Won}
-	if state.Stats != nil {
-		g.stats = *state.Stats
-	}
-	g.recordsFile = state.RecordsFile
-	if g.player.HeadArmor.Name == "" {
-		g.player.HeadArmor = armor{Name: "Padded Hood", Slot: slotHead, Defense: 1, Rarity: rarityCommon}
-	}
-	if g.player.BodyArmor.Name == "" {
-		g.player.BodyArmor = armor{Name: "Worn Coat", Slot: slotBody, Defense: 1, Rarity: rarityCommon}
-	}
-	if g.player.LegArmor.Name == "" {
-		g.player.LegArmor = armor{Name: "Frayed Boots", Slot: slotLeg, Defense: 0, Rarity: rarityCommon}
-	}
-	if g.player.HeadArmor.Rarity == "" {
-		g.player.HeadArmor.Rarity = rarityCommon
-	}
-	if g.player.BodyArmor.Rarity == "" {
-		g.player.BodyArmor.Rarity = rarityCommon
-	}
-	if g.player.LegArmor.Rarity == "" {
-		g.player.LegArmor.Rarity = rarityCommon
-	}
-	if g.knownMonsters == nil {
-		g.knownMonsters = map[monsterKind]bool{}
-	}
-	if g.currentLevel >= 0 && g.currentLevel < len(g.levels) && g.levels[g.currentLevel] != nil {
-		g.levels[g.currentLevel].Visited = true
-	}
-	if countFountains(g.levels) == 0 {
-		g.placeFountains()
-	}
-	g.player.ensureCarriedEquipment()
-	for _, lvl := range g.levels {
-		for i := range lvl.Items {
-			if lvl.Items[i].Kind == itemArmor && lvl.Items[i].Armor.Slot == slotLeg {
-				lvl.Items[i].Name = lvl.Items[i].Armor.Name
-			}
-		}
-		g.addSecretSideStory(lvl)
-		g.addSecretFountain(lvl)
-		g.prepareGhostGifts(lvl)
-	}
-	g.repairActorPositions()
-	return g, nil
-}
-
-func countFountains(levels []*level) int {
-	count := 0
-	for _, lvl := range levels {
-		if lvl != nil {
-			count += len(lvl.Fountains)
-		}
-	}
-	return count
-}
-
-func (g *game) repairActorPositions() {
-	for levelIndex, lvl := range g.levels {
-		if lvl == nil {
-			continue
-		}
-		for _, m := range lvl.Monsters {
-			if m.HP <= 0 {
-				continue
-			}
-			if m.Boss && m.StoryChapter == 0 {
-				m.StoryChapter = levelCount
-			}
-			blocked := lvl.DogChain != nil && m.Pos == *lvl.DogChain && !g.dog.Freed
-			if levelIndex == g.currentLevel {
-				blocked = blocked || m.Pos == g.player.Pos || (g.dog.Freed && g.dog.Alive && m.Pos == g.dog.Pos)
-			}
-			if !blocked {
-				continue
-			}
-			best := pos{}
-			bestDistance := math.MaxInt
-			found := false
-			for y := 1; y < mapHeight-1; y++ {
-				for x := 1; x < mapWidth-1; x++ {
-					p := pos{X: x, Y: y}
-					if lvl.Tiles[y][x] == '#' || p == m.Pos || (!g.dog.Freed && lvl.DogChain != nil && p == *lvl.DogChain) {
-						continue
-					}
-					if levelIndex == g.currentLevel && (p == g.player.Pos || (g.dog.Freed && g.dog.Alive && p == g.dog.Pos)) {
-						continue
-					}
-					occupied := false
-					for _, other := range lvl.Monsters {
-						if other != m && other.HP > 0 && other.Pos == p {
-							occupied = true
-							break
-						}
-					}
-					if occupied {
-						continue
-					}
-					if d := distance(p, m.Pos); d < bestDistance {
-						best, bestDistance, found = p, d, true
-					}
-				}
-			}
-			if found {
-				m.Pos = best
-			}
-		}
-	}
-	if g.dog.Freed && g.dog.Alive {
-		lvl := g.current()
-		if g.dog.Pos == g.player.Pos || g.monsterAt(lvl, g.dog.Pos) != nil || !g.inBounds(g.dog.Pos) || lvl.Tiles[g.dog.Pos.Y][g.dog.Pos.X] == '#' {
-			g.placeDogNearPlayer()
-		}
-	}
+	return &game{
+		rng: &simpleRNG{State: state.RNGState}, seed: state.Seed,
+		saveFile: path, saveDir: filepath.Dir(path), levels: state.Levels,
+		currentLevel: state.CurrentLevel, player: state.Player, dog: state.Dog,
+		messages: append([]string(nil), state.Messages...), knownMonsters: known,
+		won: state.Won, stats: state.Stats,
+	}, nil
 }
 
 func encodeTiles(tiles [][]rune) string {

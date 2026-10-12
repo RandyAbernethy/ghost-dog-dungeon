@@ -11,13 +11,13 @@ import (
 func TestBookShowsOnlyCollectedSideStoriesThroughRoomDiscoveryAndLoading(t *testing.T) {
 	g := nestedGameForTest(t, filepath.Join(t.TempDir(), "book-discoveries.json"))
 	lvl := g.current()
-	inner := lvl.Secret.Inner
+	inner := lvl.primarySecret().Inner
 	var outerScroll, innerScroll item
 	for _, it := range lvl.Items {
 		if it.Kind != itemSideStoryScroll {
 			continue
 		}
-		if it.SideStoryID == lvl.Secret.SideStoryID {
+		if it.SideStoryID == lvl.primarySecret().SideStoryID {
 			outerScroll = it
 		} else if it.SideStoryID == inner.SideStoryID {
 			innerScroll = it

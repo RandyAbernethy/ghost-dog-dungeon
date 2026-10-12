@@ -24,7 +24,7 @@ func TestRelicsSpawnRarelyOnlyInInnerRoomsOnFloorsSevenThroughNine(t *testing.T)
 		runRelics, runEpics := 0, 0
 		for _, lvl := range g.levels {
 			innerTiles := map[pos]bool{}
-			roots := append([]*secretRoom{lvl.Secret}, lvl.ExtraSecrets...)
+			roots := lvl.Secrets
 			for _, root := range roots {
 				if root == nil {
 					continue
@@ -86,7 +86,7 @@ func TestRelicsSpawnRarelyOnlyInInnerRoomsOnFloorsSevenThroughNine(t *testing.T)
 	}
 	t.Run("nested discovery and persistence", func(t *testing.T) {
 		g := repeated
-		g.saveFile, g.timestampedSaves = filepath.Join(t.TempDir(), "nested.json"), false
+		g.saveDir = filepath.Dir(filepath.Join(t.TempDir(), "nested.json"))
 		var treasure item
 		var outer, inner *secretRoom
 		for depth, lvl := range g.levels {
@@ -97,7 +97,7 @@ func TestRelicsSpawnRarelyOnlyInInnerRoomsOnFloorsSevenThroughNine(t *testing.T)
 				treasure = it
 				g.currentLevel, g.player.Pos = depth, lvl.Start
 				lvl.Visited = true
-				for _, root := range append([]*secretRoom{lvl.Secret}, lvl.ExtraSecrets...) {
+				for _, root := range lvl.Secrets {
 					if root == nil {
 						continue
 					}
@@ -157,7 +157,7 @@ func TestAllRelicsArePossibleAndExcludedFromOrdinaryLootAndGifts(t *testing.T) {
 		lvl := g.current()
 		lvl.Index = 6
 		inner := &secretRoom{Tiles: []pos{{12, 8}, {13, 8}, {12, 9}, {13, 9}}}
-		lvl.Secret = &secretRoom{Tiles: []pos{{11, 8}}, Inner: inner}
+		lvl.Secrets = []*secretRoom{{Tiles: []pos{{11, 8}}, Inner: inner}}
 		lvl.Items = []item{{Pos: pos{12, 8}, Kind: itemPotion, Name: "healing potion", Glyph: '!'}}
 		g.addNestedRelic(lvl)
 		if relicItem(lvl.Items[0]) {
@@ -289,7 +289,7 @@ func TestArtifactPowersUseActualDamageAndRespectRange(t *testing.T) {
 }
 
 func TestRelicEquipmentAndEpicStateSurviveCommandsAndSave(t *testing.T) {
-	g := newGameWithSaveFile(1, filepath.Join(t.TempDir(), "relics.json"))
+	g := newGameWithSaveDir(1, t.TempDir())
 	lvl := g.current()
 	lvl.Monsters = nil
 	g.player.carryWeapon(artifactWeapons[0])
@@ -353,7 +353,7 @@ func TestRelicsThroughRealExecutablePickupEquipDropAndSave(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "run.json")
 	g := openArena()
-	g.saveFile, g.timestampedSaves = path, false
+	g.saveDir = filepath.Dir(path)
 	w, a := makeWeaponItem(artifactWeapons[2]), makeArmorItem(godArmorPieces[1])
 	w.Pos, a.Pos = pos{6, 5}, pos{6, 5}
 	g.current().Items = []item{w, a}
@@ -365,7 +365,8 @@ func TestRelicsThroughRealExecutablePickupEquipDropAndSave(t *testing.T) {
 	if output, err := build.CombinedOutput(); err != nil {
 		t.Fatalf("build: %v\n%s", err, output)
 	}
-	cmd := exec.Command(binary, "--load-file", path)
+	path = g.saveFile
+	cmd := exec.Command(binary, "--load-file", path, "--save-file-path", dir)
 	cmd.Env = append(os.Environ(), "HOME="+dir)
 	cmd.Stdin = strings.NewReader("d\ni\nequip 2\nequip 6\ndrop 6\ni\nequip 1\ndrop 2\nsave\nload\nquit\n")
 	output, err := cmd.CombinedOutput()
@@ -377,7 +378,7 @@ func TestRelicsThroughRealExecutablePickupEquipDropAndSave(t *testing.T) {
 			t.Fatalf("executable did not display %q", want)
 		}
 	}
-	loaded, err := loadGame(path)
+	loaded, err := loadGame(lastSavePath(t, string(output)))
 	if err != nil {
 		t.Fatal(err)
 	}

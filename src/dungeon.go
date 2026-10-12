@@ -67,7 +67,7 @@ func (g *game) buildDungeon() error {
 			}
 			if depth == nested {
 				g.addNestedSecretRoom(lvl)
-				if lvl.Secret == nil || lvl.Secret.Inner == nil {
+				if lvl.primarySecret() == nil || lvl.primarySecret().Inner == nil {
 					continue
 				}
 			}

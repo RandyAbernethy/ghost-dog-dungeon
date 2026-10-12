@@ -34,7 +34,7 @@ func TestDropGearSpendsTurnPersistsAndCanBePickedUp(t *testing.T) {
 		t.Fatal("dropped weapon lost its properties or did not land on the player's tile")
 	}
 	g.current().Monsters = nil
-	g.saveFile, g.timestampedSaves = filepath.Join(t.TempDir(), "drop.json"), false
+	g.saveDir = filepath.Dir(filepath.Join(t.TempDir(), "drop.json"))
 	if err := g.save(); err != nil {
 		t.Fatal(err)
 	}

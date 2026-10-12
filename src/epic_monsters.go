@@ -43,7 +43,32 @@ func epicMonsterDescription(kind monsterKind) string {
 	default:
 		return ""
 	}
-	return "Epic: wakes within four tiles, acts once every three turns, and can be outrun. Very dangerous without God armor or an Artifact. " + trick
+	return "Epic: wakes within four tiles, acts once every three turns, and can be outrun. Very dangerous without God armor or an Artifact. " + trick + " Defeating it leaves one elite treasure."
+}
+
+func epicTreasurePool() []item {
+	return append(relicPool(),
+		item{Kind: itemStarfireOrb, Name: "starfire orb", Glyph: '*'},
+		item{Kind: itemSunOrb, Name: "sun orb", Glyph: '*'},
+		item{Kind: itemPhoenixAsh, Name: "phoenix ash", Glyph: '*'},
+		item{Kind: itemGhostRecallScroll, Name: "Ghost Dog recall scroll", Glyph: '?'},
+	)
+}
+
+func (g *game) dropEpicTreasure(m *monster) {
+	// Magic rewards remain available even if every relic has already been found.
+	pool := g.filterFoundSecretEquipment(epicTreasurePool())
+	treasure := pool[g.rng.Intn(len(pool))]
+	treasure.Pos = m.Pos
+	g.current().Items = append(g.current().Items, treasure)
+	name := treasure.Name
+	switch treasure.Kind {
+	case itemWeapon:
+		name = coloredWeaponName(treasure.Weapon)
+	case itemArmor:
+		name = coloredArmorName(treasure.Armor)
+	}
+	g.addMessage(m.Name + " drops an elite treasure: " + name + ".")
 }
 
 func (g *game) awakenEpic(m *monster) {

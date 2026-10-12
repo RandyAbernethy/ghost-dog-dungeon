@@ -53,7 +53,7 @@ func TestBlinkStoneExcludesSecretRoomsAfterDiscovery(t *testing.T) {
 			Tiles: []pos{{25, 8}, {25, 9}, {26, 8}, {26, 9}, {27, 8}, {27, 9}},
 			Inner: &secretRoom{Door: pos{26, 8}, Tiles: []pos{{27, 8}, {27, 9}}},
 		}
-		g.current().Secret = hidden
+		g.current().Secrets = []*secretRoom{hidden}
 		if revealed > 0 {
 			revealRoom(g.current(), hidden)
 		}
@@ -120,7 +120,7 @@ func TestBlinkStoneWorksOnAClearedFloor(t *testing.T) {
 func TestBlinkStoneFailurePreservesTheStoneAndTurn(t *testing.T) {
 	for _, noStone := range []bool{false, true} {
 		g := blinkArena(pos{10, 10})
-		g.current().Secret = &secretRoom{Door: pos{5, 3}, Tiles: []pos{g.dog.Pos}, Revealed: true}
+		g.current().Secrets = []*secretRoom{{Door: pos{5, 3}, Tiles: []pos{g.dog.Pos}, Revealed: true}}
 		if noStone {
 			g.player.BlinkStones = 0
 		}
@@ -136,24 +136,25 @@ func TestRunBlinkStone(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "blink.json")
 	g := blinkArena(pos{3, 5}, pos{10, 10}, pos{11, 10})
-	g.saveFile, g.timestampedSaves = path, false
+	g.saveDir = filepath.Dir(path)
 	foe := newMonster(monsterOrc)
 	foe.Pos, foe.FrozenTurns = pos{3, 5}, 1
 	g.current().Monsters = []*monster{&foe}
-	g.current().Secret = &secretRoom{Door: pos{30, 10}, Tiles: []pos{{31, 10}, {31, 11}}}
-	revealRoom(g.current(), g.current().Secret)
+	g.current().Secrets = []*secretRoom{{Door: pos{30, 10}, Tiles: []pos{{31, 10}, {31, 11}}}}
+	revealRoom(g.current(), g.current().primarySecret())
 	if err := g.save(); err != nil {
 		t.Fatal(err)
 	}
 	var stdout, stderr bytes.Buffer
-	args := []string{"--load-file", path, "--records-file", filepath.Join(dir, "records.json")}
+	path = g.saveFile
+	args := []string{"--load-file", path, "--save-file-path", dir, "--records-file", filepath.Join(dir, "records.json")}
 	if err := run(args, strings.NewReader("g\nsave\nquit\n"), &stdout, &stderr); err != nil {
 		t.Fatalf("run blink command: %v\n%s", err, stderr.String())
 	}
 	if !strings.Contains(stdout.String(), "Space folds and carries you and Ghost Dog to the safest open spot on this floor.") {
 		t.Fatal("the game should report the companions teleporting together")
 	}
-	loaded, err := loadGame(path)
+	loaded, err := loadGame(lastSavePath(t, stdout.String()))
 	if err != nil {
 		t.Fatal(err)
 	}

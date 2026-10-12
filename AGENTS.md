@@ -1,8 +1,8 @@
 # Working on Ghost Dog Dungeon
 
 This is a Go terminal roguelike with ten dungeon floors. Keep the game readable, fair, reproducible from a seed.
-Backwards compatibility with existing saves less important than keeping the code simple and clean. Simply notify the
-user when breaking changes in the Save files are desirable for simplicity.
+This is the first release: keep the code simple and support only the current save format. Reject unsupported
+formats with a helpful error, and notify the user when a save-format change requires a new game.
 
 
 ## Workflow
@@ -36,6 +36,8 @@ The file map below is relative to `src/`.
 - `relics.go`, `relic_powers.go`, `epic_monsters.go`: rare nested-room relics, equipped powers, and optional Epic encounters.
 - `equipment.go`, `loot.go`, `stories.go`, `records.go`: equipment, collection, discovered stories, and personal records.
 - `commands.go`, `terminal.go`, `render.go`, `save.go`: actions, terminal input, presentation, and persistence.
+- `terminal_linux.go`, `terminal_darwin.go`, `terminal_other.go`: platform-specific terminal calls. Keep operating
+  system APIs out of shared input handling, and isolate Linux PTY tests in `terminal_linux_test.go`.
 
 Keep related behavior together in this package. Add a package or abstraction only when it simplifies a real boundary. Avoid rebuilding a large miscellaneous source file.
 
@@ -51,8 +53,11 @@ Keep related behavior together in this package. Add a package or abstraction onl
 - Bound generation retries and provide a connected fallback. Reserve features before placing competing actors or items.
 - Keep rendering and inspection free of gameplay mutations, except existing codex visibility bookkeeping. Reading
   screens and invalid commands must not spend turns.
-- Preserve old JSON fields and enum values through explicit loading migrations when renaming persistent data. New state
-  must survive save/load without rerolling or renewing one-time rewards.
+- Save only current game state; do not add compatibility migrations for development saves. State must survive save/load
+  exactly, without repairing the dungeon, rerolling gifts, or renewing one-time rewards. Use one list of secret-room roots.
+- Every save creates a fresh timestamped snapshot in the directory selected by `--save-file-path` (default: current
+  working directory). Create missing directories at startup and report useful errors. Loading must preserve the current
+  save-directory and record-storage settings; never overwrite the source or previous snapshots.
 
 
 ## Gameplay contracts
@@ -67,15 +72,18 @@ Keep related behavior together in this package. Add a package or abstraction onl
   duplicate species. Ordinary equipment variety must preserve average damage, reach, and armor trait averages. Use saved RNG for all
   selection; new types and items may be absent from a run. Keep entry tiles clear and avoid crowding newly arrived
   players. Reserve one distant guard position for the Dread Lich.
-- God armor and Artifact weapons are explicit rare exceptions to ordinary loot balance: only generate them in inner
-  secret chambers on floors 7–9, with a 25% chance per eligible chamber and at most one relic per dungeon. Replace
+- God armor and Artifact weapons are explicit rare exceptions to ordinary loot balance: only generate room treasure
+  in inner secret chambers on floors 7–9, with a 25% chance per eligible chamber and at most one room relic per dungeon. Replace
   ordinary treasure so fountains and side-story scrolls still fit. Never roll relics on discovery, revisiting, or loading.
+- Defeated Epic monsters guarantee one additional elite treasure at their final position, independently of nesting:
+  God armor, an Artifact weapon, a Starfire Orb, a Sun Orb, Phoenix Ash, or Ghost Dog Recall. Use the saved RNG, avoid
+  duplicate equipment, and award once through the common death handler for every kill source. Save/load must preserve
+  the dropped or collected reward without rerolling or recreating it.
 - Optional Epic monsters only occur on floors 7–9, with at most one per dungeon, outside ordinary difficulty budgets
   and guardian pools. Keep their initial position bypassable and distant from stairs; they act once every three turns.
   Gear powers require equipped pieces and must not revive Ghost Dog. God protection is powerful but not invulnerability.
 - Award kill count and defeated difficulty once per dead monster, including companion, consumable, and stairwell
-  guardian kills. Only finished runs submit records. Old saves lacking complete difficulty history cannot set that
-  record; loading must preserve their dungeon without rerolling it.
+  guardian kills. Only finished runs submit records. Loading must preserve the full challenge progress and dungeon.
 - Ghost Dog accompanies the player only when freed and alive. Preserve his existing combat behavior; revival belongs to
   explicit revival mechanics.
 - Blink Stones exclude all secret chambers, including discovered and additional rooms, and move active companions together.
@@ -106,6 +114,9 @@ git diff --check
   executable and raw terminal keys.
 - Build the game with `go build -o bin/ghostdog ./src` from the repository root. Package-level tests in `src/` may
   build `.` from their package directory. Black-box tests in `tests/` must build `./src` from the repository root.
+- For terminal or build changes, verify `make all` for Linux, Windows, and macOS on AMD64 and ARM64. Use a temporary
+  `BIN_DIR` during tests; keep the native Linux raw-key regression. Cross-compilation alone does not verify foreign
+  console behavior. Windows currently uses the command-and-Enter fallback.
 - Use `t.TempDir()` for saves and records. Give executable tests a temporary home directory; never overwrite the
   player's real records or saves.
 - Once relevant checks pass, avoid repeating or expanding them without a new change, failure, or unresolved concern.

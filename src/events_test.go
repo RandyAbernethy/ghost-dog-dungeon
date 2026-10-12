@@ -102,7 +102,7 @@ func TestLeverCreatesAndPreservesAShortcut(t *testing.T) {
 	if after != 2 || before <= after || g.stats.Turns != 1 || !lvl.Events[0].Used {
 		t.Fatal("the lever should shorten an existing route and spend one turn")
 	}
-	g.saveFile, g.timestampedSaves = filepath.Join(t.TempDir(), "lever.json"), false
+	g.saveDir = filepath.Dir(filepath.Join(t.TempDir(), "lever.json"))
 	if err := g.save(); err != nil {
 		t.Fatal(err)
 	}
@@ -121,7 +121,7 @@ func TestIndependentSecretRoomsCanBeDiscoveredInEitherOrder(t *testing.T) {
 	lvl := g.current()
 	first := &secretRoom{Door: pos{6, 5}, Tiles: []pos{{7, 5}, {7, 6}, {8, 5}, {8, 6}}, SideStoryID: 1}
 	second := &secretRoom{Door: pos{15, 5}, Tiles: []pos{{16, 5}, {16, 6}, {17, 5}, {17, 6}}, SideStoryID: 2}
-	lvl.Secret, lvl.ExtraSecrets = first, []*secretRoom{second}
+	lvl.Secrets = []*secretRoom{first, second}
 	for p := range lvl.secretFootprint(false) {
 		lvl.Tiles[p.Y][p.X] = '#'
 	}
@@ -137,7 +137,7 @@ func TestIndependentSecretRoomsCanBeDiscoveredInEitherOrder(t *testing.T) {
 	if !first.Revealed || g.stats.Turns != 2 {
 		t.Fatal("the first room should remain independently discoverable")
 	}
-	g.saveFile, g.timestampedSaves = filepath.Join(t.TempDir(), "rooms.json"), false
+	g.saveDir = filepath.Dir(filepath.Join(t.TempDir(), "rooms.json"))
 	if err := g.save(); err != nil {
 		t.Fatal(err)
 	}
@@ -156,7 +156,7 @@ func TestBlinkStoneExcludesAdditionalSecretRooms(t *testing.T) {
 	foe.Pos = pos{3, 5}
 	g.current().Monsters = []*monster{&foe}
 	extra := &secretRoom{Door: pos{29, 10}, Tiles: []pos{{30, 10}, {30, 11}}}
-	g.current().ExtraSecrets = []*secretRoom{extra}
+	g.current().Secrets = []*secretRoom{extra}
 	revealRoom(g.current(), extra)
 	if !g.useBlinkStone() || g.player.Pos != (pos{11, 10}) || g.dog.Pos != (pos{10, 10}) {
 		t.Fatal("the farthest additional secret room must remain excluded even after discovery")
@@ -166,7 +166,7 @@ func TestBlinkStoneExcludesAdditionalSecretRooms(t *testing.T) {
 func TestRunEventsAndMetadataSaveRoundTrip(t *testing.T) {
 	dir := t.TempDir()
 	g := openArena()
-	g.saveFile, g.timestampedSaves = filepath.Join(dir, "event.json"), false
+	g.saveDir = filepath.Dir(filepath.Join(dir, "event.json"))
 	g.current().Layout, g.current().Theme = layoutHall, themeChapel
 	g.current().Events = []floorEvent{testFriendlyGhost(pos{6, 5})}
 	g.current().Special = &specialRoom{Kind: roomVault, Area: room{X: 4, Y: 4, W: 3, H: 3}, Pos: pos{6, 6}}
@@ -174,13 +174,13 @@ func TestRunEventsAndMetadataSaveRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 	var stdout, stderr bytes.Buffer
-	if err := run([]string{"--load-file", g.saveFile, "--records-file", filepath.Join(dir, "records.json")}, strings.NewReader("y\nchoose 3\nsave\nload\ny\nsave\nquit\n"), &stdout, &stderr); err != nil {
+	if err := run([]string{"--load-file", g.saveFile, "--save-file-path", dir, "--records-file", filepath.Join(dir, "records.json")}, strings.NewReader("y\nchoose 3\nsave\nload\ny\nsave\nquit\n"), &stdout, &stderr); err != nil {
 		t.Fatalf("run events: %v %s", err, stderr.String())
 	}
 	if !strings.Contains(stdout.String(), "ruined chapel — pillared halls") || !strings.Contains(stdout.String(), "offers one gift") || !strings.Contains(stdout.String(), "3. Ghost Dog recall scroll") || !strings.Contains(stdout.String(), "one Ghost Dog recall scroll") || !strings.Contains(stdout.String(), "nothing nearby") {
 		t.Fatal("the command flow should show theme, choices, and the event's completion")
 	}
-	loaded, err := loadGame(g.saveFile)
+	loaded, err := loadGame(lastSavePath(t, stdout.String()))
 	if err != nil {
 		t.Fatal(err)
 	}

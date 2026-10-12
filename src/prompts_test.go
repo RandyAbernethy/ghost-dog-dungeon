@@ -110,9 +110,9 @@ func TestNearbyObjectsPromptIndependently(t *testing.T) {
 func TestHiddenObjectsDoNotPromptUntilApproachedAfterDiscovery(t *testing.T) {
 	g := openArena()
 	lvl := g.current()
-	lvl.Secret = &secretRoom{Door: pos{7, 5}, Tiles: []pos{{8, 5}, {8, 6}, {9, 5}, {9, 6}}}
+	lvl.Secrets = []*secretRoom{{Door: pos{7, 5}, Tiles: []pos{{8, 5}, {8, 6}, {9, 5}, {9, 6}}}}
 	lvl.Fountains = []fountain{{Pos: pos{8, 5}}}
-	for _, p := range append([]pos{lvl.Secret.Door}, lvl.Secret.Tiles...) {
+	for _, p := range append([]pos{lvl.primarySecret().Door}, lvl.primarySecret().Tiles...) {
 		lvl.Tiles[p.Y][p.X] = '#'
 	}
 	g.processCommand("d")
@@ -141,7 +141,7 @@ func TestArrivalPromptsOnStairsAndBlink(t *testing.T) {
 			}
 		}
 		second.Monsters, second.Items, second.Fountains = nil, nil, nil
-		second.Secret, second.ExtraSecrets, second.Special, second.DogChain = nil, nil, nil, nil
+		second.Secrets, second.Special, second.DogChain = nil, nil, nil
 		first.Stairs, second.UpStairs = g.player.Pos, g.player.Pos
 		first.HasStair, second.HasUpStair = true, true
 		second.Events = []floorEvent{{Kind: eventGhost, Pos: pos{6, 5}}}
@@ -176,7 +176,7 @@ func TestObjectPromptsStayQuietAcrossScreensAndSaveLoad(t *testing.T) {
 	g.current().Events = []floorEvent{{Kind: eventGhost, Pos: pos{8, 5}}}
 	g.processCommand("d")
 	g.processCommand("d")
-	g.saveFile, g.timestampedSaves = filepath.Join(t.TempDir(), "prompts.json"), false
+	g.saveDir = filepath.Dir(filepath.Join(t.TempDir(), "prompts.json"))
 	if err := g.save(); err != nil {
 		t.Fatal(err)
 	}

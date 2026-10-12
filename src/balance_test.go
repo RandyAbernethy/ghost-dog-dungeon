@@ -2,7 +2,7 @@ package main
 
 import (
 	"bytes"
-	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -59,9 +59,9 @@ func TestSecretFountainStaysHiddenThenHealsAndRenews(t *testing.T) {
 	g := openArena()
 	lvl := g.current()
 	lvl.HasStair, lvl.HasUpStair = false, false
-	lvl.Secret = &secretRoom{Door: pos{6, 5}, Tiles: []pos{{7, 5}, {8, 5}, {7, 6}, {8, 6}}}
+	lvl.Secrets = []*secretRoom{{Door: pos{6, 5}, Tiles: []pos{{7, 5}, {8, 5}, {7, 6}, {8, 6}}}}
 	lvl.Tiles[5][6] = '#'
-	for _, p := range lvl.Secret.Tiles {
+	for _, p := range lvl.primarySecret().Tiles {
 		lvl.Tiles[p.Y][p.X] = '#'
 	}
 	g.player.Pos, g.player.HP = pos{6, 4}, 20
@@ -113,11 +113,14 @@ func TestSecretFountainStaysHiddenThenHealsAndRenews(t *testing.T) {
 	}
 }
 
-func TestLoadedSecretRoomsGainFountainsAndKeepSpentState(t *testing.T) {
-	g := newGameWithSaveFile(15, filepath.Join(t.TempDir(), "fountains.json"))
+func TestSavedFountainsKeepSpentStateWithoutRenewal(t *testing.T) {
+	g := newGameWithSaveDir(15, t.TempDir())
 	for _, lvl := range g.levels {
-		lvl.Fountains = nil
+		for i := range lvl.Fountains {
+			lvl.Fountains[i].Used = true
+		}
 	}
+	beforeRNG := g.rng.State
 	if err := g.save(); err != nil {
 		t.Fatal(err)
 	}
@@ -125,39 +128,15 @@ func TestLoadedSecretRoomsGainFountainsAndKeepSpentState(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, lvl := range loaded.levels {
-		if lvl.Secret == nil {
-			continue
-		}
-		for _, hidden := range lvl.secretRooms() {
-			found := false
-			for i := range lvl.Fountains {
-				for _, p := range hidden.floorTiles() {
-					if lvl.Fountains[i].Pos == p {
-						found = true
-						lvl.Fountains[i].Used = true
-					}
-				}
-			}
-			if !found {
-				t.Fatal("a loaded secret room should gain a fountain")
-			}
-		}
-	}
-	count := countFountains(loaded.levels)
 	if err := loaded.save(); err != nil {
 		t.Fatal(err)
 	}
 	reloaded, err := loadGame(loaded.saveFile)
-	if err != nil || countFountains(reloaded.levels) != count {
-		t.Fatal("reloading should not create more fountains")
+	if err != nil {
+		t.Fatal(err)
 	}
-	for depth, lvl := range loaded.levels {
-		for i, f := range lvl.Fountains {
-			if f != reloaded.levels[depth].Fountains[i] {
-				t.Fatal("loading should not refill a spent fountain")
-			}
-		}
+	if !reflect.DeepEqual(g.levels, loaded.levels) || !reflect.DeepEqual(g.levels, reloaded.levels) || reloaded.rng.State != beforeRNG {
+		t.Fatal("saving and loading must preserve fountains and dungeon state without renewing or adding anything")
 	}
 }
 

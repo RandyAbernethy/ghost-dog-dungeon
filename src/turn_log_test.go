@@ -16,6 +16,7 @@ func crowdedLogArena() *game {
 	g := openArena()
 	g.rng = newSimpleRNG(1)
 	g.stats.Turns = 80
+	g.stats.MonstersKilled = 37
 	g.messages = []string{"An event from the previous turn."}
 	g.player.HP, g.player.MaxHP = 1000, 1000
 	g.player.Weapon = weapon{Name: "Silver test blade", Min: 3, Max: 3, Magic: true}
@@ -42,7 +43,7 @@ func crowdedLogArena() *game {
 
 func assertWholeTurnRendered(t *testing.T, g *game, output string) {
 	t.Helper()
-	header := fmt.Sprintf("Turn %d events:\n", g.stats.Turns)
+	header := fmt.Sprintf("Turn %d events (%d monsters killed):\n", g.stats.Turns, g.stats.MonstersKilled)
 	_, remaining, ok := strings.Cut(output, header)
 	if !ok {
 		t.Fatalf("missing current turn heading %q", header)
@@ -136,7 +137,7 @@ func TestFreeAndFailedActionsKeepCurrentTurnAvailable(t *testing.T) {
 
 func TestCurrentTurnLogSurvivesSaveLoadWithoutMergingOtherTurns(t *testing.T) {
 	g := crowdedLogArena()
-	g.saveFile, g.timestampedSaves = filepath.Join(t.TempDir(), "turn.json"), false
+	g.saveDir = filepath.Dir(filepath.Join(t.TempDir(), "turn.json"))
 	g.processCommand("d")
 	want := append([]string(nil), g.messages...)
 	beforeStats, beforeRNG := g.stats, g.rng.State
@@ -196,7 +197,7 @@ func TestPlayerActionPrecedesMagicFountainAndFloorTransition(t *testing.T) {
 func TestCompleteTurnLogThroughRealExecutableAndSavedGame(t *testing.T) {
 	dir := t.TempDir()
 	g := crowdedLogArena()
-	g.saveFile, g.timestampedSaves = filepath.Join(dir, "combat.json"), false
+	g.saveDir = filepath.Dir(filepath.Join(dir, "combat.json"))
 	if err := g.save(); err != nil {
 		t.Fatal(err)
 	}
@@ -205,7 +206,7 @@ func TestCompleteTurnLogThroughRealExecutableAndSavedGame(t *testing.T) {
 	if output, err := build.CombinedOutput(); err != nil {
 		t.Fatalf("build: %v\n%s", err, output)
 	}
-	cmd := exec.Command(binary, "--load-file", g.saveFile)
+	cmd := exec.Command(binary, "--load-file", g.saveFile, "--save-file-path", dir)
 	cmd.Env = append(os.Environ(), "HOME="+dir)
 	cmd.Stdin = strings.NewReader("d\ni\n\x1b\nsave\nquit\n")
 	output, err := cmd.CombinedOutput()
@@ -213,7 +214,7 @@ func TestCompleteTurnLogThroughRealExecutableAndSavedGame(t *testing.T) {
 		t.Fatalf("run: %v\n%s", err, output)
 	}
 	g.processCommand("d")
-	loaded, err := loadGame(g.saveFile)
+	loaded, err := loadGame(lastSavePath(t, string(output)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -221,7 +222,7 @@ func TestCompleteTurnLogThroughRealExecutableAndSavedGame(t *testing.T) {
 		t.Fatal("the executable must preserve the entire crowded turn through reading screens and saving")
 	}
 	for _, screen := range strings.Split(string(output), "=== Ghost Dog Dungeon:")[1:] {
-		if strings.Contains(screen, "Turn 81 events:") {
+		if strings.Contains(screen, "Turn 81 events (") {
 			assertWholeTurnRendered(t, loaded, screen)
 		}
 	}

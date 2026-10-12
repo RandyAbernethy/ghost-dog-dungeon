@@ -1,38 +1,36 @@
 package main
 
 type game struct {
-	rng              *simpleRNG
-	seed             int64
-	saveFile         string
-	timestampedSaves bool
-	levels           []*level
-	currentLevel     int
-	player           player
-	dog              ghostDog
-	messages         []string
-	knownMonsters    map[monsterKind]bool
-	dogFocus         *monster
-	turnDamage       map[*monster]int
-	won              bool
-	quit             bool
-	stats            runStats
-	recordsFile      string
-	generationError  error
+	rng             *simpleRNG
+	seed            int64
+	saveFile        string
+	saveDir         string
+	levels          []*level
+	currentLevel    int
+	player          player
+	dog             ghostDog
+	messages        []string
+	knownMonsters   map[monsterKind]bool
+	dogFocus        *monster
+	turnDamage      map[*monster]int
+	won             bool
+	quit            bool
+	stats           runStats
+	recordsFile     string
+	generationError error
 }
 
 func newGame(seed int64) *game {
-	return newGameWithSaveFile(seed, "")
+	return newGameWithSaveDir(seed, ".")
 }
 
-func newGameWithSaveFile(seed int64, saveFile string) *game {
+func newGameWithSaveDir(seed int64, saveDir string) *game {
 	rng := newSimpleRNG(seed)
 	g := &game{
-		rng:              rng,
-		seed:             seed,
-		saveFile:         saveFile,
-		timestampedSaves: saveFile == "",
-		knownMonsters:    map[monsterKind]bool{},
-		stats:            runStats{HistoryKnown: true, DifficultyKnown: true},
+		rng:           rng,
+		seed:          seed,
+		saveDir:       saveDir,
+		knownMonsters: map[monsterKind]bool{},
 		player: player{
 			HP:            46,
 			MaxHP:         46,

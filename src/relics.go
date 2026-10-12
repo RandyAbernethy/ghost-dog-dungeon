@@ -48,7 +48,7 @@ func (g *game) addNestedRelic(lvl *level) {
 	if !relicDepth(lvl.Index) {
 		return
 	}
-	roots := append([]*secretRoom{lvl.Secret}, lvl.ExtraSecrets...)
+	roots := lvl.Secrets
 	var nested []*secretRoom
 	for _, root := range roots {
 		if root == nil {

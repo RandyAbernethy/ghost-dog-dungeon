@@ -9,12 +9,10 @@ import (
 )
 
 type runStats struct {
-	Turns              int  `json:"turns"`
-	MonstersKilled     int  `json:"monsters_killed"`
-	GhostDogFalls      int  `json:"ghost_dog_falls"`
-	HistoryKnown       bool `json:"history_known"`
-	DifficultyDefeated int  `json:"difficulty_defeated,omitempty"`
-	DifficultyKnown    bool `json:"difficulty_known,omitempty"`
+	Turns              int `json:"turns"`
+	MonstersKilled     int `json:"monsters_killed"`
+	GhostDogFalls      int `json:"ghost_dog_falls"`
+	DifficultyDefeated int `json:"difficulty_defeated,omitempty"`
 }
 
 type challengeResult struct {
@@ -61,7 +59,7 @@ func readChallengeRecords(path string) (challengeRecords, error) {
 }
 
 func (g *game) recordChallenges() error {
-	if !g.stats.HistoryKnown || (!g.won && g.player.HP > 0) {
+	if !g.won && g.player.HP > 0 {
 		return nil
 	}
 	path, err := g.challengeRecordsPath()
@@ -72,16 +70,13 @@ func (g *game) recordChallenges() error {
 	if err != nil {
 		return err
 	}
-	result := challengeResult{Seed: g.seed, Turns: g.stats.Turns, Kills: g.stats.MonstersKilled, Escaped: g.won}
-	if g.stats.DifficultyKnown {
-		result.Difficulty = g.stats.DifficultyDefeated
-	}
+	result := challengeResult{Seed: g.seed, Turns: g.stats.Turns, Kills: g.stats.MonstersKilled, Escaped: g.won, Difficulty: g.stats.DifficultyDefeated}
 	changed := false
 	if records.MostKills == nil || result.Kills > records.MostKills.Kills {
 		records.MostKills = &result
 		changed = true
 	}
-	if g.stats.DifficultyKnown && (records.MostDifficulty == nil || result.Difficulty > records.MostDifficulty.Difficulty) {
+	if records.MostDifficulty == nil || result.Difficulty > records.MostDifficulty.Difficulty {
 		records.MostDifficulty = &result
 		changed = true
 	}
@@ -119,15 +114,9 @@ func (g *game) recordChallenges() error {
 func (g *game) renderChallenges(w io.Writer) {
 	fmt.Fprintln(w, "\n=== Optional Challenges ===")
 	fmt.Fprintf(w, "This run: %d turns, %d monsters killed, Ghost Dog fell %d time(s).\n", g.stats.Turns, g.stats.MonstersKilled, g.stats.GhostDogFalls)
-	if g.stats.DifficultyKnown {
-		fmt.Fprintf(w, "Difficulty defeated: %d points. Tougher enemies earn more points.\n", g.stats.DifficultyDefeated)
-	} else {
-		fmt.Fprintln(w, "This older save has no complete difficulty score. Start a new game to set that record.")
-	}
+	fmt.Fprintf(w, "Difficulty defeated: %d points. Tougher enemies earn more points.\n", g.stats.DifficultyDefeated)
 	fmt.Fprintln(w, "Fewest turns: escape as quickly as you can. Most kills: counts kills by you and Ghost Dog in a run ending in escape or death.")
-	if !g.stats.HistoryKnown {
-		fmt.Fprintln(w, "This older save has no complete challenge history. Start a new game to set records.")
-	} else if g.stats.GhostDogFalls > 0 {
+	if g.stats.GhostDogFalls > 0 {
 		fmt.Fprintln(w, "Escape without Ghost Dog falling: failed this run, even if he is revived.")
 	} else if g.won && g.dog.Freed && g.dog.Alive {
 		fmt.Fprintln(w, "Escape without Ghost Dog falling: achieved this run.")

@@ -77,7 +77,7 @@ func TestExpandedLootKeepsPowerAndOffersOptionalFinds(t *testing.T) {
 
 func TestAdditionalEquipmentCanBeCarriedEquippedAndSaved(t *testing.T) {
 	g := openArena()
-	g.saveFile, g.timestampedSaves = filepath.Join(t.TempDir(), "gear.json"), false
+	g.saveDir = filepath.Dir(filepath.Join(t.TempDir(), "gear.json"))
 	w := makeWeaponLoot(weaponPoolForLevel(0)[3])
 	a := makeArmorItem(armorPoolForLevel(0)[4])
 	g.collectItem(w)

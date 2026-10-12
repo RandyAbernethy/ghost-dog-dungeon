@@ -50,7 +50,7 @@ func (g *game) render(w io.Writer) {
 				ch = '>'
 			case lvl.HasUpStair && lvl.UpStairs == p:
 				ch = '<'
-			case lvl.HasEscapeStair && lvl.EscapeStairs == p && (lvl.Secret == nil || lvl.Secret.Revealed):
+			case lvl.HasEscapeStair && lvl.EscapeStairs == p && (lvl.primarySecret() == nil || lvl.primarySecret().Revealed):
 				ch = '<'
 			case ch != '#' && f != nil && !f.Used:
 				ch = 'F'
@@ -74,7 +74,7 @@ func (g *game) render(w io.Writer) {
 	if g.stats.Turns == 0 {
 		fmt.Fprintln(w, "Dungeon events:")
 	} else {
-		fmt.Fprintf(w, "Turn %d events:\n", g.stats.Turns)
+		fmt.Fprintf(w, "Turn %d events (%d monsters killed):\n", g.stats.Turns, g.stats.MonstersKilled)
 	}
 	for _, msg := range g.messages {
 		fmt.Fprintln(w, "- "+msg)
@@ -138,7 +138,7 @@ func (g *game) renderInspect(w io.Writer) {
 	if g.current().HasUpStair {
 		fmt.Fprintf(w, "Stairs up: %s.\n", relativeTo(g.player.Pos, g.current().UpStairs))
 	}
-	if g.current().HasEscapeStair && (g.current().Secret == nil || g.current().Secret.Revealed) {
+	if g.current().HasEscapeStair && (g.current().primarySecret() == nil || g.current().primarySecret().Revealed) {
 		fmt.Fprintf(w, "Hidden way out: %s.\n", relativeTo(g.player.Pos, g.current().EscapeStairs))
 	}
 	for _, f := range g.current().Fountains {
@@ -176,7 +176,7 @@ func (g *game) renderInspect(w io.Writer) {
 
 func inspectTileDescription(lvl *level, p pos) string {
 	switch {
-	case lvl.HasEscapeStair && lvl.EscapeStairs == p && (lvl.Secret == nil || lvl.Secret.Revealed):
+	case lvl.HasEscapeStair && lvl.EscapeStairs == p && (lvl.primarySecret() == nil || lvl.primarySecret().Revealed):
 		return "You are standing on the hidden stairs up and out of the dungeon."
 	case lvl.HasUpStair && lvl.UpStairs == p:
 		return "You are standing on stairs leading back up."
@@ -314,7 +314,7 @@ func (g *game) inventoryLines() []inventoryLine {
 
 func (g *game) contextHint() string {
 	lvl := g.current()
-	if lvl.HasEscapeStair && lvl.Secret != nil && lvl.Secret.Revealed && g.player.Pos == lvl.EscapeStairs {
+	if lvl.HasEscapeStair && lvl.primarySecret() != nil && lvl.primarySecret().Revealed && g.player.Pos == lvl.EscapeStairs {
 		return "stairs up and out — press < to escape."
 	}
 	if lvl.HasUpStair && g.player.Pos == lvl.UpStairs {
@@ -324,7 +324,7 @@ func (g *game) contextHint() string {
 		return "stairs down — press > to descend."
 	}
 	if hidden := lvl.hiddenRoomNear(g.player.Pos); hidden != nil {
-		if hidden == lvl.Secret && lvl.HasEscapeStair && g.bossAlive(lvl) {
+		if hidden == lvl.primarySecret() && lvl.HasEscapeStair && g.bossAlive(lvl) {
 			return "a necromantic seal chills this wall — the Lich still holds it shut."
 		}
 		return "this wall feels strange — try search."

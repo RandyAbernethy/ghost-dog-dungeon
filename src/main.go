@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+const gameVersion = "1.0.1"
+
 func main() {
 	if err := run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
@@ -19,13 +21,13 @@ func main() {
 func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	flags := flag.NewFlagSet("ghostdog-dungeon", flag.ContinueOnError)
 	flags.SetOutput(stderr)
-	seed := flags.Int64("seed", time.Now().UnixNano(), "random seed for dungeon generation")
-	saveFile := flags.String("save-file", "", "fixed path used by save/load commands; otherwise saves use a timestamped name")
+	version := flags.Bool("version", false, "print the game version and exit")
+	seed := flags.Int64("seed", 0, "random seed for dungeon generation (default is current time in nanoseconds)")
+	saveFilePath := flags.String("save-file-path", ".", "directory for timestamped save files; created if missing")
 	loadFile := flags.String("load-file", "", "load this save file at startup")
-	loadSave := flags.Bool("load", false, "load the path supplied with --save-file (legacy form)")
 	recordsFile := flags.String("records-file", "", "challenge records path; defaults to ~/.ghost-dog-data.json")
 	flags.Usage = func() {
-		fmt.Fprintln(stderr, "Usage: ghostdog-dungeon [--seed N] [--save-file path] [--load-file path]")
+		fmt.Fprintln(stderr, "Usage: ghostdog-dungeon [--seed N] [--save-file-path directory] [--load-file file] [--records-file file] [--version]")
 		fmt.Fprintln(stderr)
 		fmt.Fprintln(stderr, "Enter the dungeon, free the ghost dog, reach the tenth floor, and escape by finding the hidden way out beyond the Dread Lich.")
 		fmt.Fprintln(stderr, "Commands: wasd/arrows move, qezx diagonals, . wait, </> stairs, p f b g u t o n r items, v fountain, y interact, i inventory, E equipment, B book, j challenges, c codex, m inspect, k search, :equip NUMBER, :drop NUMBER, :choose 1/2/3, S save, L load, Ctrl-C quit")
@@ -41,28 +43,35 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		flags.Usage()
 		return errors.New("this game does not take positional arguments")
 	}
-
-	if *loadSave && *loadFile != "" {
-		return errors.New("use either --load-file or --load, not both")
+	if *version {
+		fmt.Fprintln(stdout, "Ghost Dog Dungeon version "+gameVersion)
+		return nil
 	}
-	if *loadSave && *saveFile == "" {
-		return errors.New("--load needs a path; use --load-file path or --load --save-file path")
+
+	saveDir, err := prepareSaveDirectory(*saveFilePath)
+	if err != nil {
+		return err
 	}
 	var g *game
-	var err error
-	if *loadFile != "" || *loadSave {
-		path := *loadFile
-		if path == "" {
-			path = *saveFile
-		}
-		g, err = loadGame(path)
+	if *loadFile != "" {
+		g, err = loadGame(*loadFile)
 		if err != nil {
 			return err
 		}
 		g.addMessage("Loaded saved game.")
 	} else {
-		g = newGameWithSaveFile(*seed, *saveFile)
+		seedSet := false
+		flags.Visit(func(f *flag.Flag) {
+			if f.Name == "seed" {
+				seedSet = true
+			}
+		})
+		if !seedSet {
+			*seed = time.Now().UnixNano()
+		}
+		g = newGameWithSaveDir(*seed, saveDir)
 	}
+	g.saveDir = saveDir
 	// Record storage belongs to the current user rather than a saved dungeon.
 	if g.generationError != nil {
 		return g.generationError

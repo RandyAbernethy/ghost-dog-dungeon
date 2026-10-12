@@ -194,8 +194,7 @@ type level struct {
 	HasEscapeStair    bool          `json:"has_escape_stair"`
 	DogChain          *pos          `json:"dog_chain,omitempty"`
 	Start             pos           `json:"start"`
-	Secret            *secretRoom   `json:"secret,omitempty"`
-	ExtraSecrets      []*secretRoom `json:"extra_secrets,omitempty"`
+	Secrets           []*secretRoom `json:"secrets,omitempty"`
 	Layout            layoutKind    `json:"layout,omitempty"`
 	Theme             floorTheme    `json:"theme,omitempty"`
 	Encounter         encounterKind `json:"encounter,omitempty"`

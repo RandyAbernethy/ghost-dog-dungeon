@@ -176,7 +176,7 @@ func TestGhostOffersSurviveRevisitingAndSaveLoad(t *testing.T) {
 	g.processCommand("a")
 	g.processCommand("d")
 	g.processCommand("y")
-	g.saveFile, g.timestampedSaves = filepath.Join(t.TempDir(), "gifts.json"), false
+	g.saveDir = filepath.Dir(filepath.Join(t.TempDir(), "gifts.json"))
 	if err := g.save(); err != nil {
 		t.Fatal(err)
 	}
@@ -201,35 +201,5 @@ func TestGhostOffersSurviveRevisitingAndSaveLoad(t *testing.T) {
 	claimed.processCommand("choose 1")
 	if !claimed.current().Events[0].Used || !reflect.DeepEqual(offer, claimed.current().Events[0].Gifts) || !reflect.DeepEqual(before, claimed.player) || claimed.stats.Turns != 5 {
 		t.Fatal("loading a claimed offer must not renew or reroll its gifts")
-	}
-}
-
-func TestOlderSavesReceiveChoicesOnlyForUnusedGhosts(t *testing.T) {
-	g := openArena()
-	g.current().Events = []floorEvent{
-		{Kind: eventGhost, Pos: pos{6, 5}},
-		{Kind: eventGhost, Pos: pos{10, 5}, Used: true},
-	}
-	g.saveFile, g.timestampedSaves = filepath.Join(t.TempDir(), "old-gifts.json"), false
-	if err := g.save(); err != nil {
-		t.Fatal(err)
-	}
-	loaded, err := loadGame(g.saveFile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(loaded.current().Events[0].Gifts) != 3 || len(loaded.current().Events[1].Gifts) != 0 || !loaded.current().Events[1].Used {
-		t.Fatal("an older save should gain three choices without renewing a used ghost")
-	}
-	offer, rngState := append([]item(nil), loaded.current().Events[0].Gifts...), loaded.rng.State
-	if err := loaded.save(); err != nil {
-		t.Fatal(err)
-	}
-	reloaded, err := loadGame(loaded.saveFile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !reflect.DeepEqual(offer, reloaded.current().Events[0].Gifts) || reloaded.rng.State != rngState {
-		t.Fatal("saving the upgraded offer should prevent further rerolls")
 	}
 }

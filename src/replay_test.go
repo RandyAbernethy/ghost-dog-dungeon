@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -23,8 +22,8 @@ func openArena() *game {
 		}
 	}
 	lvl.Monsters, lvl.Items, lvl.Fountains = nil, nil, nil
-	lvl.Secret = nil
-	lvl.ExtraSecrets, lvl.Events, lvl.Special = nil, nil, nil
+	lvl.Secrets = nil
+	lvl.Events, lvl.Special = nil, nil
 	g.player.Pos = pos{5, 5}
 	return g
 }
@@ -77,7 +76,7 @@ func TestEverySecretRoomAddsOneSideStory(t *testing.T) {
 	for seed := int64(1); seed <= 30; seed++ {
 		g := newGame(seed)
 		for _, lvl := range g.levels {
-			if lvl.Secret == nil {
+			if lvl.primarySecret() == nil {
 				continue
 			}
 			rooms += len(lvl.secretRooms())
@@ -122,8 +121,7 @@ func TestEverySecretRoomAddsOneSideStory(t *testing.T) {
 
 func TestBookCollectsOnlyFoundStoriesAndSurvivesSave(t *testing.T) {
 	g := openArena()
-	g.saveFile, g.timestampedSaves = filepath.Join(t.TempDir(), "book.json"), false
-	g.timestampedSaves = false
+	g.saveDir = filepath.Dir(filepath.Join(t.TempDir(), "book.json"))
 	for _, chapter := range []int{3, 1, 3} {
 		g.current().Items = []item{{Pos: g.player.Pos, Kind: itemStoryScroll, StoryChapter: chapter}}
 		g.collectItems()
@@ -357,7 +355,7 @@ func TestChallengeRecordsPersistBestResultsAcrossRuns(t *testing.T) {
 		t.Helper()
 		g := newGame(seed)
 		g.recordsFile = path
-		g.stats = runStats{Turns: turns, MonstersKilled: kills, GhostDogFalls: falls, HistoryKnown: true}
+		g.stats = runStats{Turns: turns, MonstersKilled: kills, GhostDogFalls: falls}
 		g.won, g.dog.Freed = escaped, true
 		if !escaped {
 			g.player.HP = 0
@@ -389,14 +387,14 @@ func TestChallengeRecordsPersistBestResultsAcrossRuns(t *testing.T) {
 	}
 }
 
-func TestSavePreservesNewFeaturesAndLegacySavesRemainPlayable(t *testing.T) {
-	g := newGameWithSaveFile(15, filepath.Join(t.TempDir(), "save.json"))
+func TestSavePreservesEquipmentStoriesAndChallengeProgress(t *testing.T) {
+	g := newGameWithSaveDir(15, t.TempDir())
 	g.player.carryWeapon(weapon{Name: "Spear", Min: 3, Max: 5, Reach: 2})
 	g.player.Weapon = g.player.Weapons[1]
 	g.player.carryArmor(armor{Name: "Rune Hood", Slot: slotHead, SpellWard: 3, Rarity: rarityRare})
 	g.player.HeadArmor = g.player.Armors[len(g.player.Armors)-1]
 	g.player.SideStories, g.player.StoryChapters = []int{2}, []int{1, 3}
-	g.stats = runStats{Turns: 34, MonstersKilled: 7, GhostDogFalls: 1, HistoryKnown: true}
+	g.stats = runStats{Turns: 34, MonstersKilled: 7, GhostDogFalls: 1}
 	if err := g.save(); err != nil {
 		t.Fatal(err)
 	}
@@ -407,65 +405,13 @@ func TestSavePreservesNewFeaturesAndLegacySavesRemainPlayable(t *testing.T) {
 	if !reflect.DeepEqual(g.player, loaded.player) || g.stats != loaded.stats || g.recordsFile != loaded.recordsFile {
 		t.Fatalf("save/load lost state: before=%+v after=%+v stats=%+v/%+v records=%s/%s", g.player, loaded.player, g.stats, loaded.stats, g.recordsFile, loaded.recordsFile)
 	}
-	data, _ := os.ReadFile(g.saveFile)
-	var legacy map[string]json.RawMessage
-	if err := json.Unmarshal(data, &legacy); err != nil {
-		t.Fatal(err)
-	}
-	delete(legacy, "stats")
-	delete(legacy, "records_file")
-	var levels []*level
-	if err := json.Unmarshal(legacy["levels"], &levels); err != nil {
-		t.Fatal(err)
-	}
-	for _, lvl := range levels {
-		kept := lvl.Items[:0]
-		for _, it := range lvl.Items {
-			if it.Kind != itemSideStoryScroll {
-				kept = append(kept, it)
-			}
-		}
-		lvl.Items = kept
-	}
-	legacy["levels"], _ = json.Marshal(levels)
-	var p map[string]json.RawMessage
-	json.Unmarshal(legacy["player"], &p)
-	delete(p, "weapons")
-	delete(p, "armors")
-	delete(p, "side_stories")
-	legacy["player"], _ = json.Marshal(p)
-	data, _ = json.Marshal(legacy)
-	if err := os.WriteFile(g.saveFile, data, 0600); err != nil {
-		t.Fatal(err)
-	}
-	loaded, err = loadGame(g.saveFile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if loaded.stats.HistoryKnown || len(loaded.player.Weapons) != 1 || len(loaded.player.Armors) != 3 || len(loaded.player.StoryChapters) != 2 {
-		t.Fatal("legacy saves should retain gear and chapters without inventing challenge history")
-	}
-	for _, lvl := range loaded.levels {
-		if lvl.Secret == nil {
-			continue
-		}
-		count := 0
-		for _, it := range lvl.Items {
-			if it.Kind == itemSideStoryScroll {
-				count++
-			}
-		}
-		if count != len(lvl.secretRooms()) {
-			t.Fatal("loading an older save should supply its secret rooms with side stories")
-		}
-	}
 }
 
-func TestLegacyLegArmorRemainsUsableAndSavesWithNewNames(t *testing.T) {
+func TestLegArmorPickupEquipmentAndSaving(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "armor.json")
 	g := openArena()
-	g.saveFile, g.timestampedSaves = path, false
+	g.saveDir = filepath.Dir(path)
 	g.player.LegArmor = armor{Name: "Runespun leg armor", Slot: slotLeg, Defense: 4, SpellWard: 2, Rarity: rarityRare}
 	g.player.ensureCarriedEquipment()
 	found := armor{Name: "Hunter's leg armor", Slot: slotLeg, Defense: 2, StrikeBonus: 3, Rarity: rarityRare}
@@ -475,41 +421,33 @@ func TestLegacyLegArmorRemainsUsableAndSavesWithNewNames(t *testing.T) {
 	if err := g.save(); err != nil {
 		t.Fatal(err)
 	}
-	data, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	data = bytes.ReplaceAll(data, []byte("\"leg_armor\""), []byte("\"feet_armor\""))
-	data = bytes.ReplaceAll(data, []byte("\"slot\": \"leg\""), []byte("\"slot\": \"feet\""))
-	data = bytes.ReplaceAll(data, []byte(" leg armor"), []byte(" feet armor"))
-	if err := os.WriteFile(path, data, 0600); err != nil {
-		t.Fatal(err)
-	}
+	path = g.saveFile
 	loaded, err := loadGame(path)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(loaded.player, g.player) || loaded.player.armorDefense() != 6 || loaded.player.spellWard() != 2 || !reflect.DeepEqual(loaded.current().Items, g.current().Items) {
-		t.Fatal("old equipped, carried, and floor armor should retain their properties with the new leg names")
+		t.Fatal("equipped, carried, and floor armor should retain their properties")
 	}
 	var stdout, stderr bytes.Buffer
 	commands := fmt.Sprintf("i\nd\nequip %d\ni\nsave\nquit\n", len(g.player.Weapons)+len(g.player.Armors)+1)
-	args := []string{"--load-file", path, "--records-file", filepath.Join(dir, "records.json")}
+	args := []string{"--load-file", path, "--save-file-path", dir, "--records-file", filepath.Join(dir, "records.json")}
 	if err := run(args, strings.NewReader(commands), &stdout, &stderr); err != nil {
-		t.Fatalf("run legacy armor commands: %v\n%s", err, stderr.String())
+		t.Fatalf("run armor commands: %v\n%s", err, stderr.String())
 	}
 	output := stdout.String()
 	if !strings.Contains(output, "Leg:") || !strings.Contains(output, "You equip Hunter's leg armor") || strings.Contains(output, "Feet:") || strings.Contains(output, "feet armor") || strings.Contains(output, "feet slot") {
 		t.Fatal("inventory, pickup, and equip text should consistently use the leg armor name")
 	}
+	path = lastSavePath(t, output)
 	loaded, err = loadGame(path)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if loaded.player.LegArmor != found || loaded.player.strikeBonus() != 3 || loaded.stats.Turns != 2 {
-		t.Fatal("migrated floor armor should be collectable, equippable, and saveable in the leg slot")
+		t.Fatal("floor armor should be collectable, equippable, and saveable in the leg slot")
 	}
-	data, err = os.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -527,7 +465,7 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 	testEnv := append(os.Environ(), "HOME="+testHome)
 	recordsPath := filepath.Join(testHome, ".ghost-dog-data.json")
 	path := filepath.Join(dir, "save.json")
-	g := newGameWithSaveFile(31, path)
+	g := newGameWithSaveDir(31, filepath.Dir(path))
 	g.currentLevel = levelCount - 1
 	lvl := g.current()
 	g.revealSecretRoom(lvl)
@@ -537,7 +475,7 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 	g.placeDogNearPlayer()
 	g.player.StoryChapters, g.player.SideStories = []int{1, 3}, []int{2}
 	g.player.carryWeapon(weapon{Name: "Test Spear", Min: 3, Max: 5, Reach: 2})
-	g.stats = runStats{Turns: 23, MonstersKilled: 7, HistoryKnown: true, DifficultyKnown: true, DifficultyDefeated: 250}
+	g.stats = runStats{Turns: 23, MonstersKilled: 7, DifficultyDefeated: 250}
 	if err := g.save(); err != nil {
 		t.Fatal(err)
 	}
@@ -548,7 +486,8 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 	if output, err := build.CombinedOutput(); err != nil {
 		t.Fatalf("build executable: %v\n%s", err, output)
 	}
-	command := exec.Command(binary, "--load", "--save-file", path)
+	path = g.saveFile
+	command := exec.Command(binary, "--load-file", path, "--save-file-path", dir)
 	command.Env = testEnv
 	command.Stdin, command.Stdout, command.Stderr = strings.NewReader(commands), &stdout, &stderr
 	if err := command.Run(); err != nil {
@@ -565,6 +504,9 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 		}
 	}
 	output := stdout.String()
+	if !strings.HasSuffix(output, fmt.Sprintf("Dungeon seed: %d\n", g.seed)) {
+		t.Fatal("victory should finish by reporting the saved dungeon's seed")
+	}
 	if strings.Index(output, "=== Personal Records ===") > strings.Index(output, "=== Ghost Dog Dungeon:") || strings.LastIndex(output, "=== Personal Records ===") < strings.Index(output, "Victory!") {
 		t.Fatal("personal records should appear at startup and after victory")
 	}
@@ -581,7 +523,7 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 	stdout.Reset()
 	stderr.Reset()
 	freshSave := filepath.Join(dir, "fresh.json")
-	command = exec.Command(binary, "--seed", "1", "--save-file", freshSave)
+	command = exec.Command(binary, "--seed", "1", "--save-file-path", dir)
 	command.Env = testEnv
 	command.Stdin = strings.NewReader("book\ni\ndrop 1\ndrop 5\nsave\nquit\n")
 	command.Stdout, command.Stderr = &stdout, &stderr
@@ -597,6 +539,7 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 			t.Fatalf("a fresh game's book exposed side story %q", story.Title)
 		}
 	}
+	freshSave = lastSavePath(t, output)
 	fresh, err := loadGame(freshSave)
 	if err != nil || fresh.player.Potions != 2 || fresh.stats.Turns != 1 {
 		t.Fatalf("drop command did not survive the CLI save: err=%v", err)
@@ -610,11 +553,11 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 	}
 	deathSave := filepath.Join(dir, "death.json")
 	death := openArena()
-	death.saveFile, death.timestampedSaves = deathSave, false
-	// An older save's record path must not override the current user's home.
+	death.saveDir = filepath.Dir(deathSave)
+	// Record storage is a runtime setting, independent of the saved dungeon.
 	death.recordsFile = filepath.Join(dir, "ghostdog-records.json")
 	death.player.HP = 1
-	death.stats = runStats{Turns: 10, MonstersKilled: 12, HistoryKnown: true, DifficultyKnown: true, DifficultyDefeated: 275}
+	death.stats = runStats{Turns: 10, MonstersKilled: 12, DifficultyDefeated: 275}
 	attacker := newMonster(monsterOrc)
 	attacker.Pos, attacker.MinDamage, attacker.MaxDamage = pos{6, 5}, 5, 5
 	death.current().Monsters = []*monster{&attacker}
@@ -623,7 +566,8 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 	}
 	stdout.Reset()
 	stderr.Reset()
-	command = exec.Command(binary, "--load-file", deathSave)
+	deathSave = death.saveFile
+	command = exec.Command(binary, "--load-file", deathSave, "--save-file-path", dir)
 	command.Env = testEnv
 	command.Stdin = strings.NewReader(".\n")
 	command.Stdout, command.Stderr = &stdout, &stderr
@@ -632,6 +576,9 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 	}
 	output = stdout.String()
 	deathIndex := strings.Index(output, "You fall in the dark.")
+	if !strings.HasSuffix(output, fmt.Sprintf("Dungeon seed: %d\n", death.seed)) {
+		t.Fatal("death should finish by reporting the saved dungeon's seed")
+	}
 	if deathIndex < 0 || strings.Count(output, "=== Personal Records ===") != 2 || strings.LastIndex(output, "Most monsters killed record: 12") < deathIndex || strings.LastIndex(output, "Most difficulty defeated record: 275 points") < deathIndex {
 		t.Fatal("death should automatically show the updated personal records")
 	}
@@ -640,18 +587,19 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 		t.Fatalf("death should automatically update home-directory records: %+v, err=%v", records, err)
 	}
 	if _, err := os.Stat(death.recordsFile); !os.IsNotExist(err) {
-		t.Fatal("loaded games should not write records beside an older save")
+		t.Fatal("loaded games should use the current user's home for records")
 	}
 	eventSave := filepath.Join(dir, "event.json")
 	eventGame := openArena()
-	eventGame.saveFile, eventGame.timestampedSaves = eventSave, false
+	eventGame.saveDir = filepath.Dir(eventSave)
 	eventGame.current().Events = []floorEvent{testFriendlyGhost(pos{8, 5})}
 	if err := eventGame.save(); err != nil {
 		t.Fatal(err)
 	}
 	stdout.Reset()
 	stderr.Reset()
-	command = exec.Command(binary, "--load-file", eventSave)
+	eventSave = eventGame.saveFile
+	command = exec.Command(binary, "--load-file", eventSave, "--save-file-path", dir)
 	command.Env = testEnv
 	command.Stdin = strings.NewReader("d\nd\nmap\nbook\ny\nchoose 3\nsave\nload\ny\nsave\nquit\n")
 	command.Stdout, command.Stderr = &stdout, &stderr
@@ -661,7 +609,7 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 	if !strings.Contains(stdout.String(), "friendly ghost offers a choice") || !strings.Contains(stdout.String(), "Press y (interact)") || !strings.Contains(stdout.String(), "offers one gift") || !strings.Contains(stdout.String(), "3. Ghost Dog recall scroll") || !strings.Contains(stdout.String(), "one Ghost Dog recall scroll") || !strings.Contains(stdout.String(), "nothing nearby") {
 		t.Fatal("the executable did not complete the one-use event flow")
 	}
-	eventLoaded, err := loadGame(eventSave)
+	eventLoaded, err := loadGame(lastSavePath(t, stdout.String()))
 	if err != nil || eventLoaded.player.GhostRecallScrolls != 1 || eventLoaded.player.BlinkStones != 0 || eventLoaded.stats.Turns != 3 || !eventLoaded.current().Events[0].Used {
 		t.Fatal("the executable should preserve movement and the gift's one-turn cost after loading")
 	}

@@ -105,8 +105,10 @@ func (g *game) processFreeCommand(cmd string) bool {
 			g.addMessage("Load failed: " + err.Error())
 		} else {
 			recordsFile := g.recordsFile
+			saveDir := g.saveDir
 			*g = *loaded
 			g.recordsFile = recordsFile
+			g.saveDir = saveDir
 			g.dogFocus = nil
 			g.addMessage("Game loaded from " + g.saveFile)
 		}
@@ -283,7 +285,7 @@ func (g *game) search() bool {
 		g.addMessage("You search nearby stone, but uncover nothing unusual.")
 		return true
 	}
-	if hidden == lvl.Secret && lvl.HasEscapeStair && g.bossAlive(lvl) {
+	if hidden == lvl.primarySecret() && lvl.HasEscapeStair && g.bossAlive(lvl) {
 		g.addMessage("Ancient death-magic locks the hidden seam tight. The Lich still binds it.")
 		return true
 	}
@@ -293,7 +295,7 @@ func (g *game) search() bool {
 }
 
 func (g *game) revealSecretRoom(lvl *level) {
-	revealRoom(lvl, lvl.Secret)
+	revealRoom(lvl, lvl.primarySecret())
 }
 
 func revealRoom(lvl *level, hidden *secretRoom) {
@@ -328,7 +330,7 @@ func (g *game) tryDescend() bool {
 
 func (g *game) tryAscend() bool {
 	lvl := g.current()
-	if lvl.HasEscapeStair && lvl.Secret != nil && lvl.Secret.Revealed && g.player.Pos == lvl.EscapeStairs {
+	if lvl.HasEscapeStair && lvl.primarySecret() != nil && lvl.primarySecret().Revealed && g.player.Pos == lvl.EscapeStairs {
 		g.won = true
 		g.addMessage("You climb the hidden stairs and leave the dungeon behind.")
 		return true

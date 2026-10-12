@@ -55,9 +55,6 @@ func (g *game) addSecretSideStory(lvl *level) {
 
 func (g *game) addRoomSideStory(lvl *level, hidden *secretRoom) {
 	id := hidden.SideStoryID
-	if id == 0 {
-		id = lvl.Index + 1
-	}
 	if id < 1 || id > len(ghostDogSideStories) {
 		return
 	}

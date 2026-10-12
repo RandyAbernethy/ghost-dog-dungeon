@@ -55,7 +55,7 @@ func TestNewGameHasTenLevelsBossDogAndVariety(t *testing.T) {
 		t.Fatal("expected boss on final level")
 	}
 	bottom := g.levels[levelCount-1]
-	if bottom.Secret == nil || !bottom.HasEscapeStair {
+	if bottom.primarySecret() == nil || !bottom.HasEscapeStair {
 		t.Fatal("expected final level to contain a hidden escape sanctum")
 	}
 	if len(kinds) < 10 {
@@ -101,8 +101,7 @@ func TestMonsterDifficultyIncreasesWhileCountsCanVary(t *testing.T) {
 }
 
 func TestSaveAndLoadRoundTrip(t *testing.T) {
-	savePath := filepath.Join(t.TempDir(), "savegame.json")
-	g := newGameWithSaveFile(13, savePath)
+	g := newGameWithSaveDir(13, t.TempDir())
 	g.currentLevel = 2
 	g.player.Pos = g.levels[2].Start
 	g.player.Potions = 5
@@ -119,7 +118,7 @@ func TestSaveAndLoadRoundTrip(t *testing.T) {
 	if err := g.save(); err != nil {
 		t.Fatalf("save() error = %v", err)
 	}
-	loaded, err := loadGame(savePath)
+	loaded, err := loadGame(g.saveFile)
 	if err != nil {
 		t.Fatalf("loadGame() error = %v", err)
 	}
@@ -474,10 +473,10 @@ func TestSearchRevealsSecretRoomAndHiddenLoot(t *testing.T) {
 		lvl.Tiles[p.Y][p.X] = '.'
 	}
 	g.player.Pos = pos{X: 3, Y: 3}
-	lvl.Secret = &secretRoom{
+	lvl.Secrets = []*secretRoom{{
 		Door:  pos{X: 4, Y: 3},
 		Tiles: []pos{{X: 5, Y: 2}, {X: 5, Y: 3}, {X: 5, Y: 4}, {X: 6, Y: 2}, {X: 6, Y: 3}, {X: 6, Y: 4}},
-	}
+	}}
 	lvl.Items = []item{{Pos: pos{X: 5, Y: 3}, Kind: itemSunOrb, Name: "sun orb", Glyph: '*'}}
 	if got := len(g.visibleItems(10)); got != 0 {
 		t.Fatalf("hidden loot should stay invisible before reveal, got %d visible items", got)
@@ -485,7 +484,7 @@ func TestSearchRevealsSecretRoomAndHiddenLoot(t *testing.T) {
 	if !g.search() {
 		t.Fatal("search should consume a turn")
 	}
-	if !lvl.Secret.Revealed {
+	if !lvl.primarySecret().Revealed {
 		t.Fatal("search should reveal the secret room")
 	}
 	if lvl.Tiles[3][4] != '.' || lvl.Tiles[3][5] != '.' {
@@ -500,10 +499,10 @@ func TestBottomEscapeStaysSealedUntilLichDies(t *testing.T) {
 	g := newGame(15)
 	g.currentLevel = levelCount - 1
 	lvl := g.current()
-	if lvl.Secret == nil || !lvl.HasEscapeStair {
+	if lvl.primarySecret() == nil || !lvl.HasEscapeStair {
 		t.Fatal("expected bottom floor to have a hidden escape sanctum")
 	}
-	guard, ok := floorNextToDoor(g, lvl.Secret.Door)
+	guard, ok := floorNextToDoor(g, lvl.primarySecret().Door)
 	if !ok {
 		t.Fatal("expected a floor tile next to the hidden sanctum door")
 	}
@@ -512,7 +511,7 @@ func TestBottomEscapeStaysSealedUntilLichDies(t *testing.T) {
 		t.Fatal("expected the boss to still be alive")
 	}
 	g.search()
-	if lvl.Secret.Revealed {
+	if lvl.primarySecret().Revealed {
 		t.Fatal("escape sanctum should remain sealed while the boss lives")
 	}
 	if !strings.Contains(strings.Join(g.messages, "\n"), "Lich still binds") {
@@ -532,7 +531,7 @@ func TestBossDeathUnlocksEscapeButDoesNotImmediatelyWin(t *testing.T) {
 	if g.won {
 		t.Fatal("killing the boss should not immediately win the game")
 	}
-	if lvl.Secret == nil || !lvl.Secret.Revealed || !lvl.HasEscapeStair {
+	if lvl.primarySecret() == nil || !lvl.primarySecret().Revealed || !lvl.HasEscapeStair {
 		t.Fatal("boss death should reveal the escape sanctum")
 	}
 	g.player.Pos = lvl.EscapeStairs
@@ -607,11 +606,12 @@ func TestContentPoolsExposeNewMonstersWeaponsArmorAndMagic(t *testing.T) {
 func TestRunShowsDungeonSaveLoadAndQuit(t *testing.T) {
 	savePath := filepath.Join(t.TempDir(), "savegame.json")
 	var stdout, stderr bytes.Buffer
-	err := run([]string{"--seed", "3", "--save-file", savePath}, strings.NewReader("save\nload\nquit\n"), &stdout, &stderr)
+	err := run([]string{"--seed", "3", "--save-file-path", filepath.Dir(savePath)}, strings.NewReader("save\nload\nquit\n"), &stdout, &stderr)
 	if err != nil {
 		t.Fatalf("run() error = %v", err)
 	}
 	plain := stripANSI(stdout.String())
+	savePath = lastSavePath(t, plain)
 	for _, want := range []string{"Ghost Dog Dungeon: Level 1/10", "Game saved to " + savePath, "Game loaded from " + savePath, "You retreat before the dungeon can claim you."} {
 		if !strings.Contains(plain, want) {
 			t.Fatalf("output missing %q in %q", want, plain)

@@ -91,6 +91,9 @@ func (g *game) damageMonsterPiercing(m *monster, damage int, verb string, pierci
 			g.addMessage("The Dread Lich drops the tenth Ghost Dog story scroll.")
 		}
 	}
+	if epicMonster(m.Kind) {
+		g.dropEpicTreasure(m)
+	}
 	if g.dog.Freed && !g.dog.Alive && g.rng.Intn(100) < 10 {
 		lvl.Items = append(lvl.Items, item{Pos: m.Pos, Kind: itemGhostRecallScroll, Name: "Ghost Dog recall scroll", Glyph: '?'})
 		g.addMessage("A fallen foe leaves behind a Ghost Dog recall scroll.")
@@ -99,7 +102,7 @@ func (g *game) damageMonsterPiercing(m *monster, damage int, verb string, pierci
 
 func (g *game) unlockEscapeRoute() {
 	lvl := g.current()
-	if lvl.HasEscapeStair && lvl.Secret != nil && !lvl.Secret.Revealed {
+	if lvl.HasEscapeStair && lvl.primarySecret() != nil && !lvl.primarySecret().Revealed {
 		g.revealSecretRoom(lvl)
 		g.addMessage("The Dread Lich collapses and hidden stone grinds open around a secret stairway out.")
 		return
