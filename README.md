@@ -163,8 +163,9 @@ stairwell guardians, 2-4 monsters which spawn on a floor when you descend below 
 4-8 health to you and 8-12 health to Ghost Dog. Stairwell guardians use smaller budgets appropriate to their floor.
 
 Searching suspicious walls allows the player to discover secret passages. Each game has 5-8 secret chambers, including
-the escape sanctum and possible nested chambers. Floors can have zero, one, two, or rarely three secret chambers. Every
-secret chamber contains a fountain and its own side-story scroll.
+the escape sanctum and possible linked chambers. Floors can have zero, one, two, or rarely three secret chambers. Every
+secret chamber contains a fountain and its own side-story scroll. Linked chambers connect through separate hidden
+doors: discover the first chamber, then search its walls for the next. Chambers never surround other secret rooms.
 
 Floor monster pools include new monster types with each level, while the Dread Lich is always on floor ten. Monsters
 such as Tunnel Bats, Cave Crawlers, Rust Guards, Barrow Archers, Grave Acolytes, Ember Hounds, Obsidian Guards, and
@@ -207,10 +208,10 @@ Weapon and Armor types:
 
 Each floor selects from its weapon and armor pool, so equipment need not appear every run.
 
-Nested secret rooms on deep floors have a chance to replace one treasure with a supreme relic. There is at most one
-relic generated as room treasure per dungeon; finding one through exploration requires an eligible inner chamber.
-Defeating an Epic monster can award an additional relic, even in a dungeon without nested rooms. These pieces are never
-ordinary loot or friendly-ghost gifts.
+The second chamber in a secret-room chain on a deep floor has a chance to replace one treasure with a supreme relic.
+There is at most one relic generated as room treasure per dungeon; finding one through exploration requires an eligible
+linked chamber. Defeating an Epic monster can award an additional relic, even in a dungeon without linked rooms.
+These pieces are never ordinary loot or friendly-ghost gifts.
 
 | God armor              | Protection and power                                                                              |
 | ---------------------- | ------------------------------------------------------------------------------------------------- |
@@ -270,6 +271,13 @@ Press **j** or type `challenges` to see the current run and personal records:
   count; each monster counts once.
 - **Most difficulty defeated:** the greatest sum of slain monsters' difficulty points in a finished run. Tougher
   monsters contribute more than weaker ones. Returning stairwell guardians count toward both kill records.
+
+Movement effects name their cause: spider silk webs you, Frostbound Hounds freeze your feet, Chain Imps pin you with
+silver chains, and Rift Weavers bind you with rift magic. Each costs one attempted movement turn; other actions and
+reading screens keep their existing behavior. The Oracle Crown prevents all four effects and clears them when equipped.
+
+Save format 2 stores each movement effect and the connected chamber layout. Saves from earlier builds are not
+supported; start a new game. Personal records are retained.
 
 Records are saved automatically in `~/.ghost-dog-data.json` when you die or escape, without using the save command.
 Personal records appear at game startup and game end, and are shared across runs and save files. Saves retain equipment,

@@ -87,6 +87,7 @@ func (g *game) loop(stdin io.Reader, stdout io.Writer) error {
 		} else {
 			fmt.Fprintln(stdout, "\nYou escaped the dungeon. Victory!")
 		}
+		fmt.Fprintln(stdout, "Beside the door, you see a clean bowl filled with fresh water.")
 	case g.player.HP <= 0:
 		g.render(stdout)
 		fmt.Fprintln(stdout, "\nYou fall in the dark. The Dread Lich keeps the dungeon.")

@@ -99,7 +99,7 @@ func TestEachSuccessfulActionReplacesThePreviousTurnLog(t *testing.T) {
 	if !reflect.DeepEqual(g.messages, []string{"You wait and let the dungeon move around you."}) || g.stats.Turns != 3 {
 		t.Fatal("a quiet wait must not retain the last move or pickup")
 	}
-	g.player.WebbedTurns = 1
+	g.player.BoundTurns, g.player.Binding = 1, bindingWebs
 	beforePos := g.player.Pos
 	g.processCommand("d")
 	if !reflect.DeepEqual(g.messages, []string{"Sticky webs hold you in place for a turn."}) || g.stats.Turns != 4 || g.player.Pos != beforePos {

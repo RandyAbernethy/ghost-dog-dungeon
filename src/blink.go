@@ -15,9 +15,6 @@ func (g *game) safestBlinkLanding() (blinkLanding, bool) {
 		for _, p := range room.Tiles {
 			secret[p] = true
 		}
-		for _, p := range room.Walls {
-			secret[p] = true
-		}
 	}
 	clearance := map[pos]int{}
 	for y := 1; y < mapHeight-1; y++ {

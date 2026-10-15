@@ -25,8 +25,12 @@ func (g *game) render(w io.Writer) {
 	} else {
 		fmt.Fprintln(w, "Ghost dog: not yet freed")
 	}
-	if g.player.ShieldTurns > 0 || g.player.HexedTurns > 0 || g.player.WebbedTurns > 0 {
-		fmt.Fprintf(w, "Effects: ward %d  hex %d  web %d\n", g.player.ShieldTurns, g.player.HexedTurns, g.player.WebbedTurns)
+	if g.player.ShieldTurns > 0 || g.player.HexedTurns > 0 || g.player.BoundTurns > 0 {
+		effects := fmt.Sprintf("Effects: ward %d  hex %d", g.player.ShieldTurns, g.player.HexedTurns)
+		if g.player.BoundTurns > 0 {
+			effects += fmt.Sprintf("  %s %d", g.player.Binding.label(), g.player.BoundTurns)
+		}
+		fmt.Fprintln(w, effects)
 	}
 	for y := 0; y < mapHeight; y++ {
 		var line strings.Builder

@@ -35,14 +35,6 @@ func (g *game) applyWeaponPower(target *monster, dealt int) {
 	}
 }
 
-func (g *game) entanglePlayer() {
-	if g.player.hasArmorPower(powerClearMind) {
-		g.addMessage("Oracle Crown dissolves the binding.")
-		return
-	}
-	g.player.WebbedTurns = 1
-}
-
 func (g *game) hexPlayer() {
 	if g.player.hasArmorPower(powerClearMind) {
 		g.addMessage("Oracle Crown scatters the curse.")

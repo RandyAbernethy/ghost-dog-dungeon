@@ -327,7 +327,7 @@ func (g *game) equipCommand(cmd string) bool {
 		}
 		g.player.setArmor(a)
 		if g.player.hasArmorPower(powerClearMind) {
-			g.player.HexedTurns, g.player.WebbedTurns = 0, 0
+			g.player.HexedTurns, g.player.BoundTurns, g.player.Binding = 0, 0, ""
 		}
 		g.addMessage(fmt.Sprintf("You equip %s. %s Swapping equipment takes a turn.", a.Name, armorTraits(a)))
 	}

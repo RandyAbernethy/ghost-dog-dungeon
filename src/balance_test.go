@@ -14,7 +14,7 @@ func TestFountainsIncludeOrdinaryFloorsAndEverySecretRoom(t *testing.T) {
 		for _, lvl := range g.levels {
 			secret := map[pos]bool{}
 			for _, hidden := range lvl.secretRooms() {
-				for _, p := range hidden.floorTiles() {
+				for _, p := range hidden.Tiles {
 					secret[p] = true
 				}
 			}
@@ -39,7 +39,7 @@ func TestFountainsIncludeOrdinaryFloorsAndEverySecretRoom(t *testing.T) {
 			}
 			for _, hidden := range lvl.secretRooms() {
 				count := 0
-				for _, p := range hidden.floorTiles() {
+				for _, p := range hidden.Tiles {
 					if g.fountainAt(lvl, p) != nil {
 						count++
 					}

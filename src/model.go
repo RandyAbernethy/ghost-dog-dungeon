@@ -148,29 +148,30 @@ type monster struct {
 }
 
 type player struct {
-	Pos                pos      `json:"pos"`
-	HP                 int      `json:"hp"`
-	MaxHP              int      `json:"max_hp"`
-	Weapon             weapon   `json:"weapon"`
-	HeadArmor          armor    `json:"head_armor"`
-	BodyArmor          armor    `json:"body_armor"`
-	LegArmor           armor    `json:"leg_armor"`
-	Potions            int      `json:"potions"`
-	FireScrolls        int      `json:"fire_scrolls"`
-	BlinkStones        int      `json:"blink_stones"`
-	WardingCharms      int      `json:"warding_charms"`
-	SunOrbs            int      `json:"sun_orbs"`
-	FrostCharms        int      `json:"frost_charms"`
-	StarfireOrbs       int      `json:"starfire_orbs"`
-	PhoenixAshes       int      `json:"phoenix_ashes"`
-	GhostRecallScrolls int      `json:"ghost_recall_scrolls,omitempty"`
-	StoryChapters      []int    `json:"story_chapters,omitempty"`
-	SideStories        []int    `json:"side_stories,omitempty"`
-	Weapons            []weapon `json:"weapons,omitempty"`
-	Armors             []armor  `json:"armors,omitempty"`
-	ShieldTurns        int      `json:"shield_turns"`
-	HexedTurns         int      `json:"hexed_turns"`
-	WebbedTurns        int      `json:"webbed_turns"`
+	Pos                pos         `json:"pos"`
+	HP                 int         `json:"hp"`
+	MaxHP              int         `json:"max_hp"`
+	Weapon             weapon      `json:"weapon"`
+	HeadArmor          armor       `json:"head_armor"`
+	BodyArmor          armor       `json:"body_armor"`
+	LegArmor           armor       `json:"leg_armor"`
+	Potions            int         `json:"potions"`
+	FireScrolls        int         `json:"fire_scrolls"`
+	BlinkStones        int         `json:"blink_stones"`
+	WardingCharms      int         `json:"warding_charms"`
+	SunOrbs            int         `json:"sun_orbs"`
+	FrostCharms        int         `json:"frost_charms"`
+	StarfireOrbs       int         `json:"starfire_orbs"`
+	PhoenixAshes       int         `json:"phoenix_ashes"`
+	GhostRecallScrolls int         `json:"ghost_recall_scrolls,omitempty"`
+	StoryChapters      []int       `json:"story_chapters,omitempty"`
+	SideStories        []int       `json:"side_stories,omitempty"`
+	Weapons            []weapon    `json:"weapons,omitempty"`
+	Armors             []armor     `json:"armors,omitempty"`
+	ShieldTurns        int         `json:"shield_turns"`
+	HexedTurns         int         `json:"hexed_turns"`
+	BoundTurns         int         `json:"bound_turns"`
+	Binding            bindingKind `json:"binding,omitempty"`
 }
 
 type ghostDog struct {
@@ -215,8 +216,7 @@ type secretRoom struct {
 	Door        pos         `json:"door"`
 	Tiles       []pos       `json:"tiles"`
 	Revealed    bool        `json:"revealed"`
-	Walls       []pos       `json:"walls,omitempty"`
-	Inner       *secretRoom `json:"inner,omitempty"`
+	Next        *secretRoom `json:"next,omitempty"`
 	SideStoryID int         `json:"side_story_id,omitempty"`
 }
 

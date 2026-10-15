@@ -16,9 +16,12 @@ func (g *game) processCommand(cmd string) {
 	previousMessages := g.messages
 	g.messages = nil
 	g.turnDamage = make(map[*monster]int)
-	if g.player.WebbedTurns > 0 && isMoveCommand(cmd) {
-		g.player.WebbedTurns--
-		g.addMessage("Sticky webs hold you in place for a turn.")
+	if g.player.BoundTurns > 0 && isMoveCommand(cmd) {
+		g.addMessage(g.player.Binding.blockedMessage())
+		g.player.BoundTurns--
+		if g.player.BoundTurns == 0 {
+			g.player.Binding = ""
+		}
 		g.stats.Turns++
 		g.advanceEnemies()
 		return
@@ -304,7 +307,7 @@ func revealRoom(lvl *level, hidden *secretRoom) {
 	}
 	hidden.Revealed = true
 	lvl.Tiles[hidden.Door.Y][hidden.Door.X] = '.'
-	for _, p := range hidden.floorTiles() {
+	for _, p := range hidden.Tiles {
 		lvl.Tiles[p.Y][p.X] = '.'
 	}
 }

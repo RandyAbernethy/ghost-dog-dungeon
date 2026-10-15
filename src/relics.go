@@ -44,21 +44,21 @@ func relicDepth(depth int) bool { return depth >= 6 && depth <= 8 }
 
 // Relics replace ordinary treasure, preserving room space for the scroll and fountain.
 // This is generation-only: neither discovery nor loading rolls for another reward.
-func (g *game) addNestedRelic(lvl *level) {
+func (g *game) addLinkedRelic(lvl *level) {
 	if !relicDepth(lvl.Index) {
 		return
 	}
 	roots := lvl.Secrets
-	var nested []*secretRoom
+	var laterRooms []*secretRoom
 	for _, root := range roots {
 		if root == nil {
 			continue
 		}
-		for inner := root.Inner; inner != nil; inner = inner.Inner {
-			nested = append(nested, inner)
+		for inner := root.Next; inner != nil; inner = inner.Next {
+			laterRooms = append(laterRooms, inner)
 		}
 	}
-	if len(nested) == 0 {
+	if len(laterRooms) == 0 {
 		return
 	}
 	for _, floor := range g.levels {
@@ -75,8 +75,8 @@ func (g *game) addNestedRelic(lvl *level) {
 		return
 	}
 	var slots []int
-	for _, hidden := range nested {
-		for _, p := range hidden.floorTiles() {
+	for _, hidden := range laterRooms {
+		for _, p := range hidden.Tiles {
 			for i, it := range lvl.Items {
 				if it.Pos == p && it.Kind != itemSideStoryScroll && it.Kind != itemStoryScroll {
 					slots = append(slots, i)

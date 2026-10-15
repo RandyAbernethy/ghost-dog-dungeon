@@ -97,7 +97,7 @@ func TestEverySecretRoomAddsOneSideStory(t *testing.T) {
 					if id == 0 {
 						id = lvl.Index + 1
 					}
-					for _, p := range hidden.floorTiles() {
+					for _, p := range hidden.Tiles {
 						inside = inside || (p == it.Pos && it.SideStoryID == id)
 					}
 				}
@@ -326,7 +326,7 @@ func TestRunCountersCountActionsKillsAndPermanentDogFalls(t *testing.T) {
 		t.Fatal("information and failed actions should not count")
 	}
 	g.processCommand(".")
-	g.player.WebbedTurns = 1
+	g.player.BoundTurns, g.player.Binding = 1, bindingWebs
 	g.processCommand("d")
 	if g.stats.Turns != 2 {
 		t.Fatal("waiting and losing a move to webbing should count")
@@ -493,7 +493,7 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 	if err := command.Run(); err != nil {
 		t.Fatalf("run executable: %v\n%s", err, stderr.String())
 	}
-	for _, want := range []string{"=== Book of Ghost Dog ===", ghostDogStory[0], ghostDogSideStories[1].Text, "You equip Test Spear", "Victory!", "Fewest turns record: 25", "Ghost Dog safe escape record: achieved", "Most monsters killed record: 7", "Most difficulty defeated record: 250 points"} {
+	for _, want := range []string{"=== Book of Ghost Dog ===", ghostDogStory[0], ghostDogSideStories[1].Text, "You equip Test Spear", "Victory!", "Beside the door, you see the clean bowl Mara left, filled with fresh water for Ghost Dog.", "Fewest turns record: 25", "Ghost Dog safe escape record: achieved", "Most monsters killed record: 7", "Most difficulty defeated record: 250 points"} {
 		if !strings.Contains(stdout.String(), want) {
 			t.Fatalf("game CLI did not show %q", want)
 		}

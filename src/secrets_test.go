@@ -11,6 +11,9 @@ import (
 func TestDungeonSecretCountAndReachability(t *testing.T) {
 	for seed := int64(-1); seed <= 200; seed++ {
 		g := newGame(seed)
+		if g.generationError != nil {
+			t.Fatalf("seed %d: %v", seed, g.generationError)
+		}
 		total := 0
 		for depth, lvl := range g.levels {
 			if lvl.primarySecret() == nil {
@@ -21,7 +24,14 @@ func TestDungeonSecretCountAndReachability(t *testing.T) {
 				t.Fatalf("seed %d floor %d has too many chambers", seed, depth+1)
 			}
 			g.currentLevel = depth
+			occupied := map[pos]bool{}
 			for _, hidden := range lvl.secretRooms() {
+				for _, p := range append([]pos{hidden.Door}, hidden.Tiles...) {
+					if occupied[p] {
+						t.Fatalf("seed %d floor %d: secret chambers overlap", seed, depth+1)
+					}
+					occupied[p] = true
+				}
 				if hidden.Revealed || lvl.Tiles[hidden.Door.Y][hidden.Door.X] != '#' {
 					t.Fatalf("seed %d floor %d starts with a discovered room", seed, depth+1)
 				}
@@ -30,16 +40,8 @@ func TestDungeonSecretCountAndReachability(t *testing.T) {
 						t.Fatalf("seed %d floor %d exposes hidden tiles", seed, depth+1)
 					}
 				}
-				if inner := hidden.Inner; inner != nil {
-					inside := map[pos]bool{}
-					for _, p := range hidden.Tiles {
-						inside[p] = true
-					}
-					for _, p := range append(append([]pos{inner.Door}, inner.Tiles...), inner.Walls...) {
-						if !inside[p] {
-							t.Fatalf("seed %d floor %d puts its inner room outside its parent", seed, depth+1)
-						}
-					}
+				if next := hidden.Next; next != nil {
+					assertLinkedSecretGeometry(t, lvl, hidden, next, seed)
 				}
 			}
 			for _, hidden := range lvl.secretRooms() {
@@ -48,10 +50,22 @@ func TestDungeonSecretCountAndReachability(t *testing.T) {
 					t.Fatalf("seed %d floor %d has an unreachable secret door", seed, depth+1)
 				}
 				revealRoom(lvl, hidden)
-				for _, p := range hidden.floorTiles() {
+				for _, p := range hidden.Tiles {
 					if !reachable(lvl.Tiles, lvl.Start, p) {
 						t.Fatalf("seed %d floor %d has unreachable secret-room contents", seed, depth+1)
 					}
+				}
+			}
+			for _, parent := range lvl.secretRooms() {
+				if parent.Next == nil {
+					continue
+				}
+				blocked := cloneTiles(lvl.Tiles)
+				for _, p := range parent.Tiles {
+					blocked[p.Y][p.X] = '#'
+				}
+				if reachable(blocked, lvl.Start, parent.Next.Tiles[0]) {
+					t.Fatalf("seed %d floor %d: second chamber has a route bypassing the first", seed, depth+1)
 				}
 			}
 		}
@@ -61,7 +75,7 @@ func TestDungeonSecretCountAndReachability(t *testing.T) {
 	}
 }
 
-func nestedGameForTest(t *testing.T, path string) *game {
+func linkedGameForTest(t *testing.T, path string) *game {
 	t.Helper()
 	for seed := int64(1); seed <= 100; seed++ {
 		g := newGameWithSaveDir(seed, filepath.Dir(path))
@@ -69,7 +83,7 @@ func nestedGameForTest(t *testing.T, path string) *game {
 			t.Fatal(g.generationError)
 		}
 		for depth, lvl := range g.levels {
-			if lvl.primarySecret() != nil && lvl.primarySecret().Inner != nil {
+			if lvl.primarySecret() != nil && lvl.primarySecret().Next != nil {
 				g.currentLevel = depth
 				g.player.Pos = lvl.Start
 				return g
@@ -80,11 +94,11 @@ func nestedGameForTest(t *testing.T, path string) *game {
 	return nil
 }
 
-func TestNestedRoomDiscoveryRewardsAndFountainRenewal(t *testing.T) {
-	g := nestedGameForTest(t, "")
+func TestLinkedRoomDiscoveryRewardsAndFountainRenewal(t *testing.T) {
+	g := linkedGameForTest(t, "")
 	lvl := g.current()
 	lvl.Monsters = nil
-	outer, inner := lvl.primarySecret(), lvl.primarySecret().Inner
+	outer, inner := lvl.primarySecret(), lvl.primarySecret().Next
 	approach, ok := floorNextToDoor(g, outer.Door)
 	if !ok {
 		t.Fatal("outer door has no approach")
@@ -94,7 +108,7 @@ func TestNestedRoomDiscoveryRewardsAndFountainRenewal(t *testing.T) {
 	if !outer.Revealed || inner.Revealed || g.stats.Turns != 1 {
 		t.Fatal("the first search should discover only the outer room and spend one turn")
 	}
-	for _, p := range append(append([]pos{inner.Door}, inner.Tiles...), inner.Walls...) {
+	for _, p := range append([]pos{inner.Door}, inner.Tiles...) {
 		if lvl.Tiles[p.Y][p.X] != '#' {
 			t.Fatal("opening the outer room must leave the inner chamber concealed")
 		}
@@ -134,11 +148,6 @@ func TestNestedRoomDiscoveryRewardsAndFountainRenewal(t *testing.T) {
 	if !inner.Revealed || lvl.Tiles[inner.Door.Y][inner.Door.X] != '.' {
 		t.Fatal("a second search from the outer room should open the inner door")
 	}
-	for _, p := range inner.Walls {
-		if p != inner.Door && lvl.Tiles[p.Y][p.X] != '#' {
-			t.Fatal("the inner chamber's surrounding walls should remain intact")
-		}
-	}
 	walkToSecretTestTile(t, g, scroll.Pos)
 	display.Reset()
 	g.renderBook(&display)
@@ -158,18 +167,18 @@ func TestNestedRoomDiscoveryRewardsAndFountainRenewal(t *testing.T) {
 	}
 }
 
-func TestNestedRoomSavePreservesSeparateDiscoveries(t *testing.T) {
+func TestLinkedRoomSavePreservesSeparateDiscoveries(t *testing.T) {
 	for _, revealInner := range []bool{false, true} {
 		name := "outer only"
 		if revealInner {
 			name = "both rooms"
 		}
 		t.Run(name, func(t *testing.T) {
-			g := nestedGameForTest(t, filepath.Join(t.TempDir(), "nested.json"))
+			g := linkedGameForTest(t, filepath.Join(t.TempDir(), "nested.json"))
 			lvl := g.current()
 			g.revealSecretRoom(lvl)
 			if revealInner {
-				revealRoom(lvl, lvl.primarySecret().Inner)
+				revealRoom(lvl, lvl.primarySecret().Next)
 			}
 			for i := range lvl.Fountains {
 				lvl.Fountains[i].Used = true
@@ -185,13 +194,13 @@ func TestNestedRoomSavePreservesSeparateDiscoveries(t *testing.T) {
 				t.Fatal("save/load must preserve each door, hidden tiles, rewards, and spent fountains")
 			}
 			if !revealInner {
-				approach, ok := floorNextToDoor(loaded, loaded.current().primarySecret().Inner.Door)
+				approach, ok := floorNextToDoor(loaded, loaded.current().primarySecret().Next.Door)
 				if !ok {
 					t.Fatal("loading should preserve access to the inner door")
 				}
 				loaded.player.Pos = approach
 				loaded.search()
-				if !loaded.current().primarySecret().Inner.Revealed {
+				if !loaded.current().primarySecret().Next.Revealed {
 					t.Fatal("the inner chamber should remain discoverable after loading")
 				}
 			}
@@ -199,7 +208,7 @@ func TestNestedRoomSavePreservesSeparateDiscoveries(t *testing.T) {
 	}
 }
 
-// Walk through the actual movement commands to check that the enclosed room's
+// Walk through the actual movement commands to check that the linked room's
 // entrance and rewards can be reached in play, rather than by teleporting.
 func walkToSecretTestTile(t *testing.T, g *game, target pos) {
 	t.Helper()
@@ -239,4 +248,51 @@ func walkToSecretTestTile(t *testing.T, g *game, target pos) {
 	if g.player.Pos != target {
 		t.Fatalf("movement stopped at %+v before reaching %+v", g.player.Pos, target)
 	}
+}
+
+func assertLinkedSecretGeometry(t *testing.T, lvl *level, parent, next *secretRoom, seed int64) {
+	t.Helper()
+	parentTiles := map[pos]bool{}
+	x0, x1, y0, y1 := mapWidth, 0, mapHeight, 0
+	for _, p := range parent.Tiles {
+		parentTiles[p] = true
+		x0, x1, y0, y1 = min(x0, p.X), max(x1, p.X), min(y0, p.Y), max(y1, p.Y)
+	}
+	if len(parentTiles) != (x1-x0+1)*(y1-y0+1) {
+		t.Fatalf("seed %d floor %d: first secret chamber has an enclosed hole", seed, lvl.Index+1)
+	}
+	touchesParent := false
+	for _, p := range append([]pos{next.Door}, next.Tiles...) {
+		if parentTiles[p] || (p.X >= x0 && p.X <= x1 && p.Y >= y0 && p.Y <= y1) {
+			t.Fatalf("seed %d floor %d: second chamber overlaps or is enclosed by the first", seed, lvl.Index+1)
+		}
+		for dy := -1; dy <= 1; dy++ {
+			for dx := -1; dx <= 1; dx++ {
+				q := pos{X: p.X + dx, Y: p.Y + dy}
+				if q.X < 0 || q.X >= mapWidth || q.Y < 0 || q.Y >= mapHeight || lvl.Tiles[q.Y][q.X] != '#' {
+					t.Fatalf("seed %d floor %d: second chamber can be approached from an ordinary corridor", seed, lvl.Index+1)
+				}
+				if parentTiles[q] {
+					if p != next.Door {
+						t.Fatalf("seed %d floor %d: chambers touch without a separating wall", seed, lvl.Index+1)
+					}
+					if dx*dx+dy*dy == 1 {
+						touchesParent = true
+					}
+				}
+			}
+		}
+	}
+	if !touchesParent {
+		t.Fatalf("seed %d floor %d: second door does not connect to the first chamber", seed, lvl.Index+1)
+	}
+	for _, p := range next.Tiles {
+		for _, dir := range []pos{{X: 1}, {X: -1}, {Y: 1}, {Y: -1}} {
+			q := pos{X: p.X + dir.X, Y: p.Y + dir.Y}
+			if q == next.Door {
+				return
+			}
+		}
+	}
+	t.Fatalf("seed %d floor %d: second door does not connect to its chamber", seed, lvl.Index+1)
 }

@@ -15,7 +15,7 @@ func TestEscapeReturnsToMapFromCommandScreensForFree(t *testing.T) {
 	for _, screen := range []string{"i", "c", "m", "book", "equipment", "challenges"} {
 		t.Run(screen, func(t *testing.T) {
 			g := openArena()
-			g.player.WebbedTurns, g.player.HexedTurns, g.player.ShieldTurns = 1, 2, 3
+			g.player.BoundTurns, g.player.HexedTurns, g.player.ShieldTurns = 1, 2, 3
 			g.stats.Turns = 12
 			g.messages = []string{"You strike an enemy.", "The enemy recoils."}
 			beforeLog := append([]string(nil), g.messages...)

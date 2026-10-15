@@ -275,7 +275,7 @@ func (g *game) newMonsterPower(m *monster) bool {
 	switch m.Kind {
 	case monsterChainImp:
 		if d <= 3 && g.rng.Intn(100) < 25 {
-			g.entanglePlayer()
+			g.bindPlayer(bindingChains)
 			g.addMessage("A Chain Imp hooks your ankles with a silver chain.")
 			return true
 		}
@@ -300,7 +300,7 @@ func (g *game) newMonsterPower(m *monster) bool {
 			spots := g.openNeighbors(g.player.Pos, false)
 			if len(spots) > 0 {
 				m.Pos = spots[g.rng.Intn(len(spots))]
-				g.entanglePlayer()
+				g.bindPlayer(bindingRift)
 				g.addMessage("A Rift Weaver steps through a tear in the air and binds your feet.")
 				return true
 			}

@@ -72,7 +72,7 @@ func TestObjectPromptsRepeatOnlyAfterLeavingAndReturning(t *testing.T) {
 			if g.stats.Turns != turns {
 				t.Fatal("a blocked move should remain free")
 			}
-			g.player.WebbedTurns = 1
+			g.player.BoundTurns = 1
 			move("d", false) // Entanglement does not move the player.
 			move("a", false) // Outside the object's immediate area.
 			move("e", true)  // Return diagonally.

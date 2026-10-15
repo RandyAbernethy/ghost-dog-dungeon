@@ -29,11 +29,11 @@ func TestRelicsSpawnRarelyOnlyInInnerRoomsOnFloorsSevenThroughNine(t *testing.T)
 				if root == nil {
 					continue
 				}
-				for inner := root.Inner; inner != nil; inner = inner.Inner {
+				for inner := root.Next; inner != nil; inner = inner.Next {
 					if relicDepth(lvl.Index) {
 						eligible++
 					}
-					for _, p := range inner.floorTiles() {
+					for _, p := range inner.Tiles {
 						innerTiles[p] = true
 					}
 				}
@@ -101,8 +101,8 @@ func TestRelicsSpawnRarelyOnlyInInnerRoomsOnFloorsSevenThroughNine(t *testing.T)
 					if root == nil {
 						continue
 					}
-					for room := root.Inner; room != nil; room = room.Inner {
-						for _, p := range room.floorTiles() {
+					for room := root.Next; room != nil; room = room.Next {
+						for _, p := range room.Tiles {
 							if p == it.Pos {
 								outer, inner = root, room
 							}
@@ -157,9 +157,9 @@ func TestAllRelicsArePossibleAndExcludedFromOrdinaryLootAndGifts(t *testing.T) {
 		lvl := g.current()
 		lvl.Index = 6
 		inner := &secretRoom{Tiles: []pos{{12, 8}, {13, 8}, {12, 9}, {13, 9}}}
-		lvl.Secrets = []*secretRoom{{Tiles: []pos{{11, 8}}, Inner: inner}}
+		lvl.Secrets = []*secretRoom{{Tiles: []pos{{11, 8}}, Next: inner}}
 		lvl.Items = []item{{Pos: pos{12, 8}, Kind: itemPotion, Name: "healing potion", Glyph: '!'}}
-		g.addNestedRelic(lvl)
+		g.addLinkedRelic(lvl)
 		if relicItem(lvl.Items[0]) {
 			seen[lvl.Items[0].Name] = true
 		}
@@ -219,21 +219,21 @@ func TestRelicPowersActivateOnlyWhileEquipped(t *testing.T) {
 	}
 	g.player.HeadArmor = godArmorPieces[1]
 	g.hexPlayer()
-	g.entanglePlayer()
-	if g.player.HexedTurns != 0 || g.player.WebbedTurns != 0 {
+	g.bindPlayer(bindingWebs)
+	if g.player.HexedTurns != 0 || g.player.BoundTurns != 0 {
 		t.Fatal("Oracle Crown must prevent curses and bindings")
 	}
 	g.player.HeadArmor = armor{}
 	g.hexPlayer()
-	g.entanglePlayer()
-	if g.player.HexedTurns != 1 || g.player.WebbedTurns != 1 {
+	g.bindPlayer(bindingWebs)
+	if g.player.HexedTurns != 1 || g.player.BoundTurns != 1 {
 		t.Fatal("immunity should end when the crown is removed")
 	}
 	g.player.LegArmor = godArmorPieces[2]
 	m := newMonster(monsterOrc)
 	m.Pos, m.MinDamage, m.MaxDamage = pos{6, 5}, 40, 40
 	g.current().Monsters = []*monster{&m}
-	g.player.HexedTurns, g.player.WebbedTurns = 0, 0
+	g.player.HexedTurns, g.player.BoundTurns = 0, 0
 	g.attackPlayer(&m)
 	if m.HP != m.MaxHP-12 || g.player.HP >= 46 {
 		t.Fatal("Starthorn should retaliate after a survived damaging melee hit")
@@ -296,10 +296,10 @@ func TestRelicEquipmentAndEpicStateSurviveCommandsAndSave(t *testing.T) {
 	g.player.carryArmor(godArmorPieces[1])
 	wNumber := len(g.player.Weapons)
 	aNumber := wNumber + len(g.player.Armors)
-	g.player.HexedTurns, g.player.WebbedTurns = 1, 1
+	g.player.HexedTurns, g.player.BoundTurns = 1, 1
 	g.processCommand(fmt.Sprintf("equip %d", wNumber))
 	g.processCommand(fmt.Sprintf("equip %d", aNumber))
-	if g.stats.Turns != 2 || g.player.HexedTurns != 0 || g.player.WebbedTurns != 0 {
+	if g.stats.Turns != 2 || g.player.HexedTurns != 0 || g.player.BoundTurns != 0 {
 		t.Fatal("equipping the crown should clear effects and cost one turn")
 	}
 	epic := newMonster(monsterGraveTitan)

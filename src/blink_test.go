@@ -50,15 +50,15 @@ func TestBlinkStoneExcludesSecretRoomsAfterDiscovery(t *testing.T) {
 		g.current().Monsters = []*monster{&foe}
 		hidden := &secretRoom{
 			Door:  pos{24, 8},
-			Tiles: []pos{{25, 8}, {25, 9}, {26, 8}, {26, 9}, {27, 8}, {27, 9}},
-			Inner: &secretRoom{Door: pos{26, 8}, Tiles: []pos{{27, 8}, {27, 9}}},
+			Tiles: []pos{{25, 8}, {25, 9}, {26, 8}, {26, 9}},
+			Next:  &secretRoom{Door: pos{27, 8}, Tiles: []pos{{28, 8}, {28, 9}, {29, 8}, {29, 9}}},
 		}
 		g.current().Secrets = []*secretRoom{hidden}
 		if revealed > 0 {
 			revealRoom(g.current(), hidden)
 		}
 		if revealed > 1 {
-			revealRoom(g.current(), hidden.Inner)
+			revealRoom(g.current(), hidden.Next)
 		}
 		if !g.useBlinkStone() {
 			t.Fatal("an ordinary landing area is available")

@@ -23,7 +23,7 @@ func (g *game) secretPlan() ([levelCount]int, int) {
 		}
 		counts[choices[g.rng.Intn(len(choices))]]++
 	}
-	nested := -1
+	linked := -1
 	if g.rng.Intn(100) < 40 {
 		choices := []int{}
 		for depth, count := range counts[:levelCount-1] {
@@ -32,14 +32,14 @@ func (g *game) secretPlan() ([levelCount]int, int) {
 			}
 		}
 		if len(choices) > 0 {
-			nested = choices[g.rng.Intn(len(choices))]
+			linked = choices[g.rng.Intn(len(choices))]
 		}
 	}
-	return counts, nested
+	return counts, linked
 }
 
 func (g *game) buildDungeon() error {
-	counts, nested := g.secretPlan()
+	counts, linked := g.secretPlan()
 	storyIDs := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 	for i := len(storyIDs) - 1; i > 0; i-- {
 		j := g.rng.Intn(i + 1)
@@ -65,9 +65,9 @@ func (g *game) buildDungeon() error {
 					continue
 				}
 			}
-			if depth == nested {
-				g.addNestedSecretRoom(lvl)
-				if lvl.primarySecret() == nil || lvl.primarySecret().Inner == nil {
+			if depth == linked {
+				g.addLinkedSecretRooms(lvl)
+				if lvl.primarySecret() == nil || lvl.primarySecret().Next == nil {
 					continue
 				}
 			}

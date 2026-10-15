@@ -136,7 +136,7 @@ func TestLoadRejectsUnsupportedSaveFormats(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, version := range []int{0, saveFormatVersion + 1} {
+	for _, version := range []int{0, 1, saveFormatVersion + 1} {
 		var state saveState
 		if err := json.Unmarshal(data, &state); err != nil {
 			t.Fatal(err)

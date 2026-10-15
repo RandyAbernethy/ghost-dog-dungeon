@@ -232,7 +232,7 @@ func (g *game) monsterTurn(m *monster) {
 		}
 	case monsterSpider, monsterCaveCrawler:
 		if distance(m.Pos, g.player.Pos) <= 4 && g.rng.Intn(100) < 20 {
-			g.entanglePlayer()
+			g.bindPlayer(bindingWebs)
 			g.addMessage("A " + m.Name + " spits silk across your legs.")
 			return
 		}
@@ -368,7 +368,7 @@ func (g *game) attackPlayer(m *monster) {
 		source = "The Soul Leech drains your vitality"
 	case monsterSpider, monsterCaveCrawler:
 		if g.rng.Intn(100) < 25 {
-			g.entanglePlayer()
+			g.bindPlayer(bindingWebs)
 			source = "The " + m.Name + " bites and tangles you"
 		}
 	case monsterHexPriest:
@@ -378,7 +378,7 @@ func (g *game) attackPlayer(m *monster) {
 		}
 	case monsterFrostHound:
 		if g.rng.Intn(100) < 30 {
-			g.entanglePlayer()
+			g.bindPlayer(bindingIce)
 			source = "The Frostbound Hound bites and freezes your feet"
 		}
 	case monsterCrownlessKnight:

@@ -28,12 +28,13 @@ The file map below is relative to `src/`.
 - `main.go`: entry point, flags, startup errors.
 - `model.go`, `game.go`, `world.go`: data types, game initialization, common spatial helpers and seeded randomness.
 - `dungeon.go`, `layouts.go`, `generation.go`: dungeon plans, geometry, placement, and fountains.
-- `secrets.go`: independent and nested secret rooms, discovery geometry, rewards, and escape sanctum.
+- `secrets.go`: independent and linked secret rooms, discovery geometry, rewards, and escape sanctum.
 - `themes.go`, `difficulty.go`, `rosters.go`, `encounters.go`, `features.go`, `events.go`: floor identity, difficulty budgets,
   balanced encounters, optional rooms, and interactive events.
-- `combat.go`, `monsters.go`, `companion.go`, `consumables.go`, `blink.go`: combat, monster definitions, Ghost Dog, and usable items.
+- `combat.go`, `monsters.go`, `companion.go`, `consumables.go`, `blink.go`, `conditions.go`: combat, monster definitions,
+  Ghost Dog, usable items, and movement effects.
 - `monster_variety.go`, `equipment_variety.go`: additional depth-specific monster and equipment choices.
-- `relics.go`, `relic_powers.go`, `epic_monsters.go`: rare nested-room relics, equipped powers, and optional Epic encounters.
+- `relics.go`, `relic_powers.go`, `epic_monsters.go`: rare secret room relics, equipped powers, and optional Epic encounters.
 - `equipment.go`, `loot.go`, `stories.go`, `records.go`: equipment, collection, discovered stories, and personal records.
 - `commands.go`, `terminal.go`, `render.go`, `save.go`: actions, terminal input, presentation, and persistence.
 - `terminal_linux.go`, `terminal_darwin.go`, `terminal_other.go`: platform-specific terminal calls. Keep operating
@@ -62,10 +63,11 @@ Keep related behavior together in this package. Add a package or abstraction onl
 
 ## Gameplay contracts
 
-- Generate 5–8 secret chambers per new game, counting nested chambers and the final escape sanctum. Ordinary floors may
-  have zero, one, two, or rarely three chambers. Nesting is occasional and has no fixed floor.
+- Generate 5–8 secret chambers per new game, counting linked chambers and the final escape sanctum. Ordinary floors may
+  have zero, one, two, or rarely three chambers. Linked chambers are occasional and have no fixed floor.
 - Keep ordinary terrain connected, stairs and rewards reachable, unrelated secret rooms separate, and undiscovered
-  chambers concealed. Inner chambers require separate discovery after their parent is opened.
+  chambers concealed. Secret chambers must never enclose another chamber; link disjoint rooms through a hidden door
+  reachable only through the preceding chamber, with separate discovery after its parent is opened.
 - Every secret chamber has its own fountain and side-story scroll. The Book of Ghost Dog shows only collected stories.
 - Ordinary monster counts vary within calibrated floor difficulty budgets. Keep ordinary budgets and encounter totals strictly
   increasing, preserve the previous health and damage averages, and cap ranged attackers, disabling powers, and
@@ -73,9 +75,10 @@ Keep related behavior together in this package. Add a package or abstraction onl
   selection; new types and items may be absent from a run. Keep entry tiles clear and avoid crowding newly arrived
   players. Reserve one distant guard position for the Dread Lich.
 - God armor and Artifact weapons are explicit rare exceptions to ordinary loot balance: only generate room treasure
-  in inner secret chambers on floors 7–9, with a 25% chance per eligible chamber and at most one room relic per dungeon. Replace
-  ordinary treasure so fountains and side-story scrolls still fit. Never roll relics on discovery, revisiting, or loading.
-- Defeated Epic monsters guarantee one additional elite treasure at their final position, independently of nesting:
+  in later chambers of secret-room chains on floors 7–9, with a 25% chance per eligible chamber and at most one room relic
+  per dungeon. Replace ordinary treasure so fountains and side-story scrolls still fit. Never roll relics on discovery,
+  revisiting, or loading.
+- Defeated Epic monsters guarantee one additional elite treasure at their final position, independently of linked rooms:
   God armor, an Artifact weapon, a Starfire Orb, a Sun Orb, Phoenix Ash, or Ghost Dog Recall. Use the saved RNG, avoid
   duplicate equipment, and award once through the common death handler for every kill source. Save/load must preserve
   the dropped or collected reward without rerolling or recreating it.
@@ -88,6 +91,8 @@ Keep related behavior together in this package. Add a package or abstraction onl
   explicit revival mechanics.
 - Blink Stones exclude all secret chambers, including discovered and additional rooms, and move active companions together.
 - Fountains refill on leaving their floor. Event gifts and shrine blessings are one-use and stay used after revisiting or loading.
+- Track whether a movement hold comes from webs, ice, silver chains, or rift magic; the log and status display must name
+  the actual effect. Preserve the one-movement-turn cost and Oracle Crown immunity, including save/load and equipment.
 - Successful gameplay actions spend one turn. Reading event choices, reading the book, escaping a command screen,
   saving, and failed actions do not.
 - Keep the complete current turn's event log in action order, beginning with the player's action. Replace it when

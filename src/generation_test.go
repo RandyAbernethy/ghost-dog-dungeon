@@ -94,7 +94,7 @@ func TestGenerationVarietyAndPlayableFeaturesAcrossSeeds(t *testing.T) {
 				t.Fatal("a floor has more than three secret chambers")
 			}
 			for _, hidden := range lvl.secretRooms() {
-				if hidden.Inner != nil {
+				if hidden.Next != nil {
 					nested = true
 					nestedFloors[depth] = true
 				}
@@ -103,7 +103,7 @@ func TestGenerationVarietyAndPlayableFeaturesAcrossSeeds(t *testing.T) {
 				}
 				storyIDs[hidden.SideStoryID] = true
 				fountains, scrolls := 0, 0
-				for _, p := range hidden.floorTiles() {
+				for _, p := range hidden.Tiles {
 					if lvl.Tiles[p.Y][p.X] != '#' {
 						t.Fatal("secret chamber is exposed before discovery")
 					}

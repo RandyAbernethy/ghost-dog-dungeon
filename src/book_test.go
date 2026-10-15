@@ -9,9 +9,9 @@ import (
 )
 
 func TestBookShowsOnlyCollectedSideStoriesThroughRoomDiscoveryAndLoading(t *testing.T) {
-	g := nestedGameForTest(t, filepath.Join(t.TempDir(), "book-discoveries.json"))
+	g := linkedGameForTest(t, filepath.Join(t.TempDir(), "book-discoveries.json"))
 	lvl := g.current()
-	inner := lvl.primarySecret().Inner
+	inner := lvl.primarySecret().Next
 	var outerScroll, innerScroll item
 	for _, it := range lvl.Items {
 		if it.Kind != itemSideStoryScroll {

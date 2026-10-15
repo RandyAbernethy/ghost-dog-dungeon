@@ -32,10 +32,10 @@ func TestAdditionalMonstersPerformTheirAdvertisedPowers(t *testing.T) {
 			a.current().Monsters, b.current().Monsters = []*monster{&ma}, []*monster{&mb}
 			a.monsterTurn(&ma)
 			b.monsterTurn(&mb)
-			if a.player.HP != b.player.HP || a.player.WebbedTurns != b.player.WebbedTurns || a.player.HexedTurns != b.player.HexedTurns || ma.Pos != mb.Pos || ma.HP != mb.HP || a.rng.State != b.rng.State {
+			if a.player.HP != b.player.HP || a.player.BoundTurns != b.player.BoundTurns || a.player.HexedTurns != b.player.HexedTurns || ma.Pos != mb.Pos || ma.HP != mb.HP || a.rng.State != b.rng.State {
 				t.Fatalf("%s should use its advertised %s power", pair[0], pair[1])
 			}
-			if a.player.HP < 46 || a.player.WebbedTurns > 0 || a.player.HexedTurns > 0 || ma.HP > 20 || distance(ma.Pos, a.player.Pos) == 1 {
+			if a.player.HP < 46 || a.player.BoundTurns > 0 || a.player.HexedTurns > 0 || ma.HP > 20 || distance(ma.Pos, a.player.Pos) == 1 {
 				observed = true
 			}
 		}

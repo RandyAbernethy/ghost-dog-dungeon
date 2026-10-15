@@ -35,7 +35,7 @@ func TestStandaloneEscapeInRawTerminalReturnsWithoutAnotherKey(t *testing.T) {
 	}
 	defer slave.Close()
 	g := openArena()
-	g.player.WebbedTurns, g.player.HexedTurns, g.player.ShieldTurns = 1, 2, 3
+	g.player.BoundTurns, g.player.HexedTurns, g.player.ShieldTurns = 1, 2, 3
 	g.stats.Turns = 17
 	g.messages = []string{"You strike an enemy.", "The enemy recoils."}
 	beforeLog := append([]string(nil), g.messages...)

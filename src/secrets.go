@@ -30,11 +30,11 @@ func (g *game) addSecretTreasure(lvl *level) {
 	}
 	g.addSecretSideStory(lvl)
 	g.addSecretFountain(lvl)
-	g.addNestedRelic(lvl)
+	g.addLinkedRelic(lvl)
 }
 
 func (g *game) addRoomTreasure(lvl *level, hidden *secretRoom) {
-	tiles := hidden.floorTiles()
+	tiles := hidden.Tiles
 	if len(tiles) == 0 {
 		return
 	}
@@ -164,7 +164,7 @@ func (g *game) addSecretFountain(lvl *level) {
 }
 
 func (g *game) addRoomFountain(lvl *level, hidden *secretRoom) {
-	tiles := hidden.floorTiles()
+	tiles := hidden.Tiles
 	for _, f := range lvl.Fountains {
 		for _, p := range tiles {
 			if f.Pos == p {
@@ -224,34 +224,61 @@ func (g *game) placeSecretRoom(lvl *level, w, h int) bool {
 	return true
 }
 
-func (g *game) addNestedSecretRoom(lvl *level) {
-	size := 6 + g.rng.Intn(2)
-	if !g.placeSecretRoom(lvl, size, size) {
+func (g *game) addLinkedSecretRooms(lvl *level) {
+	if !g.placeSecretRoom(lvl, 3+g.rng.Intn(2), 3+g.rng.Intn(2)) {
 		return
 	}
-	outer := lvl.primarySecret()
-	corner := outer.Tiles[0]
-	center := pos{X: corner.X + size/2, Y: corner.Y + size/2}
-	last := 2
-	if size == 6 {
-		last = 1
+	parent := lvl.Secrets[len(lvl.Secrets)-1]
+	width, height := 2+g.rng.Intn(2), 2+g.rng.Intn(2)
+	reserved := lvl.secretFootprint(false)
+	parentTiles := map[pos]bool{}
+	for _, p := range parent.Tiles {
+		parentTiles[p] = true
 	}
-	doors := []pos{
-		{X: center.X - 2, Y: center.Y}, {X: center.X + last, Y: center.Y},
-		{X: center.X, Y: center.Y - 2}, {X: center.X, Y: center.Y + last},
-	}
-	inner := &secretRoom{Door: doors[g.rng.Intn(len(doors))], SideStoryID: levelCount + 1}
-	for y := center.Y - 2; y <= center.Y+last; y++ {
-		for x := center.X - 2; x <= center.X+last; x++ {
-			p := pos{X: x, Y: y}
-			if x == center.X-2 || x == center.X+last || y == center.Y-2 || y == center.Y+last {
-				inner.Walls = append(inner.Walls, p)
-			} else {
-				inner.Tiles = append(inner.Tiles, p)
+	var candidates []*secretRoom
+	for _, p := range parent.Tiles {
+		for _, dir := range []pos{{X: 1}, {X: -1}, {Y: 1}, {Y: -1}} {
+			door := pos{X: p.X + dir.X, Y: p.Y + dir.Y}
+			x0, y0, x1, y1, ok := secretBounds(door, dir, width, height)
+			if !ok {
+				continue
+			}
+			next := &secretRoom{Door: door, SideStoryID: levelCount + 1}
+			for y := y0; y <= y1; y++ {
+				for x := x0; x <= x1; x++ {
+					next.Tiles = append(next.Tiles, pos{X: x, Y: y})
+				}
+			}
+			if g.linkedRoomFits(lvl, next, parentTiles, reserved) {
+				candidates = append(candidates, next)
 			}
 		}
 	}
-	outer.Inner = inner
+	if len(candidates) == 0 {
+		// Discard the incomplete pair so the bounded floor-generation retry can try another layout.
+		lvl.Secrets = lvl.Secrets[:len(lvl.Secrets)-1]
+		return
+	}
+	parent.Next = candidates[g.rng.Intn(len(candidates))]
+}
+
+func (g *game) linkedRoomFits(lvl *level, next *secretRoom, parentTiles, reserved map[pos]bool) bool {
+	for _, p := range append([]pos{next.Door}, next.Tiles...) {
+		if reserved[p] {
+			return false
+		}
+		// A wall buffer prevents access from ordinary corridors or unrelated secrets.
+		// Only the connecting door may touch the first chamber.
+		for dy := -1; dy <= 1; dy++ {
+			for dx := -1; dx <= 1; dx++ {
+				q := pos{X: p.X + dx, Y: p.Y + dy}
+				if !g.inBounds(q) || lvl.Tiles[q.Y][q.X] != '#' || (reserved[q] && !parentTiles[q]) || (p != next.Door && parentTiles[q]) {
+					return false
+				}
+			}
+		}
+	}
+	return true
 }
 
 func (lvl *level) primarySecret() *secretRoom {
@@ -273,7 +300,6 @@ func (lvl *level) secretFootprint(margin bool) map[pos]bool {
 	blocked := map[pos]bool{}
 	for _, hidden := range lvl.secretRooms() {
 		points := append([]pos{hidden.Door}, hidden.Tiles...)
-		points = append(points, hidden.Walls...)
 		for _, p := range points {
 			blocked[p] = true
 			if margin {
@@ -298,38 +324,16 @@ func (lvl *level) hiddenRoomNear(p pos) *secretRoom {
 	return nil
 }
 
-// The outer rectangle contains the inner chamber, but opening the outer door
-// must leave the inner chamber and its enclosing wall intact.
-func (hidden *secretRoom) floorTiles() []pos {
-	if hidden.Inner == nil {
-		return hidden.Tiles
-	}
-	blocked := map[pos]bool{hidden.Inner.Door: true}
-	for _, p := range hidden.Inner.Tiles {
-		blocked[p] = true
-	}
-	for _, p := range hidden.Inner.Walls {
-		blocked[p] = true
-	}
-	tiles := make([]pos, 0, len(hidden.Tiles))
-	for _, p := range hidden.Tiles {
-		if !blocked[p] {
-			tiles = append(tiles, p)
-		}
-	}
-	return tiles
-}
-
 func (hidden *secretRoom) rooms() []*secretRoom {
 	if hidden == nil {
 		return nil
 	}
-	return append([]*secretRoom{hidden}, hidden.Inner.rooms()...)
+	return append([]*secretRoom{hidden}, hidden.Next.rooms()...)
 }
 
 func (hidden *secretRoom) nextHiddenRoom() *secretRoom {
 	for hidden != nil && hidden.Revealed {
-		hidden = hidden.Inner
+		hidden = hidden.Next
 	}
 	return hidden
 }
