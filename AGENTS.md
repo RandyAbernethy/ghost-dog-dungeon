@@ -13,6 +13,8 @@ avoid compatibility migrations, and notify the user when a format change require
   source. Separate structural moves from behavior changes where practical.
 - Work in this repository unless isolation is needed. Do not commit, push, publish, or overwrite existing player
   executables, saves, or records unless requested.
+- When changing behavior or build interfaces, update the affected README sections, gameplay contracts, and regression
+  tests together. Update this file when working conventions or shared safeguards change.
 - Share concise progress updates during longer work. Report results, verification, and remaining limitations honestly.
 
 ## Source organization
@@ -56,8 +58,7 @@ Before changing generation, balance, encounters, equipment, events, or movement 
 
 ## Verification
 
-Use Go 1.22 or newer. The full test suite requires `make` and a POSIX-compatible shell; on Windows, use WSL or a
-suitable Unix-like build environment. Windows gameplay currently uses the command-and-Enter fallback.
+See [Build](README.md#build) for tool prerequisites and local build commands.
 
 For Go changes, run these checks from the repository root, choosing an unused build path under `bin/` or a temporary
 directory:
@@ -78,6 +79,6 @@ git diff --check
 - `go test ./...` already covers `make all` through `tests/build_test.go`, using a temporary `BIN_DIR` for Linux,
   Windows, and macOS on AMD64 and ARM64. Do not repeat the matrix after a successful full suite without a new concern.
 - For terminal changes, also verify raw keys on native Linux. Cross-compilation does not verify foreign console
-  behavior; report unavailable runtime checks.
+  behavior; Windows uses the command-and-Enter fallback. Report unavailable runtime checks.
 - Use `t.TempDir()` for test saves and records, and a temporary home directory for executable tests.
 - Once relevant checks pass, avoid repeating or expanding them without a new change, failure, or unresolved concern.

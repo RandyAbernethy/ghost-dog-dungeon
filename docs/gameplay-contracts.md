@@ -1,7 +1,8 @@
 # Gameplay contracts
 
-These specialized rules supplement [AGENTS.md](../AGENTS.md). Read the relevant sections before changing these
-systems. Shared rules for RNG, turn costs, rendering, saves, companions, and death accounting remain in AGENTS.md.
+This document defines intended gameplay invariants and links them to source and regression tests. Player-facing
+usage and mechanics are in the [README](../README.md); repository workflow and shared safeguards are in
+[AGENTS.md](../AGENTS.md). Read the relevant sections before changing these systems.
 
 ## Generation and secret rooms
 
@@ -35,12 +36,15 @@ test assertions as the balance baseline rather than an unspecified previous vers
 
 ## Relics and Epic encounters
 
-- God armor and Artifact weapons are rare exceptions to ordinary loot balance. Generate room relics only in later
-  chambers of secret-room chains on floors 7–9, with a 25% chance per eligible chamber and at most one room relic
-  per dungeon. Replace ordinary treasure so fountains and side-story scrolls still fit. Never roll relics on discovery,
-  revisiting, or loading.
-- Optional Epic monsters occur only on floors 7–9, with at most one per dungeon, outside ordinary difficulty budgets
-  and guardian pools. Their initial position must be bypassable and distant from stairs; they act once every three turns.
+- God armor and Artifact weapons are rare exceptions to ordinary loot balance. Generate room relics only in chambers
+  after the first in secret-room chains on floors 7–9, with at most one room relic per dungeon. While no room relic
+  exists, make one 25% roll per eligible floor, then select a replaceable treasure position among its later chambers;
+  additional chambers do not add rolls. Replace ordinary treasure so fountains and side-story scrolls still fit.
+  Never roll relics on discovery, revisiting, or loading. See [addLinkedRelic in relics.go](../src/relics.go).
+- Optional Epic monsters occur only on floors 7–9. While none exists, make one 12% roll per eligible floor, with at most
+  one Epic per dungeon, outside ordinary difficulty budgets and guardian pools. Its initial position must be bypassable
+  and distant from stairs; Epics act once every three turns. See
+  [addEpicEncounter in epic_monsters.go](../src/epic_monsters.go).
 - Gear powers require equipped pieces and must not revive Ghost Dog. God protection is powerful but not invulnerability.
 - Defeated Epics guarantee one additional elite treasure at their final position, independently of linked rooms:
   God armor, an Artifact weapon, a Starfire Orb, a Sun Orb, Phoenix Ash, or Ghost Dog Recall. Avoid duplicate equipment.

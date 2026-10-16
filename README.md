@@ -6,7 +6,7 @@ escape thorough the hidden passage... but beware the Dread Lich!
 
 ## TLDR
 
-To play the game simply execute the binary for your platform in a shell:
+To play a downloaded copy, execute the binary for your platform in a shell:
 
 ```bash
 $ ./ghostdog
@@ -52,16 +52,20 @@ Dungeon events:
 Command>
 ```
 
-To build (install a recent GoLang first):
+To build and run from source with Go 1.22 or newer, use the repository root:
 
 ```sh
-$ go build -o ghostdog ./src
+go build -o bin/ghostdog ./src
+./bin/ghostdog
 ```
 
-Use `--help` for command line help:
+Windows uses command-and-Enter input. The Unix shell examples below can be run in WSL; see [Build](#build) for tool
+requirements.
+
+Use `--help` for command line help (shown here for a source build):
 
 ```bash
-$ ./ghostdog --help
+$ ./bin/ghostdog --help
 
 Usage: ghostdog [--seed N] [--save-file-path directory] [--load-file file] [--records-file file] [--version]
 
@@ -87,7 +91,10 @@ each run. Explicitly setting a seed (e.g. `--seed 42`) allows you to create that
 
 ## Build
 
-The repository keeps module metadata, documentation, and the Makefile at the root:
+Direct builds require Go 1.22 or newer. The Makefile and full test suite also require `make` and a POSIX-compatible
+shell; on Windows, use WSL or a suitable Unix-like build environment. Local builds go in ignored `bin/`.
+
+The repository layout is:
 
 ```text
 .gitignore  Git ignore file
@@ -96,10 +103,15 @@ LICENSE     License file
 Makefile    Build automation file
 README.md   This file
 bin/        Local build output (ignored by Git)
+docs/       Developer gameplay contracts and regression-test references
 go.mod      Go module definition
 src/        Game source and tests that exercise private game state
 tests/      Black-box tests of the compiled executable
 ```
+
+This README covers building, running, and player-facing mechanics. For repository workflow and verification, read
+[AGENTS.md](AGENTS.md). Intended gameplay invariants and their source and test references live in
+[Gameplay contracts](docs/gameplay-contracts.md).
 
 Go's package tests live beside the source they exercise. Tests in `tests/` build the game and run it from temporary
 directories with isolated saves and home directories. Run all checks from the repository root:
@@ -109,6 +121,9 @@ go test ./...
 go vet ./...
 git diff --check
 ```
+
+The full test suite already builds all six release targets in a temporary directory; a separate `make all` is useful
+when you want release binaries to keep.
 
 The Makefile provides:
 
@@ -153,19 +168,16 @@ passages, connected chambers, or pillared halls, with a chapel, barracks, cataco
 different enemies and supplies within the floor's usual difficulty range. Monster groups can be scattered patrols, small
 packs, treasure guards, or a guard with a spellcaster.
 
-Monster counts vary based on the floor's difficulty budget. Each monster's difficulty points account for health, damage,
-armor, and special powers. Floor budgets vary by about 7% around defined values (26 points on floor one through 903 on
-floor ten), budgets and actual encounter totals increase with depth. Limits are placed on ranged attackers, disabling
-powers, and repeated species.
+Monster counts and groups vary within each floor's difficulty budget, with danger increasing as you descend. Limits
+on ranged attackers, disabling powers, and repeated species keep encounters varied within those budgets.
 
 Used fountains refill when you leave their floor, so you can return for more healing if you are willing to face the
 stairwell guardians, 2-4 monsters which spawn on a floor when you descend below it. Drinking from a fountain restores
 4-8 health to you and 8-12 health to Ghost Dog. Stairwell guardians use smaller budgets appropriate to their floor.
 
 Searching suspicious walls allows the player to discover secret passages. Each game has 5-8 secret chambers, including
-the escape sanctum and possible linked chambers. Floors can have zero, one, two, or rarely three secret chambers. Every
-secret chamber contains a fountain and its own side-story scroll. Linked chambers connect through separate hidden
-doors: discover the first chamber, then search its walls for the next. Chambers never surround other secret rooms.
+the escape sanctum and possible linked chambers. Every secret chamber contains a fountain and its own side-story
+scroll. After discovering a chamber, search its walls for hidden doors to further chambers.
 
 Floor monster pools include new monster types with each level, while the Dread Lich is always on floor ten. Monsters
 such as Tunnel Bats, Cave Crawlers, Rust Guards, Barrow Archers, Grave Acolytes, Ember Hounds, Obsidian Guards, and
@@ -208,9 +220,8 @@ Weapon and Armor types:
 
 Each floor selects from its weapon and armor pool, so equipment need not appear every run.
 
-The second chamber in a secret-room chain on a deep floor has a chance to replace one treasure with a supreme relic.
-There is at most one relic generated as room treasure per dungeon; finding one through exploration requires an eligible
-linked chamber. Defeating an Epic monster can award an additional relic, even in a dungeon without linked rooms.
+Later chambers in a secret-room chain on a deep floor can contain a supreme relic. There is at most one relic generated
+as room treasure per dungeon. Defeating an Epic monster can award an additional relic, even without linked rooms.
 These pieces are never ordinary loot or friendly-ghost gifts.
 
 | God armor              | Protection and power                                                                              |
@@ -242,19 +253,17 @@ Deep floors can have a rare **Epic** encounter:
 - Ashen Wyrm
 - Hollow Reaper
 
-Each eligible floor has a 12% chance, with at most one Epic in a dungeon. Epics are optional additions to the ordinary
-difficulty budgets. They spawn away from entrances and stairs, with a route around them. They wake within four tiles,
-warn you when they wake, and act once every three turns, letting you retreat. They have enormous health, armor, and
-damage: the Colossus crushes warding charms, the Titan heals from damaging melee attacks, the Wyrm's strikes erupt in
-adjacent fire, and the Reaper reflects close-range hits. God armor or an Artifact helps, but careful use of reach,
-consumables, and positioning still matters. Epics never return as stairwell guardians, and killing one is not needed to
-defeat the Dread Lich or escape.
+There is at most one Epic in a dungeon. They spawn away from entrances and stairs, with a route around them. They wake
+within four tiles, warn you when they wake, and act once every three turns, letting you retreat. They have enormous
+health, armor, and damage: the Colossus crushes warding charms, the Titan heals from damaging melee attacks, the Wyrm's
+strikes erupt in adjacent fire, and the Reaper reflects close-range hits. God armor or an Artifact helps, but careful
+use of reach, consumables, and positioning still matters. Epics never return as stairwell guardians, and killing one is
+not needed to defeat the Dread Lich or escape.
 
-Defeating any Epic guarantees one elite treasure on its final tile: a God armor piece, an Artifact weapon, a Starfire
-Orb, a Sun Orb, Phoenix Ash, or a Ghost Dog Recall Scroll. The reward uses the saved RNG and avoids equipment already
-carried, equipped, or lying elsewhere in the dungeon. Kills by Ghost Dog, magic items, and gear powers earn the same
-reward. Walk onto the tile to collect it; equipment still needs to be equipped. Drops persist through save/load and
-are never rerolled or awarded again for the same dead monster.
+Defeating any Epic guarantees one elite treasure on its final tile: rare equipment or a powerful consumable. Kills by
+Ghost Dog, magic items, and gear powers earn the same reward. Walk onto the tile to collect it; equipment still needs
+to be equipped. Rewards persist through save/load. Exact generation and reward rules are in the
+[gameplay contracts](docs/gameplay-contracts.md#relics-and-epic-encounters).
 
 
 ## Book of Ghost Dog and Records
