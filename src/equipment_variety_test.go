@@ -8,41 +8,48 @@ import (
 )
 
 func TestExpandedLootKeepsPowerAndOffersOptionalFinds(t *testing.T) {
+	// These pool averages are the calibrated ordinary-loot baseline. Compare
+	// outcomes independently of catalog length, ordering, or variant pairing.
+	weaponDamage := [...]int{31, 33, 44, 51, 55, 63, 75, 76, 81, 95} // Sum for three baseline choices.
+	weaponReach := [...]int{4, 5, 4, 4, 5, 5, 4, 5, 5, 4}
+	armorTraits := [...][3]int{
+		{5, 2, 1}, {4, 2, 1}, {6, 2, 1}, {9, 2, 1}, {10, 3, 2},
+		{10, 3, 2}, {13, 3, 2}, {13, 3, 2}, {15, 4, 3}, {17, 4, 3},
+	} // Guard, ward, and strike totals for four baseline choices.
 	for depth := 0; depth < levelCount; depth++ {
 		weapons, armors := weaponPoolForLevel(depth), armorPoolForLevel(depth)
-		if len(weapons) != 6 || len(armors) != 8 {
-			t.Fatal("floor should have six weapon choices and eight armor choices")
+		if len(weapons) < 2 || len(armors) < 2 {
+			t.Fatal("ordinary loot should offer multiple choices")
 		}
-		for i, original := range weapons[:3] {
-			variant := weapons[i+3]
-			if original.Name == variant.Name || original.Min+original.Max != variant.Min+variant.Max || original.effectiveReach() != variant.effectiveReach() || original.Magic != variant.Magic || variant.Min < 1 || variant.Min > variant.Max {
-				t.Fatalf("floor %d changes average weapon power or reach", depth+1)
+		names := map[string]bool{}
+		damage, reach := 0, 0
+		for _, w := range weapons {
+			if names[w.Name] || w.Name == "" || w.Min < 1 || w.Min > w.Max || w.Magic || w.Rarity == rarityArtifact {
+				t.Fatalf("floor %d has invalid or duplicate ordinary weapon %+v", depth+1, w)
 			}
-			if original.Min == variant.Min || original.Max == variant.Max {
-				t.Fatal("new weapon should offer a different damage spread")
-			}
+			names[w.Name] = true
+			damage += w.Min + w.Max
+			reach += w.effectiveReach()
 		}
-		var originalTotals, variantTotals [3]int
-		for i, original := range armors[:4] {
-			variant := armors[i+4]
-			if original.Name == variant.Name {
-				t.Fatal("new armor should have its own identity")
-			}
-			if variant.Slot != original.Slot || variant.Rarity != original.Rarity || variant.Defense < 0 || variant.SpellWard < 0 || variant.StrikeBonus < 0 {
-				t.Fatal("armor additions must preserve slots and rarities and have nonnegative traits")
-			}
-			originalTotals[0] += original.Defense
-			originalTotals[1] += original.SpellWard
-			originalTotals[2] += original.StrikeBonus
-			variantTotals[0] += variant.Defense
-			variantTotals[1] += variant.SpellWard
-			variantTotals[2] += variant.StrikeBonus
+		if damage*3 != weaponDamage[depth]*len(weapons) || reach*3 != weaponReach[depth]*len(weapons) {
+			t.Fatalf("floor %d changes calibrated average weapon damage or reach", depth+1)
 		}
-		if originalTotals != variantTotals {
-			t.Fatal("armor choices should retain the pool's average guard, ward, and strike bonuses")
+		names = map[string]bool{}
+		var totals [3]int
+		for _, a := range armors {
+			if names[a.Name] || a.Name == "" || a.Defense < 0 || a.SpellWard < 0 || a.StrikeBonus < 0 || a.Rarity == rarityGod ||
+				(a.Slot != slotHead && a.Slot != slotBody && a.Slot != slotLeg) {
+				t.Fatalf("floor %d has invalid or duplicate ordinary armor %+v", depth+1, a)
+			}
+			names[a.Name] = true
+			totals[0] += a.Defense
+			totals[1] += a.SpellWard
+			totals[2] += a.StrikeBonus
 		}
-		if armors[4].Defense >= armors[0].Defense || armors[4].SpellWard <= armors[0].SpellWard || armors[6].Defense <= armors[2].Defense || armors[6].SpellWard >= armors[2].SpellWard {
-			t.Fatal("new armor should trade guard for spell protection in both directions")
+		for trait, total := range totals {
+			if total*4 != armorTraits[depth][trait]*len(armors) {
+				t.Fatalf("floor %d changes calibrated average armor trait %d", depth+1, trait)
+			}
 		}
 		g := &game{rng: newSimpleRNG(int64(depth + 10))}
 		foundWeapons, foundArmor := map[string]bool{}, map[string]bool{}

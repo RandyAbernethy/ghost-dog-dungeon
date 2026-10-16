@@ -237,7 +237,7 @@ func TestNormalizeCommandSupportsArrowKeys(t *testing.T) {
 }
 
 func TestWaitCommandAdvancesEnemies(t *testing.T) {
-	g := newGame(1)
+	g := openArena()
 	g.player.Pos = pos{X: 5, Y: 5}
 	g.current().Monsters = []*monster{{Kind: monsterOrc, Name: "Orc Brute", Glyph: 'o', Pos: pos{X: 6, Y: 5}, HP: 16, MaxHP: 16, MinDamage: 4, MaxDamage: 7}}
 	startHP := g.player.HP
@@ -260,7 +260,7 @@ func TestDiagonalMoveLetsPlayerAttackDiagonally(t *testing.T) {
 }
 
 func TestGhostDogTargetsPlayersFight(t *testing.T) {
-	g := newGame(8)
+	g := openArena()
 	g.dog.Freed = true
 	g.dog.Alive = true
 	g.player.Pos = pos{X: 5, Y: 5}
@@ -279,7 +279,7 @@ func TestGhostDogTargetsPlayersFight(t *testing.T) {
 }
 
 func TestWardingCharmProtectsGhostDogForThreeEnemyTurns(t *testing.T) {
-	g := newGame(10)
+	g := openArena()
 	g.player.Pos = pos{X: 5, Y: 5}
 	g.player.WardingCharms = 1
 	g.dog.Freed = true
@@ -306,7 +306,7 @@ func TestWardingCharmProtectsGhostDogForThreeEnemyTurns(t *testing.T) {
 }
 
 func TestWardCannotHealGhostDogWithSmallHits(t *testing.T) {
-	g := newGame(10)
+	g := openArena()
 	g.dog.Freed = true
 	g.player.ShieldTurns = 3
 	for _, damage := range []int{1, 2, 3} {
@@ -319,7 +319,7 @@ func TestWardCannotHealGhostDogWithSmallHits(t *testing.T) {
 
 func TestWardProtectsGhostDogFromLightning(t *testing.T) {
 	damage := func(shieldTurns int) int {
-		g := newGame(10)
+		g := openArena()
 		g.player.Pos = pos{X: 5, Y: 5}
 		g.player.ShieldTurns = shieldTurns
 		g.dog.Freed = true
@@ -340,7 +340,7 @@ func TestWardProtectsGhostDogFromLightning(t *testing.T) {
 }
 
 func TestGhostDogDeathExplainsHowToFreeIt(t *testing.T) {
-	g := newGame(10)
+	g := openArena()
 	g.dog.Freed = true
 	g.dog.Alive = true
 	g.dog.HP = 1
@@ -375,7 +375,7 @@ func TestDreadLichRestoresFallenGhostDog(t *testing.T) {
 }
 
 func TestGhostDogHealsBetweenFloors(t *testing.T) {
-	g := newGame(10)
+	g := openArena()
 	g.currentLevel = 0
 	g.player.Pos = g.levels[0].Stairs
 	g.dog.Freed = true
@@ -390,7 +390,7 @@ func TestGhostDogHealsBetweenFloors(t *testing.T) {
 }
 
 func TestDogPrefersNotToSitInDoorway(t *testing.T) {
-	g := newGame(11)
+	g := openArena()
 	lvl := g.current()
 	for y := range lvl.Tiles {
 		for x := range lvl.Tiles[y] {
@@ -462,7 +462,7 @@ func TestGhostDogIsTougherAndStaysClose(t *testing.T) {
 }
 
 func TestSearchRevealsSecretRoomAndHiddenLoot(t *testing.T) {
-	g := newGame(12)
+	g := openArena()
 	lvl := g.current()
 	for y := range lvl.Tiles {
 		for x := range lvl.Tiles[y] {

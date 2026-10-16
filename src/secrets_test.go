@@ -9,6 +9,9 @@ import (
 )
 
 func TestDungeonSecretCountAndReachability(t *testing.T) {
+	if testing.Short() {
+		t.Skip("secret-room distribution sweep runs in the full suite")
+	}
 	for seed := int64(-1); seed <= 200; seed++ {
 		g := newGame(seed)
 		if g.generationError != nil {

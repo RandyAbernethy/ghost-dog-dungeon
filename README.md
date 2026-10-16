@@ -91,8 +91,8 @@ each run. Explicitly setting a seed (e.g. `--seed 42`) allows you to create that
 
 ## Build
 
-Direct builds require Go 1.22 or newer. The Makefile and full test suite also require `make` and a POSIX-compatible
-shell; on Windows, use WSL or a suitable Unix-like build environment. Local builds go in ignored `bin/`.
+Direct builds and native gameplay tests require Go 1.22 or newer. Makefile recipes require `make` and a POSIX-compatible
+shell, such as Git Bash or WSL on Windows. Local builds go in ignored `bin/`.
 
 The repository layout is:
 
@@ -114,22 +114,43 @@ This README covers building, running, and player-facing mechanics. For repositor
 [Gameplay contracts](docs/gameplay-contracts.md).
 
 Go's package tests live beside the source they exercise. Tests in `tests/` build the game and run it from temporary
-directories with isolated saves and home directories. Run all checks from the repository root:
+directories with isolated saves and home directories. For a fast development check from the repository root:
 
 ```sh
-go test ./...
+go test -short ./...
+```
+
+Short mode skips compiled-executable scenarios, the release build matrix, and the large generation, secret-room,
+relic, and roster seed sweeps. Run the complete checks before finishing Go changes:
+
+```sh
+go test -count=1 -timeout 5m ./...
 go vet ./...
 git diff --check
 ```
 
-The full test suite already builds all six release targets in a temporary directory; a separate `make all` is useful
-when you want release binaries to keep.
+The full suite runs a fresh seed-6 campaign through all ten floors, rescue, combat, equipment, story collection, and
+escape. It compares uninterrupted play with save/load continuation and checks saved checkpoints and final records.
+The command route is in [tests/testdata/seed-6.txt](tests/testdata/seed-6.txt).
+
+Optional timed experiments with a state-aware automated player are documented in [montecarlo/](montecarlo/README.md).
+They run separately from the regression suite and keep results in `montecarlo/data/`, with binaries and temporary
+files under ignored `montecarlo/bin/` and `montecarlo/tmp/`.
+
+Full Linux verification requires `make` and builds all six release targets in a temporary directory. On Windows and
+macOS, that check runs when `make` and the required shell are available; native executable tests still run without them.
+A separate `make all` creates release binaries to keep. Windows GNU Make can use `make all SHELL=sh` with Git Bash's
+`sh` on `PATH`.
+
+CI runs the full suite and vet on Linux with Go 1.22 and 1.25, plus native Windows and macOS with Go 1.25. The raw-key
+PTY regression runs on Linux; Windows tests exercise command-and-Enter input.
 
 The Makefile provides:
 
 - `make build`
 - `make run`
 - `make test`
+- `make test-fast`
 - `make vet`
 - `make fmt`
 - `make check`

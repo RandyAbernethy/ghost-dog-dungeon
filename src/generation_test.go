@@ -6,6 +6,9 @@ import (
 )
 
 func TestGenerationVarietyAndPlayableFeaturesAcrossSeeds(t *testing.T) {
+	if testing.Short() {
+		t.Skip("300-seed generation sweep runs in the full suite")
+	}
 	var maps [levelCount]map[string]bool
 	var starts [levelCount]map[pos]bool
 	var styles [levelCount]map[layoutKind]bool

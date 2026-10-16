@@ -3,11 +3,8 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"os"
-	"os/exec"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"strings"
 	"testing"
 )
@@ -201,13 +198,8 @@ func TestCompleteTurnLogThroughRealExecutableAndSavedGame(t *testing.T) {
 	if err := g.save(); err != nil {
 		t.Fatal(err)
 	}
-	binary := filepath.Join(dir, "ghostdog")
-	build := exec.Command(filepath.Join(runtime.GOROOT(), "bin", "go"), "build", "-o", binary, ".")
-	if output, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("build: %v\n%s", err, output)
-	}
-	cmd := exec.Command(binary, "--load-file", g.saveFile, "--save-file-path", dir)
-	cmd.Env = append(os.Environ(), "HOME="+dir)
+	cmd := gameCommand(t, "--load-file", g.saveFile, "--save-file-path", dir)
+	cmd.Env = testEnvironment(dir)
 	cmd.Stdin = strings.NewReader("d\ni\n\x1b\nsave\nquit\n")
 	output, err := cmd.CombinedOutput()
 	if err != nil {

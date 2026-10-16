@@ -1,0 +1,117 @@
+[
+  {
+    "consecutive_invalid_commands": [
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog."
+    ],
+    "dog_alive": false,
+    "dog_freed": true,
+    "dog_hp": 0,
+    "dog_max_hp": 34,
+    "floor": 5,
+    "nearby_event": "healing shrine",
+    "player_hp": 46,
+    "player_max_hp": 46,
+    "seed": 8465720325107947233,
+    "turns": 171
+  },
+  {
+    "consecutive_invalid_commands": [
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog."
+    ],
+    "dog_alive": false,
+    "dog_freed": true,
+    "dog_hp": 0,
+    "dog_max_hp": 34,
+    "floor": 5,
+    "nearby_event": "healing shrine",
+    "player_hp": 46,
+    "player_max_hp": 46,
+    "seed": 5047429944124451532,
+    "turns": 197
+  },
+  {
+    "consecutive_invalid_commands": [
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog."
+    ],
+    "dog_alive": false,
+    "dog_freed": true,
+    "dog_hp": 0,
+    "dog_max_hp": 34,
+    "floor": 4,
+    "nearby_event": "healing shrine",
+    "player_hp": 46,
+    "player_max_hp": 46,
+    "seed": 7308550609673156553,
+    "turns": 141
+  },
+  {
+    "consecutive_invalid_commands": [
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog."
+    ],
+    "dog_alive": false,
+    "dog_freed": true,
+    "dog_hp": 0,
+    "dog_max_hp": 34,
+    "floor": 5,
+    "nearby_event": "healing shrine",
+    "player_hp": 46,
+    "player_max_hp": 46,
+    "seed": 2908546829016299302,
+    "turns": 262
+  },
+  {
+    "consecutive_invalid_commands": [
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog.",
+      "y: The shrine waits until its blessing can heal you or Ghost Dog."
+    ],
+    "dog_alive": false,
+    "dog_freed": true,
+    "dog_hp": 0,
+    "dog_max_hp": 34,
+    "floor": 7,
+    "nearby_event": "healing shrine",
+    "player_hp": 46,
+    "player_max_hp": 46,
+    "seed": 3907468864646188265,
+    "turns": 325
+  }
+]

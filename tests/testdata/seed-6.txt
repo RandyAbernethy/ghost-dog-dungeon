@@ -1,0 +1,150 @@
+# Seed 6: ordinary commands from a fresh dungeon through the hidden escape.
+# Keep the route deterministic; checkpoints are verified by campaign_test.go.
+# Consecutive movement keys may share a line; other commands use one line each.
+book
+equipment
+save
+az
+equip 2
+aqeeedd
+equip 6
+aaddeedsxeezzqq
+# Descend to floor 2.
+>
+save
+f
+dwwwwdeeaaq
+k
+z
+equip 3
+azssswwweeewqsxssssssz
+# Descend to floor 3.
+>
+save
+b
+wwssssz
+equip 4
+qq
+equip 10
+sssxxxxeeaa
+# Descend to floor 4.
+>
+save
+t
+ddq
+p
+p
+aa
+p
+eex
+equip 5
+aaqdddddeaqedddddd
+equip 12
+aaaaaaaaaaaaaa
+y
+aa
+v
+z
+k
+szadddedddddddeeddddddddddddddeeeee
+# Descend to floor 5.
+>
+save
+load
+# Save again to verify the checkpoint was restored without spending a turn.
+save
+b
+t
+wdweexs
+p
+ssszssszs
+equip 13
+wwqqqqaaaaaaaaaqazsx
+equip 6
+dx
+k
+s
+v
+s
+equip 7
+aewwwedddddddddddddeddxxx
+# Descend to floor 6.
+>
+save
+zzszxx
+u
+qzzqaaqaawqazza
+equip 17
+deqadddddddxxx
+t
+dxd
+p
+eeeqqqex
+v
+xddd
+k
+zx
+v
+equip 18
+daqqaqwqqaaaaq
+# Descend to floor 7.
+>
+save
+dddxxsssssxddaazzaazz
+# Descend to floor 8.
+>
+save
+b
+deqqqwwww
+p
+we
+p
+ww
+p
+wqwwwqqaaa
+equip 19
+w
+r
+weee
+v
+y
+aqqqqsszzzzzzwwwqqq
+k
+aaa
+v
+zwqdddxxsssssxxx
+# Descend to floor 9.
+>
+save
+f
+x
+n
+xssswwqdeee
+k
+ww
+equip 21
+q
+v
+equip 10
+wssxszxxeeeewwwwee
+equip 23
+eddxx
+choose 3
+p
+xxxxxxxxxxsaqaaaawwwwqaww
+# Descend to floor 10.
+>
+save
+azssszzzqw
+r
+zzwqqwq
+p
+qqwzazqeeeweewwwwa
+choose 1
+b
+qqzsszqqaqqqqwqqqqqa
+v
+zqsx
+# Save after the Lich falls, before the final escape action.
+save
+<

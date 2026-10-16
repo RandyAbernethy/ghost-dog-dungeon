@@ -155,3 +155,60 @@ func TestLoadRejectsUnsupportedSaveFormats(t *testing.T) {
 		}
 	}
 }
+
+func TestLoadRejectsMalformedCurrentFormatSaves(t *testing.T) {
+	g := openArena()
+	g.saveDir = t.TempDir()
+	if err := g.save(); err != nil {
+		t.Fatal(err)
+	}
+	valid, err := os.ReadFile(g.saveFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name   string
+		change func(*saveState)
+		want   string
+	}{
+		{"truncated JSON", nil, "decode save file"},
+		{"missing levels", func(s *saveState) { s.Levels = nil }, "missing dungeon levels"},
+		{"missing maps", func(s *saveState) { s.LevelTiles = nil }, "missing dungeon levels"},
+		{"negative floor", func(s *saveState) { s.CurrentLevel = -1 }, "invalid current level"},
+		{"floor out of range", func(s *saveState) { s.CurrentLevel = levelCount }, "invalid current level"},
+		{"zero RNG", func(s *saveState) { s.RNGState = 0 }, "invalid random state"},
+		{"null floor", func(s *saveState) { s.Levels[0] = nil }, "missing floor 1"},
+		{"map height", func(s *saveState) { s.LevelTiles[0] = "#" }, "invalid map height"},
+		{"map width", func(s *saveState) {
+			lines := strings.Split(s.LevelTiles[0], "\n")
+			lines[0] = "#"
+			s.LevelTiles[0] = strings.Join(lines, "\n")
+		}, "invalid map width"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var state saveState
+			if err := json.Unmarshal(valid, &state); err != nil {
+				t.Fatal(err)
+			}
+			data := valid[:len(valid)/2]
+			if tc.change != nil {
+				tc.change(&state)
+				data, err = json.Marshal(state)
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			path := filepath.Join(t.TempDir(), "malformed.json")
+			if err := os.WriteFile(path, data, 0600); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := loadGame(path); err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("load error = %v, want %q", err, tc.want)
+			}
+			unchanged, err := os.ReadFile(path)
+			if err != nil || !bytes.Equal(unchanged, data) {
+				t.Fatal("rejecting a malformed save must leave it untouched")
+			}
+		})
+	}
+}

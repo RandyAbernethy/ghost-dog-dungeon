@@ -1,5 +1,3 @@
-# Workflow to build this golang project
-
 name: Go
 
 on:
@@ -9,22 +7,38 @@ on:
     branches: [ "main" ]
 
 jobs:
-
-  build:
-    runs-on: ubuntu-latest
+  test:
+    name: ${{ matrix.os }} / Go ${{ matrix.go }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            go: '1.22'
+          - os: ubuntu-latest
+            go: '1.25'
+          - os: windows-latest
+            go: '1.25'
+          - os: macos-latest
+            go: '1.25'
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v7
 
     - name: Set up Go
       uses: actions/setup-go@v7
       with:
-        go-version: '1.25'
+        go-version: ${{ matrix.go }}
 
     - name: Build
-      run: go build -v -o ./bin/ghostdog ./src
+      shell: bash
+      run: |
+        game_binary=./bin/ghostdog
+        if [ "$RUNNER_OS" = Windows ]; then game_binary="$game_binary.exe"; fi
+        go build -v -o "$game_binary" ./src
 
     - name: Test
-      run: go test -v ./...
+      run: go test -count=1 -timeout 5m -v ./...
 
     - name: Vet
       run: go vet -v ./...

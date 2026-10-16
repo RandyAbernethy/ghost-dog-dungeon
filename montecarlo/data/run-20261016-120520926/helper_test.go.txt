@@ -1,0 +1,360 @@
+package main
+
+import (
+	"bufio"
+	"encoding/json"
+	"fmt"
+	"math/rand"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+)
+
+// This is a preserved experiment template, included in src through a Go build overlay.
+// Its policy reads current state and advances the real game using processCommand.
+// It never changes gameplay fields, rewinds a game, or reads future RNG values.
+type dungeonTrial struct {
+	Number         int     `json:"number"`
+	Seed           int64   `json:"seed"`
+	DeepestFloor   int     `json:"deepest_floor"`
+	Turns          int     `json:"turns"`
+	Escaped        bool    `json:"escaped"`
+	DogFreed       bool    `json:"dog_freed"`
+	DogAlive       bool    `json:"dog_alive"`
+	Reason         string  `json:"reason"`
+	ElapsedSeconds float64 `json:"elapsed_seconds"`
+}
+type dungeonTrialSummary struct {
+	Policy                string          `json:"policy"`
+	SamplingSeed          int64           `json:"sampling_seed"`
+	StartedAt             string          `json:"started_at"`
+	FinishedAt            string          `json:"finished_at"`
+	BudgetSeconds         float64         `json:"budget_seconds"`
+	ElapsedSeconds        float64         `json:"elapsed_seconds"`
+	StopReason            string          `json:"stop_reason"`
+	AttemptsStarted       int             `json:"attempts_started"`
+	FailedAttempts        int             `json:"failed_attempts"`
+	InterruptedAttempts   int             `json:"interrupted_attempts"`
+	Reasons               map[string]int  `json:"reasons"`
+	DeepestFloorHistogram [levelCount]int `json:"deepest_floor_histogram"`
+	WinningAttempt        *dungeonTrial   `json:"winning_attempt,omitempty"`
+}
+
+// No trials begin until configuration and output files have been prepared.
+// time.Now carries a monotonic clock; seed sampling, generation, decisions,
+// command execution and logging all count against the one uninterrupted budget.
+func TestDungeonTrials(t *testing.T) {
+	out := os.Getenv("GHOST_TRIAL_OUTPUT")
+	if out == "" {
+		t.Skip("explicit experiment only; use the preserved run.ps1")
+	}
+	var seconds float64
+	if _, err := fmt.Sscan(os.Getenv("GHOST_TRIAL_SECONDS"), &seconds); err != nil || seconds <= 0 {
+		t.Fatal("positive GHOST_TRIAL_SECONDS required")
+	}
+	var samplingSeed int64
+	if _, err := fmt.Sscan(os.Getenv("GHOST_TRIAL_SAMPLING_SEED"), &samplingSeed); err != nil {
+		t.Fatal("GHOST_TRIAL_SAMPLING_SEED required")
+	}
+	file, err := os.OpenFile(filepath.Join(out, "attempts.jsonl"), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	buffer := bufio.NewWriter(file)
+	encoder := json.NewEncoder(buffer)
+	sampleRNG := rand.New(rand.NewSource(samplingSeed))
+	seen := map[int64]bool{}
+	summary := dungeonTrialSummary{Policy: "previous-rule-policy-v1", SamplingSeed: samplingSeed, BudgetSeconds: seconds, Reasons: map[string]int{}}
+	started := time.Now()
+	deadline := started.Add(time.Duration(seconds * float64(time.Second)))
+	summary.StartedAt = started.UTC().Format(time.RFC3339Nano)
+	fmt.Printf("TRIALS_STARTED %s budget=%.3fs sampling_seed=%d\n", summary.StartedAt, seconds, samplingSeed)
+	nextProgress := started.Add(10 * time.Second)
+	var winningCommands []string
+	var winner *game
+	var finished time.Time
+	for {
+		if !time.Now().Before(deadline) {
+			summary.StopReason = "deadline"
+			finished = time.Now()
+			break
+		}
+		seed := sampleRNG.Int63()
+		if seed == 0 || seed == 6 || seen[seed] {
+			continue
+		}
+		seen[seed] = true
+		summary.AttemptsStarted++
+		g := newGame(seed)
+		trial := dungeonTrial{Number: summary.AttemptsStarted, Seed: seed, DeepestFloor: 1, Reason: "command_limit"}
+		commands := make([]string, 0, 800)
+		idle := 0
+		if g.generationError != nil {
+			trial.Reason = "generation_error"
+		} else {
+			for n := 0; n < 2500 && g.player.HP > 0 && !g.won; n++ {
+				if !time.Now().Before(deadline) {
+					trial.Reason = "deadline"
+					break
+				}
+				cmd := dungeonTrialAction(g)
+				old := g.stats.Turns
+				g.processCommand(cmd)
+				commands = append(commands, cmd)
+				trial.DeepestFloor = max(trial.DeepestFloor, g.currentLevel+1)
+				if old == g.stats.Turns {
+					idle++
+				} else {
+					idle = 0
+				}
+				if idle > 8 {
+					trial.Reason = "stalled"
+					break
+				}
+			}
+		}
+		trial.Turns = g.stats.Turns
+		trial.Escaped = g.won
+		trial.DogFreed = g.dog.Freed
+		trial.DogAlive = g.dog.Alive
+		if g.player.HP <= 0 {
+			trial.Reason = "death"
+		}
+		if g.won {
+			trial.Reason = "escaped_without_companion"
+			if g.dog.Freed && g.dog.Alive {
+				trial.Reason = "success"
+			}
+		}
+		completed := time.Now()
+		// A success must actually occur inside the deadline.
+		if trial.Reason == "success" && !completed.Before(deadline) {
+			trial.Reason = "deadline"
+		}
+		trial.ElapsedSeconds = completed.Sub(started).Seconds()
+		summary.DeepestFloorHistogram[trial.DeepestFloor-1]++
+		summary.Reasons[trial.Reason]++
+		if err := encoder.Encode(trial); err != nil {
+			t.Fatal(err)
+		}
+		if trial.Reason == "success" {
+			summary.StopReason = "success"
+			summary.WinningAttempt = &trial
+			finished = completed
+			winningCommands = commands
+			winner = g
+			break
+		}
+		if trial.Reason == "deadline" {
+			summary.InterruptedAttempts++
+			summary.StopReason = "deadline"
+			finished = completed
+			break
+		}
+		summary.FailedAttempts++
+		if !completed.Before(nextProgress) {
+			if err := buffer.Flush(); err != nil {
+				t.Fatal(err)
+			}
+			fmt.Printf("PROGRESS elapsed=%.1fs failures=%d floors=%v\n", trial.ElapsedSeconds, summary.FailedAttempts, summary.DeepestFloorHistogram)
+			nextProgress = completed.Add(10 * time.Second)
+		}
+	}
+	summary.FinishedAt = finished.UTC().Format(time.RFC3339Nano)
+	summary.ElapsedSeconds = finished.Sub(started).Seconds()
+	if err := buffer.Flush(); err != nil {
+		t.Fatal(err)
+	}
+	if err := file.Sync(); err != nil {
+		t.Fatal(err)
+	}
+	data, err := json.MarshalIndent(summary, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(out, "summary.json"), append(data, '\n'), 0600); err != nil {
+		t.Fatal(err)
+	}
+	// Artifacts are written after the trial stopwatch has stopped.
+	if winner != nil {
+		if err := os.WriteFile(filepath.Join(out, "winning-commands.txt"), []byte(strings.Join(winningCommands, "\n")+"\n"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		winner.saveDir = out
+		if err := winner.save(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	fmt.Printf("TRIALS_FINISHED elapsed=%.6fs stop=%s failed=%d interrupted=%d floors=%v\n", summary.ElapsedSeconds, summary.StopReason, summary.FailedAttempts, summary.InterruptedAttempts, summary.DeepestFloorHistogram)
+	if summary.WinningAttempt != nil {
+		fmt.Printf("WINNER %+v\n", *summary.WinningAttempt)
+	}
+}
+func dungeonTrialWeapon(w weapon) int {
+	bonus := 0
+	if w.Magic {
+		bonus = 5
+	}
+	return w.Min + w.Max + 2*(w.effectiveReach()-1) + bonus
+}
+func dungeonTrialArmor(a armor) int { return a.Defense*3 + a.SpellWard*2 + a.StrikeBonus*2 }
+
+// This is the same heuristic policy used in the previous timed experiment.
+// Item and movement choices are deterministic for a given game state.
+func dungeonTrialAction(g *game) string {
+	p := &g.player
+	lvl := g.current()
+	near := g.nearestMonster(6)
+	danger, undead := 0, 0
+	for _, m := range lvl.Monsters {
+		if m.HP > 0 {
+			if distance(p.Pos, m.Pos) <= 2 {
+				danger++
+			}
+			if m.Undead {
+				undead++
+			}
+		}
+	}
+	if p.HP <= p.MaxHP-14 && p.Potions > 0 {
+		return "p"
+	}
+	if p.HP <= p.MaxHP-22 && p.PhoenixAshes > 0 {
+		return "n"
+	}
+	if g.dog.Freed && !g.dog.Alive && p.GhostRecallScrolls > 0 {
+		return "r"
+	}
+	for _, f := range lvl.Fountains {
+		if !f.Used && lvl.Tiles[f.Pos.Y][f.Pos.X] != '#' && distance(p.Pos, f.Pos) <= 1 && (p.HP < p.MaxHP-3 || (g.dog.Freed && g.dog.Alive && g.dog.HP < g.dog.MaxHP-5)) {
+			return "v"
+		}
+	}
+	if danger > 0 && p.ShieldTurns == 0 && p.WardingCharms > 0 {
+		return "b"
+	}
+	if near != nil {
+		if undead >= 3 && p.SunOrbs > 0 {
+			return "u"
+		}
+		if (danger >= 2 || near.Boss) && p.StarfireOrbs > 0 {
+			return "o"
+		}
+		if (danger >= 2 || near.Boss) && p.FrostCharms > 0 {
+			return "t"
+		}
+		if (danger >= 2 || near.HP > 20) && p.FireScrolls > 0 {
+			return "f"
+		}
+	}
+	for i, w := range p.Weapons {
+		if dungeonTrialWeapon(w) > dungeonTrialWeapon(p.Weapon) {
+			return fmt.Sprintf("equip %d", i+1)
+		}
+	}
+	for i, a := range p.Armors {
+		if dungeonTrialArmor(a) > dungeonTrialArmor(p.armorForSlot(a.Slot)) {
+			return fmt.Sprintf("equip %d", len(p.Weapons)+i+1)
+		}
+	}
+	if e := g.nearbyEvent(); e != nil {
+		if e.Kind == eventGhost {
+			return "choose 1"
+		}
+		if e.Kind == eventLever || (e.Kind == eventShrine && (p.HP < p.MaxHP || g.dog.HP < g.dog.MaxHP)) || (e.Kind == eventKeepsake && g.dog.Freed && g.dog.Alive && distance(g.dog.Pos, e.Pos) <= 2) {
+			return "y"
+		}
+	}
+	for _, key := range []string{"w", "a", "s", "d", "q", "e", "z", "x"} {
+		dx, dy, _ := moveDelta(key)
+		for step := 1; step <= p.Weapon.effectiveReach(); step++ {
+			q := pos{p.Pos.X + dx*step, p.Pos.Y + dy*step}
+			if !g.inBounds(q) || lvl.Tiles[q.Y][q.X] == '#' {
+				break
+			}
+			if m := g.monsterAt(lvl, q); m != nil {
+				return key
+			}
+		}
+	}
+	type node struct {
+		p     pos
+		first string
+		dist  int
+	}
+	queue := []node{{p.Pos, "", 0}}
+	seen := map[pos]bool{p.Pos: true}
+	paths := map[pos]node{p.Pos: queue[0]}
+	for head := 0; head < len(queue); head++ {
+		cur := queue[head]
+		for _, key := range []string{"w", "a", "s", "d", "q", "e", "z", "x"} {
+			dx, dy, _ := moveDelta(key)
+			q := pos{cur.p.X + dx, cur.p.Y + dy}
+			if seen[q] || !g.inBounds(q) || lvl.Tiles[q.Y][q.X] == '#' {
+				continue
+			}
+			first := cur.first
+			if first == "" {
+				first = key
+			}
+			n := node{q, first, cur.dist + 1}
+			seen[q] = true
+			paths[q] = n
+			queue = append(queue, n)
+		}
+	}
+	if lvl.DogChain != nil && !g.dog.Freed {
+		if n, ok := paths[*lvl.DogChain]; ok && n.first != "" {
+			return n.first
+		}
+	}
+	best := 100000
+	command := ""
+	for _, it := range lvl.Items {
+		if n, ok := paths[it.Pos]; ok && n.first != "" {
+			score := n.dist
+			if it.Kind == itemWeapon && dungeonTrialWeapon(it.Weapon) > dungeonTrialWeapon(p.Weapon) {
+				score -= 12
+			}
+			if it.Kind == itemArmor && dungeonTrialArmor(it.Armor) > dungeonTrialArmor(p.armorForSlot(it.Armor.Slot)) {
+				score -= 10
+			}
+			if score < best {
+				best = score
+				command = n.first
+			}
+		}
+	}
+	if command != "" {
+		return command
+	}
+	if lvl.HasStair {
+		if p.Pos == lvl.Stairs {
+			return ">"
+		}
+		if n, ok := paths[lvl.Stairs]; ok {
+			return n.first
+		}
+	}
+	if g.bossAlive(lvl) {
+		for _, m := range lvl.Monsters {
+			if m.HP > 0 && m.Boss {
+				if n, ok := paths[m.Pos]; ok {
+					return n.first
+				}
+			}
+		}
+	}
+	if lvl.HasEscapeStair {
+		if p.Pos == lvl.EscapeStairs {
+			return "<"
+		}
+		if n, ok := paths[lvl.EscapeStairs]; ok {
+			return n.first
+		}
+	}
+	return "."
+}

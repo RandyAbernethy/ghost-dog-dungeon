@@ -2,10 +2,8 @@ package main
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"strings"
 	"testing"
 )
@@ -245,14 +243,9 @@ func TestEpicDropPickupAndSaveThroughRealExecutable(t *testing.T) {
 	if err := g.save(); err != nil {
 		t.Fatal(err)
 	}
-	binary := filepath.Join(dir, "ghostdog")
-	build := exec.Command(filepath.Join(runtime.GOROOT(), "bin", "go"), "build", "-o", binary, ".")
-	if output, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("build: %v\n%s", err, output)
-	}
 	path = g.saveFile
-	cmd := exec.Command(binary, "--load-file", path, "--save-file-path", dir)
-	cmd.Env = append(os.Environ(), "HOME="+dir)
+	cmd := gameCommand(t, "--load-file", path, "--save-file-path", dir)
+	cmd.Env = testEnvironment(dir)
 	cmd.Stdin = strings.NewReader("d\nsave\nload\nd\ni\nsave\nload\nquit\n")
 	output, err := cmd.CombinedOutput()
 	if err != nil {

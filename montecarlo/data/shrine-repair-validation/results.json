@@ -1,0 +1,42 @@
+[
+  {
+    "former_stall_floor": 5,
+    "former_stall_turn": 171,
+    "next_command": "x",
+    "next_turn": 172,
+    "seed": 8465720325107947233,
+    "shrine_used": false
+  },
+  {
+    "former_stall_floor": 5,
+    "former_stall_turn": 197,
+    "next_command": "x",
+    "next_turn": 198,
+    "seed": 5047429944124451532,
+    "shrine_used": false
+  },
+  {
+    "former_stall_floor": 4,
+    "former_stall_turn": 141,
+    "next_command": "s",
+    "next_turn": 142,
+    "seed": 7308550609673156553,
+    "shrine_used": false
+  },
+  {
+    "former_stall_floor": 5,
+    "former_stall_turn": 262,
+    "next_command": "a",
+    "next_turn": 263,
+    "seed": 2908546829016299302,
+    "shrine_used": false
+  },
+  {
+    "former_stall_floor": 7,
+    "former_stall_turn": 325,
+    "next_command": "z",
+    "next_turn": 326,
+    "seed": 3907468864646188265,
+    "shrine_used": false
+  }
+]

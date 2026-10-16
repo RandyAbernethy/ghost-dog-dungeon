@@ -1,0 +1,29 @@
+{
+  "policy": "previous-rule-policy-v1",
+  "sampling_seed": 20261016,
+  "started_at": "2026-10-16T12:05:21.1029213Z",
+  "finished_at": "2026-10-16T12:06:21.1047798Z",
+  "budget_seconds": 60,
+  "elapsed_seconds": 60.0004785,
+  "stop_reason": "deadline",
+  "attempts_started": 3906,
+  "failed_attempts": 3905,
+  "interrupted_attempts": 1,
+  "reasons": {
+    "deadline": 1,
+    "death": 3900,
+    "stalled": 5
+  },
+  "deepest_floor_histogram": [
+    0,
+    0,
+    1,
+    53,
+    716,
+    1275,
+    1501,
+    344,
+    16,
+    0
+  ]
+}

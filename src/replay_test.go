@@ -4,29 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"sort"
 	"strings"
 	"testing"
 )
-
-func openArena() *game {
-	g := newGame(24)
-	lvl := g.current()
-	for y := 1; y < mapHeight-1; y++ {
-		for x := 1; x < mapWidth-1; x++ {
-			lvl.Tiles[y][x] = '.'
-		}
-	}
-	lvl.Monsters, lvl.Items, lvl.Fountains = nil, nil, nil
-	lvl.Secrets = nil
-	lvl.Events, lvl.Special = nil, nil
-	g.player.Pos = pos{5, 5}
-	return g
-}
 
 func TestMonsterGroupsVaryWithinFloorPools(t *testing.T) {
 	for depth := 0; depth < levelCount; depth++ {
@@ -457,12 +440,13 @@ func TestLegArmorPickupEquipmentAndSaving(t *testing.T) {
 }
 
 func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
+	gameBinary(t)
 	dir := t.TempDir()
 	testHome := filepath.Join(dir, "home")
 	if err := os.Mkdir(testHome, 0700); err != nil {
 		t.Fatal(err)
 	}
-	testEnv := append(os.Environ(), "HOME="+testHome)
+	testEnv := testEnvironment(testHome)
 	recordsPath := filepath.Join(testHome, ".ghost-dog-data.json")
 	path := filepath.Join(dir, "save.json")
 	g := newGameWithSaveDir(31, filepath.Dir(path))
@@ -481,13 +465,8 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 	}
 	var stdout, stderr bytes.Buffer
 	commands := "book\nequipment\nequip 2\nsave\nload\nchallenges\n<\n"
-	binary := filepath.Join(dir, "ghostdog")
-	build := exec.Command(filepath.Join(runtime.GOROOT(), "bin", "go"), "build", "-o", binary, ".")
-	if output, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("build executable: %v\n%s", err, output)
-	}
 	path = g.saveFile
-	command := exec.Command(binary, "--load-file", path, "--save-file-path", dir)
+	command := gameCommand(t, "--load-file", path, "--save-file-path", dir)
 	command.Env = testEnv
 	command.Stdin, command.Stdout, command.Stderr = strings.NewReader(commands), &stdout, &stderr
 	if err := command.Run(); err != nil {
@@ -523,7 +502,7 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 	stdout.Reset()
 	stderr.Reset()
 	freshSave := filepath.Join(dir, "fresh.json")
-	command = exec.Command(binary, "--seed", "1", "--save-file-path", dir)
+	command = gameCommand(t, "--seed", "1", "--save-file-path", dir)
 	command.Env = testEnv
 	command.Stdin = strings.NewReader("book\ni\ndrop 1\ndrop 5\nsave\nquit\n")
 	command.Stdout, command.Stderr = &stdout, &stderr
@@ -567,7 +546,7 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 	stdout.Reset()
 	stderr.Reset()
 	deathSave = death.saveFile
-	command = exec.Command(binary, "--load-file", deathSave, "--save-file-path", dir)
+	command = gameCommand(t, "--load-file", deathSave, "--save-file-path", dir)
 	command.Env = testEnv
 	command.Stdin = strings.NewReader(".\n")
 	command.Stdout, command.Stderr = &stdout, &stderr
@@ -599,7 +578,7 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 	stdout.Reset()
 	stderr.Reset()
 	eventSave = eventGame.saveFile
-	command = exec.Command(binary, "--load-file", eventSave, "--save-file-path", dir)
+	command = gameCommand(t, "--load-file", eventSave, "--save-file-path", dir)
 	command.Env = testEnv
 	command.Stdin = strings.NewReader("d\nd\nmap\nbook\ny\nchoose 3\nsave\nload\ny\nsave\nquit\n")
 	command.Stdout, command.Stderr = &stdout, &stderr

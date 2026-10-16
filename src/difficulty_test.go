@@ -36,6 +36,9 @@ func TestDifficultyPricesDurabilityDamageArmorAndPowers(t *testing.T) {
 }
 
 func TestBudgetedRostersStayBalancedAndVaryAcrossSeeds(t *testing.T) {
+	if testing.Short() {
+		t.Skip("1,000-seed roster sweep runs in the full suite")
+	}
 	var counts [levelCount]map[int]bool
 	var totals, health, damage [levelCount]int
 	seen, absent := map[monsterKind]bool{}, map[monsterKind]bool{}

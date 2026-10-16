@@ -4,15 +4,16 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"strings"
 	"testing"
 )
 
 func TestRelicsSpawnRarelyOnlyInInnerRoomsOnFloorsSevenThroughNine(t *testing.T) {
+	if testing.Short() {
+		t.Skip("1,000-seed relic and Epic sweep runs in the full suite")
+	}
 	relics, eligible, epicRuns := 0, 0, 0
 	var example *game
 	seenEpics := map[monsterKind]bool{}
@@ -194,6 +195,67 @@ func TestAllRelicsArePossibleAndExcludedFromOrdinaryLootAndGifts(t *testing.T) {
 	}
 }
 
+func TestRoomRelicChanceIsOneRollPerEligibleFloor(t *testing.T) {
+	// Fixed seeds exercise both sides of the 25% boundary. More chambers must
+	// supply more candidate positions, without granting additional chance rolls.
+	for _, tc := range []struct {
+		seed int64
+		roll int
+		want bool
+	}{{116, 0, true}, {100, 24, true}, {29, 25, false}, {79, 99, false}} {
+		for rooms := 1; rooms <= 3; rooms++ {
+			t.Run(fmt.Sprintf("roll_%d/rooms_%d", tc.roll, rooms), func(t *testing.T) {
+				g := openArena()
+				g.currentLevel = 6
+				g.rng = newSimpleRNG(tc.seed)
+				lvl := g.current()
+				root := &secretRoom{Tiles: []pos{{7, 5}}}
+				lvl.Secrets = []*secretRoom{root}
+				last := root
+				for room := 0; room < rooms; room++ {
+					p := pos{10 + 3*room, 5}
+					last.Next = &secretRoom{Door: pos{p.X - 1, p.Y}, Tiles: []pos{p}}
+					last = last.Next
+					lvl.Items = append(lvl.Items, item{Pos: p, Kind: itemPotion})
+				}
+				expected := newSimpleRNG(tc.seed)
+				if roll := expected.Intn(100); roll != tc.roll {
+					t.Fatalf("seed fixture produced roll %d, want %d", roll, tc.roll)
+				}
+				g.addLinkedRelic(lvl)
+				count := 0
+				for _, it := range lvl.Items {
+					if relicItem(it) {
+						count++
+					}
+				}
+				wantCount := 0
+				if tc.want {
+					wantCount = 1
+				}
+				if count != wantCount || len(lvl.Items) != rooms {
+					t.Fatalf("roll %d with %d rooms produced %d relics and %d items", tc.roll, rooms, count, len(lvl.Items))
+				}
+				if !tc.want && g.rng.State != expected.State {
+					t.Fatal("a rejected floor roll must not retry for additional chambers")
+				}
+				if tc.want {
+					next := g.levels[7]
+					next.Secrets = lvl.Secrets
+					for _, it := range lvl.Items {
+						next.Items = append(next.Items, item{Pos: it.Pos, Kind: itemPotion})
+					}
+					before := g.rng.State
+					g.addLinkedRelic(next)
+					if g.rng.State != before {
+						t.Fatal("an existing room relic must suppress subsequent floor rolls")
+					}
+				}
+			})
+		}
+	}
+}
+
 func TestRelicPowersActivateOnlyWhileEquipped(t *testing.T) {
 	g := varietyArena(2)
 	g.dog.Freed = true
@@ -360,14 +422,9 @@ func TestRelicsThroughRealExecutablePickupEquipDropAndSave(t *testing.T) {
 	if err := g.save(); err != nil {
 		t.Fatal(err)
 	}
-	binary := filepath.Join(dir, "ghostdog")
-	build := exec.Command(filepath.Join(runtime.GOROOT(), "bin", "go"), "build", "-o", binary, ".")
-	if output, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("build: %v\n%s", err, output)
-	}
 	path = g.saveFile
-	cmd := exec.Command(binary, "--load-file", path, "--save-file-path", dir)
-	cmd.Env = append(os.Environ(), "HOME="+dir)
+	cmd := gameCommand(t, "--load-file", path, "--save-file-path", dir)
+	cmd.Env = testEnvironment(dir)
 	cmd.Stdin = strings.NewReader("d\ni\nequip 2\nequip 6\ndrop 6\ni\nequip 1\ndrop 2\nsave\nload\nquit\n")
 	output, err := cmd.CombinedOutput()
 	if err != nil {

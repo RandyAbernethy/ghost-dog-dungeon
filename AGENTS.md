@@ -21,8 +21,9 @@ avoid compatibility migrations, and notify the user when a format change require
 
 Keep `go.mod`, the README, and the Makefile at the root; supporting documentation lives in `docs/`.
 Game source and tests needing private state share one Go package in `src/`. Use `tests/` for black-box executable
-tests and ignored `bin/` for local builds. Keep related behavior together; avoid large miscellaneous files and
-add abstractions only for a real boundary.
+tests and ignored `bin/` for game binaries. Keep Monte Carlo code and data in `montecarlo/`, with its binaries and
+temporary files under ignored `montecarlo/bin/` and `montecarlo/tmp/`. Keep related behavior together; avoid large
+miscellaneous files and add abstractions only for a real boundary.
 
 Start with `src/main.go` for startup, `src/commands.go` for actions, `src/render.go` for presentation, and
 `src/save.go` for persistence. Keep OS APIs in `src/terminal_{linux,darwin,other}.go` and Linux PTY tests in
@@ -72,13 +73,16 @@ git diff --check
 ```
 
 - For documentation-only changes, check links and `git diff --check`; builds and gameplay tests are unnecessary.
+- Use `go test -short ./...` for development feedback; run the full suite before completing Go changes.
 - Test observable behavior and invariants. Use explicit arena fixtures for combat tests. For generation or balance
   changes, preserve and extend the seed sweeps referenced in the gameplay contracts.
 - Exercise new commands through the command loop and save/load, retaining compiled-executable regression coverage.
   Package tests may build `.` from `src/`; black-box tests must build `./src` from the repository root.
 - `go test ./...` already covers `make all` through `tests/build_test.go`, using a temporary `BIN_DIR` for Linux,
-  Windows, and macOS on AMD64 and ARM64. Do not repeat the matrix after a successful full suite without a new concern.
+  Windows, and macOS on AMD64 and ARM64. Full Linux runs require it; other hosts skip the matrix if build tools are
+  unavailable. Do not repeat it after a successful full suite without a new concern.
 - For terminal changes, also verify raw keys on native Linux. Cross-compilation does not verify foreign console
   behavior; Windows uses the command-and-Enter fallback. Report unavailable runtime checks.
-- Use `t.TempDir()` for test saves and records, and a temporary home directory for executable tests.
+- Use `t.TempDir()` for test saves and records. Reuse the executable helpers for shared builds, process timeouts,
+  and isolation of both `HOME` and Windows `USERPROFILE`.
 - Once relevant checks pass, avoid repeating or expanding them without a new change, failure, or unresolved concern.

@@ -8,31 +8,32 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestMakeAllBuildsEachSupportedPlatform(t *testing.T) {
-	packageDir, err := os.Getwd()
+	if testing.Short() {
+		t.Skip("the release matrix runs in the full suite")
+	}
+	makePath, err := exec.LookPath("make")
 	if err != nil {
-		t.Fatal(err)
-	}
-	repo := filepath.Dir(packageDir)
-	// Track build inputs so Go's test cache also notices Makefile and game changes.
-	if _, err := os.ReadFile(filepath.Join(repo, "Makefile")); err != nil {
-		t.Fatal(err)
-	}
-	entries, err := os.ReadDir(filepath.Join(repo, "src"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, entry := range entries {
-		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".go") && !strings.HasSuffix(entry.Name(), "_test.go") {
-			if _, err := os.ReadFile(filepath.Join(repo, "src", entry.Name())); err != nil {
-				t.Fatal(err)
-			}
+		if runtime.GOOS == "linux" {
+			t.Fatal("full Linux verification requires make: ", err)
 		}
+		t.Skip("make is unavailable; the full Linux CI job verifies release builds")
 	}
+	trackGameBuildInputs(t)
+	repo := filepath.Dir(testPackageDir)
 	dir := filepath.Join(t.TempDir(), "release binaries")
-	cmd := exec.Command("make", "all", "BIN_DIR="+dir, "GO="+filepath.Join(runtime.GOROOT(), "bin", "go"))
+	args := []string{"all", "BIN_DIR=" + filepath.ToSlash(dir), "GO=" + filepath.ToSlash(filepath.Join(runtime.GOROOT(), "bin", "go"))}
+	if runtime.GOOS == "windows" {
+		sh, err := exec.LookPath("sh")
+		if err != nil {
+			t.Skip("release recipes need a POSIX shell; Linux CI verifies release builds")
+		}
+		args = append(args, "SHELL="+filepath.ToSlash(sh))
+	}
+	cmd := testCommand(t, 2*time.Minute, makePath, args...)
 	cmd.Dir = repo
 	if output, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("make all: %v\n%s", err, output)
@@ -59,8 +60,9 @@ func TestMakeAllBuildsEachSupportedPlatform(t *testing.T) {
 			t.Fatalf("%s has incorrect build settings: %v", name, settings)
 		}
 		if platform.os == runtime.GOOS && platform.arch == runtime.GOARCH {
-			run := exec.Command(path, "--version")
-			run.Dir, run.Env = t.TempDir(), append(os.Environ(), "HOME="+t.TempDir())
+			run := testCommand(t, 30*time.Second, path, "--version")
+			run.Dir = t.TempDir()
+			run.Env = testEnvironment(run.Dir)
 			if output, err := run.CombinedOutput(); err != nil || !strings.HasPrefix(string(output), "Ghost Dog Dungeon version ") {
 				t.Fatalf("run native release binary: %v\n%s", err, output)
 			}

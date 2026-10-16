@@ -41,6 +41,8 @@ test assertions as the balance baseline rather than an unspecified previous vers
   exists, make one 25% roll per eligible floor, then select a replaceable treasure position among its later chambers;
   additional chambers do not add rolls. Replace ordinary treasure so fountains and side-story scrolls still fit.
   Never roll relics on discovery, revisiting, or loading. See [addLinkedRelic in relics.go](../src/relics.go).
+  The boundary cases in [relics_test.go](../src/relics_test.go) check the 25% threshold and prevent extra rolls for
+  additional chambers independently of the large rarity sweep.
 - Optional Epic monsters occur only on floors 7–9. While none exists, make one 12% roll per eligible floor, with at most
   one Epic per dungeon, outside ordinary difficulty budgets and guardian pools. Its initial position must be bypassable
   and distant from stairs; Epics act once every three turns. See
@@ -67,3 +69,12 @@ Use [events_test.go](../src/events_test.go), [ghost_gifts_test.go](../src/ghost_
 [prompts_test.go](../src/prompts_test.go), [blink_test.go](../src/blink_test.go), and
 [conditions_test.go](../src/conditions_test.go) for event, arrival, movement, and persistence regressions. Interactive
 gift offers live in [ghost_gifts.go](../src/ghost_gifts.go).
+
+## Campaign replay
+
+[campaign_test.go](../tests/campaign_test.go) runs the compiled game from a fresh seed using the ordinary commands in
+[seed-6.txt](../tests/testdata/seed-6.txt). It checks all ten floor checkpoints, Ghost Dog's rescue, equipment and story
+collection, the Lich's death, the hidden escape, kill accounting, and final records. Uninterrupted play and save/load
+continuation must preserve identical gameplay state. The route completes the dungeon with some optional content left
+behind; it does not require collecting every story. This executable replay and the large seed sweeps run in the full
+suite; fast and full commands are documented in [Build](../README.md#build).
