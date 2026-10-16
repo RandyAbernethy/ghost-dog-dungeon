@@ -1,107 +1,66 @@
 # Working on Ghost Dog Dungeon
 
-This is a Go terminal roguelike with ten dungeon floors. Keep the game readable, fair, reproducible from a seed.
-This is the first release: keep the code simple and support only the current save format. Reject unsupported
-formats with a helpful error, and notify the user when a save-format change requires a new game.
-
+This is a Go terminal roguelike with ten dungeon floors. Keep it readable, fair, and reproducible from a seed.
+For this first release, support only the current save format: reject unsupported formats with a helpful error,
+avoid compatibility migrations, and notify the user when a format change requires a new game.
 
 ## Workflow
 
-- Read the user's current request and inspect `git status --short` before editing. Preserve unrelated changes. The
-  user's latest instructions take precedence over earlier design assumptions.
-- Trace behavior from input through the game action, enemy turn, display, and persistence. Fix the underlying behavior
-  rather than only its message.
-- Prefer focused changes. For broad refactors, prepare and test a temporary candidate before replacing working source.
-  Move behavior first, then change it; preserve declarations and comments.
-- Keep work in the current repository unless isolation is needed. Do not commit, push, publish, or overwrite the tracked
-  game executable unless requested.
-- Share concise progress updates during longer work. Report the result, relevant verification, and any remaining limitation honestly.
-
+- Inspect `git status --short` before editing; preserve unrelated changes. The current request takes precedence
+  over earlier design assumptions.
+- Trace behavior through input, action, enemy turn, display, and persistence; fix the underlying behavior.
+- Prefer focused changes. For risky structural rewrites, validate a temporary candidate before replacing working
+  source. Separate structural moves from behavior changes where practical.
+- Work in this repository unless isolation is needed. Do not commit, push, publish, or overwrite existing player
+  executables, saves, or records unless requested.
+- Share concise progress updates during longer work. Report results, verification, and remaining limitations honestly.
 
 ## Source organization
 
-Keep `go.mod`, documentation, and the Makefile at the root. All game source and tests that need private game state
-live in `src/`, in the same Go package. Use `tests/` for black-box executable tests that do not import game internals.
-Keep local build output in ignored `bin/`; do not move or overwrite a user's existing executable or save files.
-The file map below is relative to `src/`.
+Keep `go.mod`, the README, and the Makefile at the root; supporting documentation lives in `docs/`.
+Game source and tests needing private state share one Go package in `src/`. Use `tests/` for black-box executable
+tests and ignored `bin/` for local builds. Keep related behavior together; avoid large miscellaneous files and
+add abstractions only for a real boundary.
 
-- `main.go`: entry point, flags, startup errors.
-- `model.go`, `game.go`, `world.go`: data types, game initialization, common spatial helpers and seeded randomness.
-- `dungeon.go`, `layouts.go`, `generation.go`: dungeon plans, geometry, placement, and fountains.
-- `secrets.go`: independent and linked secret rooms, discovery geometry, rewards, and escape sanctum.
-- `themes.go`, `difficulty.go`, `rosters.go`, `encounters.go`, `features.go`, `events.go`: floor identity, difficulty budgets,
-  balanced encounters, optional rooms, and interactive events.
-- `combat.go`, `monsters.go`, `companion.go`, `consumables.go`, `blink.go`, `conditions.go`: combat, monster definitions,
-  Ghost Dog, usable items, and movement effects.
-- `monster_variety.go`, `equipment_variety.go`: additional depth-specific monster and equipment choices.
-- `relics.go`, `relic_powers.go`, `epic_monsters.go`: rare secret room relics, equipped powers, and optional Epic encounters.
-- `equipment.go`, `loot.go`, `stories.go`, `records.go`: equipment, collection, discovered stories, and personal records.
-- `commands.go`, `terminal.go`, `render.go`, `save.go`: actions, terminal input, presentation, and persistence.
-- `terminal_linux.go`, `terminal_darwin.go`, `terminal_other.go`: platform-specific terminal calls. Keep operating
-  system APIs out of shared input handling, and isolate Linux PTY tests in `terminal_linux_test.go`.
-
-Keep related behavior together in this package. Add a package or abstraction only when it simplifies a real boundary. Avoid rebuilding a large miscellaneous source file.
-
+Start with `src/main.go` for startup, `src/commands.go` for actions, `src/render.go` for presentation, and
+`src/save.go` for persistence. Keep OS APIs in `src/terminal_{linux,darwin,other}.go` and Linux PTY tests in
+`src/terminal_linux_test.go`.
 
 ## Go quality
 
-- Use `gofmt`, idiomatic names, small cohesive functions, and explicit data types. Comments should explain a constraint
-  or decision rather than restate the code.
-- Prefer the standard library. Add dependencies only for a clear need.
-- Return errors with useful context at I/O and startup boundaries. Do not silently discard errors or use panics for expected failures.
+- Use `gofmt`, idiomatic names, and small cohesive functions. Comments should explain constraints or decisions.
+- Prefer the standard library; add dependencies only for a clear need.
+- Return useful errors at I/O and startup boundaries. Do not silently discard failures or panic for expected errors.
+
+## Shared gameplay contracts
+
 - Use the game's saved RNG for all gameplay randomness. Avoid wall-clock or global randomness after seeding. Do not
   choose outcomes by ranging over a map.
-- Bound generation retries and provide a connected fallback. Reserve features before placing competing actors or items.
-- Keep rendering and inspection free of gameplay mutations, except existing codex visibility bookkeeping. Reading
-  screens and invalid commands must not spend turns.
-- Save only current game state; do not add compatibility migrations for development saves. State must survive save/load
-  exactly, without repairing the dungeon, rerolling gifts, or renewing one-time rewards. Use one list of secret-room roots.
-- Every save creates a fresh timestamped snapshot in the directory selected by `--save-file-path` (default: current
-  working directory). Create missing directories at startup and report useful errors. Loading must preserve the current
-  save-directory and record-storage settings; never overwrite the source or previous snapshots.
-
-
-## Gameplay contracts
-
-- Generate 5–8 secret chambers per new game, counting linked chambers and the final escape sanctum. Ordinary floors may
-  have zero, one, two, or rarely three chambers. Linked chambers are occasional and have no fixed floor.
-- Keep ordinary terrain connected, stairs and rewards reachable, unrelated secret rooms separate, and undiscovered
-  chambers concealed. Secret chambers must never enclose another chamber; link disjoint rooms through a hidden door
-  reachable only through the preceding chamber, with separate discovery after its parent is opened.
-- Every secret chamber has its own fountain and side-story scroll. The Book of Ghost Dog shows only collected stories.
-- Ordinary monster counts vary within calibrated floor difficulty budgets. Keep ordinary budgets and encounter totals strictly
-  increasing, preserve the previous health and damage averages, and cap ranged attackers, disabling powers, and
-  duplicate species. Ordinary equipment variety must preserve average damage, reach, and armor trait averages. Use saved RNG for all
-  selection; new types and items may be absent from a run. Keep entry tiles clear and avoid crowding newly arrived
-  players. Reserve one distant guard position for the Dread Lich.
-- God armor and Artifact weapons are explicit rare exceptions to ordinary loot balance: only generate room treasure
-  in later chambers of secret-room chains on floors 7–9, with a 25% chance per eligible chamber and at most one room relic
-  per dungeon. Replace ordinary treasure so fountains and side-story scrolls still fit. Never roll relics on discovery,
-  revisiting, or loading.
-- Defeated Epic monsters guarantee one additional elite treasure at their final position, independently of linked rooms:
-  God armor, an Artifact weapon, a Starfire Orb, a Sun Orb, Phoenix Ash, or Ghost Dog Recall. Use the saved RNG, avoid
-  duplicate equipment, and award once through the common death handler for every kill source. Save/load must preserve
-  the dropped or collected reward without rerolling or recreating it.
-- Optional Epic monsters only occur on floors 7–9, with at most one per dungeon, outside ordinary difficulty budgets
-  and guardian pools. Keep their initial position bypassable and distant from stairs; they act once every three turns.
-  Gear powers require equipped pieces and must not revive Ghost Dog. God protection is powerful but not invulnerability.
-- Award kill count and defeated difficulty once per dead monster, including companion, consumable, and stairwell
-  guardian kills. Only finished runs submit records. Loading must preserve the full challenge progress and dungeon.
-- Ghost Dog accompanies the player only when freed and alive. Preserve his existing combat behavior; revival belongs to
-  explicit revival mechanics.
-- Blink Stones exclude all secret chambers, including discovered and additional rooms, and move active companions together.
-- Fountains refill on leaving their floor. Event gifts and shrine blessings are one-use and stay used after revisiting or loading.
-- Track whether a movement hold comes from webs, ice, silver chains, or rift magic; the log and status display must name
-  the actual effect. Preserve the one-movement-turn cost and Oracle Crown immunity, including save/load and equipment.
+- Keep rendering and inspection free of gameplay mutations, except existing codex visibility bookkeeping.
 - Successful gameplay actions spend one turn. Reading event choices, reading the book, escaping a command screen,
   saving, and failed actions do not.
-- Keep the complete current turn's event log in action order, beginning with the player's action. Replace it when
-  another action spends a turn; reading screens, saving, and failed actions preserve it. Never truncate busy turns.
+- Keep the complete current turn's log in action order, beginning with the player's action. Replace it only when
+  another action spends a turn; never truncate busy turns.
+- Save/load must preserve the full dungeon, RNG, rewards, and challenge progress exactly, without repairing,
+  rerolling, or renewing one-time rewards. Use one list of secret-room roots.
+- Every save creates a fresh timestamped snapshot under `--save-file-path` (default: current directory). Create missing
+  directories at startup and report useful errors. Loading preserves current save-directory and record-storage
+  settings; never overwrite the source snapshot or previous saves.
+- Ghost Dog accompanies the player only when freed and alive. Preserve combat expectations in
+  `src/dog_combat_test.go` and the companion tests in `src/main_test.go`; revival requires explicit mechanics.
+- Count kills and defeated difficulty once per dead monster, including companion, consumable, and guardian kills.
+  Award death rewards once through the common death handler for every kill source. Only finished runs submit records.
 
+Before changing generation, balance, encounters, equipment, events, or movement effects, read the relevant sections of
+[Gameplay contracts](docs/gameplay-contracts.md). That document holds the specialized rules and regression-test references.
 
 ## Verification
 
-Run the applicable checks from the repository root:
+Use Go 1.22 or newer. The full test suite requires `make` and a POSIX-compatible shell; on Windows, use WSL or a
+suitable Unix-like build environment. Windows gameplay currently uses the command-and-Enter fallback.
+
+For Go changes, run these checks from the repository root, choosing an unused build path under `bin/` or a temporary
+directory:
 
 ```sh
 gofmt -w <changed Go files>
@@ -111,17 +70,14 @@ go vet ./...
 git diff --check
 ```
 
-- Test observable behavior and important invariants, not merely the implementation's structure. Use explicit arena
-  fixtures for combat tests instead of relying on a particular generated floor.
-- For generation changes, check many seeds for connectivity, feature overlap, hidden-room access, room-count
-  distribution, actual geometric variety, difficulty bounds, and seed reproduction.
-- Exercise new commands through the command loop and save/load. Keep regression coverage for the real compiled
-  executable and raw terminal keys.
-- Build the game with `go build -o bin/ghostdog ./src` from the repository root. Package-level tests in `src/` may
-  build `.` from their package directory. Black-box tests in `tests/` must build `./src` from the repository root.
-- For terminal or build changes, verify `make all` for Linux, Windows, and macOS on AMD64 and ARM64. Use a temporary
-  `BIN_DIR` during tests; keep the native Linux raw-key regression. Cross-compilation alone does not verify foreign
-  console behavior. Windows currently uses the command-and-Enter fallback.
-- Use `t.TempDir()` for saves and records. Give executable tests a temporary home directory; never overwrite the
-  player's real records or saves.
+- For documentation-only changes, check links and `git diff --check`; builds and gameplay tests are unnecessary.
+- Test observable behavior and invariants. Use explicit arena fixtures for combat tests. For generation or balance
+  changes, preserve and extend the seed sweeps referenced in the gameplay contracts.
+- Exercise new commands through the command loop and save/load, retaining compiled-executable regression coverage.
+  Package tests may build `.` from `src/`; black-box tests must build `./src` from the repository root.
+- `go test ./...` already covers `make all` through `tests/build_test.go`, using a temporary `BIN_DIR` for Linux,
+  Windows, and macOS on AMD64 and ARM64. Do not repeat the matrix after a successful full suite without a new concern.
+- For terminal changes, also verify raw keys on native Linux. Cross-compilation does not verify foreign console
+  behavior; report unavailable runtime checks.
+- Use `t.TempDir()` for test saves and records, and a temporary home directory for executable tests.
 - Once relevant checks pass, avoid repeating or expanding them without a new change, failure, or unresolved concern.
