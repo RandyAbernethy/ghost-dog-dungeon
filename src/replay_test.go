@@ -493,7 +493,7 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 	if err := command.Run(); err != nil {
 		t.Fatalf("run executable: %v\n%s", err, stderr.String())
 	}
-	for _, want := range []string{"=== Book of Ghost Dog ===", ghostDogStory[0], ghostDogSideStories[1].Text, "You equip Test Spear", "Victory!", "Beside the door, you see the clean bowl Mara left, filled with fresh water for Ghost Dog.", "Fewest turns record: 25", "Ghost Dog safe escape record: achieved", "Most monsters killed record: 7", "Most difficulty defeated record: 250 points"} {
+	for _, want := range []string{"=== Book of Ghost Dog ===", ghostDogStory[0], ghostDogSideStories[1].Text, "You equip Test Spear", "Victory!", "Beside the door, you see a clean bowl filled with fresh water.", "Fewest turns record: 25", "Ghost Dog safe escape record: achieved", "Most monsters killed record: 7", "Most difficulty defeated record: 250 points"} {
 		if !strings.Contains(stdout.String(), want) {
 			t.Fatalf("game CLI did not show %q", want)
 		}
