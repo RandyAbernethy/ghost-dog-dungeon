@@ -30,6 +30,11 @@ type challengeRecords struct {
 	MostDifficulty *challengeResult `json:"most_difficulty_defeated,omitempty"`
 }
 
+type recordAchievement struct {
+	Description string
+	Tied        bool
+}
+
 func defaultRecordsFile() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -58,57 +63,95 @@ func readChallengeRecords(path string) (challengeRecords, error) {
 	return records, err
 }
 
-func (g *game) recordChallenges() error {
+func (g *game) recordChallenges() ([]recordAchievement, error) {
 	if !g.won && g.player.HP > 0 {
-		return nil
+		return nil, nil
 	}
 	path, err := g.challengeRecordsPath()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	records, err := readChallengeRecords(path)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	result := challengeResult{Seed: g.seed, Turns: g.stats.Turns, Kills: g.stats.MonstersKilled, Escaped: g.won, Difficulty: g.stats.DifficultyDefeated}
+	var achievements []recordAchievement
 	changed := false
-	if records.MostKills == nil || result.Kills > records.MostKills.Kills {
-		records.MostKills = &result
-		changed = true
+	// Compare against the previous records before replacing them, so a new best
+	// remains distinguishable from a tie when the final statistics are displayed.
+	if g.won && (records.FewestTurns == nil || result.Turns <= records.FewestTurns.Turns) {
+		tied := records.FewestTurns != nil && result.Turns == records.FewestTurns.Turns
+		achievements = append(achievements, recordAchievement{fmt.Sprintf("Fewest turns: %d turns", result.Turns), tied})
+		if !tied {
+			records.FewestTurns = &result
+			changed = true
+		}
 	}
-	if records.MostDifficulty == nil || result.Difficulty > records.MostDifficulty.Difficulty {
-		records.MostDifficulty = &result
-		changed = true
+	if g.won && g.dog.Freed && g.dog.Alive && g.stats.GhostDogFalls == 0 && (records.SafeEscape == nil || result.Turns <= records.SafeEscape.Turns) {
+		tied := records.SafeEscape != nil && result.Turns == records.SafeEscape.Turns
+		achievements = append(achievements, recordAchievement{fmt.Sprintf("Ghost Dog safe escape: %d turns", result.Turns), tied})
+		if !tied {
+			records.SafeEscape = &result
+			changed = true
+		}
 	}
-	if g.won && (records.FewestTurns == nil || result.Turns < records.FewestTurns.Turns) {
-		records.FewestTurns = &result
-		changed = true
+	if records.MostKills == nil || result.Kills >= records.MostKills.Kills {
+		tied := records.MostKills != nil && result.Kills == records.MostKills.Kills
+		achievements = append(achievements, recordAchievement{fmt.Sprintf("Most monsters killed: %d", result.Kills), tied})
+		if !tied {
+			records.MostKills = &result
+			changed = true
+		}
 	}
-	if g.won && g.dog.Freed && g.dog.Alive && g.stats.GhostDogFalls == 0 && (records.SafeEscape == nil || result.Turns < records.SafeEscape.Turns) {
-		records.SafeEscape = &result
-		changed = true
+	if records.MostDifficulty == nil || result.Difficulty >= records.MostDifficulty.Difficulty {
+		tied := records.MostDifficulty != nil && result.Difficulty == records.MostDifficulty.Difficulty
+		achievements = append(achievements, recordAchievement{fmt.Sprintf("Most difficulty defeated: %d points", result.Difficulty), tied})
+		if !tied {
+			records.MostDifficulty = &result
+			changed = true
+		}
 	}
 	if !changed {
-		return nil
+		return achievements, nil
 	}
 	data, err := json.MarshalIndent(records, "", "  ")
 	if err != nil {
-		return err
+		return nil, err
 	}
 	f, err := os.CreateTemp(filepath.Dir(path), ".ghost-dog-data-*.tmp")
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer os.Remove(f.Name())
 	_, writeErr := f.Write(data)
 	closeErr := f.Close()
 	if writeErr != nil {
-		return writeErr
+		return nil, writeErr
 	}
 	if closeErr != nil {
-		return closeErr
+		return nil, closeErr
 	}
-	return os.Rename(f.Name(), path)
+	if err := os.Rename(f.Name(), path); err != nil {
+		return nil, err
+	}
+	return achievements, nil
+}
+
+func renderRecordAchievements(w io.Writer, achievements []recordAchievement) {
+	if len(achievements) == 0 {
+		return
+	}
+	fmt.Fprintln(w, "\n\x1b[1;33m************************************************************")
+	fmt.Fprintln(w, "              A RUN FOR THE RECORD BOOKS!")
+	for _, achievement := range achievements {
+		label := "NEW RECORD!"
+		if achievement.Tied {
+			label = "RECORD TIED!"
+		}
+		fmt.Fprintf(w, "*** %s %s ***\n", label, achievement.Description)
+	}
+	fmt.Fprintln(w, "************************************************************"+ansiReset)
 }
 
 func (g *game) renderChallenges(w io.Writer) {

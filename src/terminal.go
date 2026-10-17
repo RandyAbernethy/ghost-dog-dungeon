@@ -95,10 +95,12 @@ func (g *game) loop(stdin io.Reader, stdout io.Writer) error {
 		fmt.Fprintln(stdout, "You retreat before the dungeon can claim you.")
 	}
 	if g.won || g.player.HP <= 0 {
-		if err := g.recordChallenges(); err != nil {
+		achievements, err := g.recordChallenges()
+		if err != nil {
 			fmt.Fprintf(stdout, "Could not save challenge records: %v\n", err)
 		}
 		g.renderChallenges(stdout)
+		renderRecordAchievements(stdout, achievements)
 	}
 	return nil
 }

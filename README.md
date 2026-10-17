@@ -312,6 +312,9 @@ supported; start a new game. Personal records are retained.
 Records are saved automatically in `~/.ghost-dog-data.json` when you die or escape, without using the save command.
 Personal records appear at game startup and game end, and are shared across runs and save files. Saves retain equipment,
 book contents, challenge progress, and generated difficulty budgets and monsters without rerolling them.
+At game end, a bold gold celebration panel calls out every **NEW RECORD!** and **RECORD TIED!**, with its category and
+score. Your first qualifying result sets a record; a tie keeps the original record holder. Fastest escape records
+require victory, and the Ghost Dog safe escape record also requires that he never fell and escaped alive with you.
 
 Each save creates a new `ghostdog-dungeon-YYYYMMDD-HHMMSS.json` snapshot, adding a numeric suffix if that name already
 exists. `--save-file-path` selects the directory and creates it if missing; the default is the current working

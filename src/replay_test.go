@@ -343,7 +343,7 @@ func TestChallengeRecordsPersistBestResultsAcrossRuns(t *testing.T) {
 		if !escaped {
 			g.player.HP = 0
 		}
-		if err := g.recordChallenges(); err != nil {
+		if _, err := g.recordChallenges(); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -361,7 +361,7 @@ func TestChallengeRecordsPersistBestResultsAcrossRuns(t *testing.T) {
 	g.recordsFile = path
 	g.stats.MonstersKilled = 100
 	g.quit = true
-	if err := g.recordChallenges(); err != nil {
+	if _, err := g.recordChallenges(); err != nil {
 		t.Fatal(err)
 	}
 	unchanged, _ := readChallengeRecords(path)
@@ -493,6 +493,39 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 	if err != nil || records.FewestTurns == nil || records.FewestTurns.Turns != 25 || records.MostDifficulty == nil || records.MostDifficulty.Difficulty != 250 {
 		t.Fatalf("victory did not persist its final action: records=%+v err=%v", records, err)
 	}
+	if strings.Count(output, "NEW RECORD!") != 4 || strings.Contains(output, "RECORD TIED!") || strings.Index(output, "A RUN FOR THE RECORD BOOKS!") < strings.LastIndex(output, "=== Personal Records ===") {
+		t.Fatal("victory should celebrate all four first records after displaying the final statistics")
+	}
+	beforeTies, err := os.ReadFile(recordsPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var tiedStdout, tiedStderr bytes.Buffer
+	tiedCommand := gameCommand(t, "--load-file", path, "--save-file-path", dir)
+	tiedCommand.Env = testEnv
+	tiedCommand.Stdin = strings.NewReader("equip 2\nsave\nload\n<\n")
+	tiedCommand.Stdout, tiedCommand.Stderr = &tiedStdout, &tiedStderr
+	if err := tiedCommand.Run(); err != nil {
+		t.Fatalf("run tied victory after save/load: %v\n%s", err, tiedStderr.String())
+	}
+	tiedOutput := tiedStdout.String()
+	for _, want := range []string{
+		"RECORD TIED! Fewest turns: 25 turns",
+		"RECORD TIED! Ghost Dog safe escape: 25 turns",
+		"RECORD TIED! Most monsters killed: 7",
+		"RECORD TIED! Most difficulty defeated: 250 points",
+	} {
+		if !strings.Contains(tiedOutput, want) {
+			t.Fatalf("compiled game did not celebrate %q after save/load", want)
+		}
+	}
+	if strings.Contains(tiedOutput, "NEW RECORD!") || strings.Count(tiedOutput, "A RUN FOR THE RECORD BOOKS!") != 1 || strings.Index(tiedOutput, "A RUN FOR THE RECORD BOOKS!") < strings.LastIndex(tiedOutput, "=== Personal Records ===") {
+		t.Fatal("ties should receive one final celebration without becoming new records")
+	}
+	afterTies, err := os.ReadFile(recordsPath)
+	if err != nil || !bytes.Equal(beforeTies, afterTies) {
+		t.Fatalf("compiled game changed the original records on a tie: %v", err)
+	}
 	for key, want := range map[byte]string{'B': "book", 'E': "equipment", 'j': "challenges"} {
 		cmd, _, ok := rawKeyCommand(key)
 		if !ok || cmd != want {
@@ -525,6 +558,9 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 	}
 	if !strings.Contains(output, "Fewest turns record: 25") || !strings.Contains(output, "Most difficulty defeated record: 250 points") || strings.Count(output, "=== Personal Records ===") != 1 {
 		t.Fatal("a new game should show the previous game's records at startup")
+	}
+	if strings.Contains(output, "NEW RECORD!") || strings.Contains(output, "RECORD TIED!") || strings.Contains(output, "A RUN FOR THE RECORD BOOKS!") {
+		t.Fatal("reading records, saving, and quitting must not trigger a celebration")
 	}
 	unchanged, err := readChallengeRecords(recordsPath)
 	if err != nil || !reflect.DeepEqual(records, unchanged) {
@@ -560,6 +596,9 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 	}
 	if deathIndex < 0 || strings.Count(output, "=== Personal Records ===") != 2 || strings.LastIndex(output, "Most monsters killed record: 12") < deathIndex || strings.LastIndex(output, "Most difficulty defeated record: 275 points") < deathIndex {
 		t.Fatal("death should automatically show the updated personal records")
+	}
+	if strings.Count(output, "NEW RECORD!") != 2 || !strings.Contains(output, "NEW RECORD! Most monsters killed: 12") || !strings.Contains(output, "NEW RECORD! Most difficulty defeated: 275 points") || strings.Contains(output, "RECORD TIED!") || strings.Index(output, "A RUN FOR THE RECORD BOOKS!") < strings.LastIndex(output, "=== Personal Records ===") {
+		t.Fatal("death should celebrate both improved score records after displaying the final statistics")
 	}
 	records, err = readChallengeRecords(recordsPath)
 	if err != nil || records.MostKills == nil || records.MostKills.Kills != 12 || records.MostKills.Turns != 11 || records.MostKills.Escaped || records.FewestTurns.Turns != 25 || records.MostDifficulty == nil || records.MostDifficulty.Difficulty != 275 {

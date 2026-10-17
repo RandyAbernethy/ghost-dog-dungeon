@@ -181,19 +181,19 @@ func TestDifficultyScoreCountsEachDeathAndPersistsBestFinishedRun(t *testing.T) 
 		t.Fatal("each slain monster must award its original difficulty once")
 	}
 	g.recordsFile = filepath.Join(t.TempDir(), "records.json")
-	if err := g.recordChallenges(); err != nil {
+	if _, err := g.recordChallenges(); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(g.recordsFile); !os.IsNotExist(err) {
 		t.Fatal("unfinished runs must not submit a score")
 	}
 	g.player.HP = 0
-	if err := g.recordChallenges(); err != nil {
+	if _, err := g.recordChallenges(); err != nil {
 		t.Fatal(err)
 	}
 	g.stats.MonstersKilled = 2
 	g.stats.DifficultyDefeated = want - 1
-	if err := g.recordChallenges(); err != nil {
+	if _, err := g.recordChallenges(); err != nil {
 		t.Fatal(err)
 	}
 	records, err := readChallengeRecords(g.recordsFile)

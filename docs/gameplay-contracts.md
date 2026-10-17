@@ -70,6 +70,21 @@ Use [events_test.go](../src/events_test.go), [ghost_gifts_test.go](../src/ghost_
 [conditions_test.go](../src/conditions_test.go) for event, arrival, movement, and persistence regressions. Interactive
 gift offers live in [ghost_gifts.go](../src/ghost_gifts.go).
 
+## Personal records
+
+- Only escape or death submits records. Fewest turns requires an escape; Ghost Dog safe escape also requires him
+  freed, alive, and never fallen. Both speed records prefer fewer turns. Kills and defeated difficulty prefer higher
+  totals, including on death.
+- Compare finished results with the previous records before writing improvements. First qualifying results and strict
+  improvements earn a prominent **NEW RECORD!** announcement; equal best scores earn **RECORD TIED!**. Include every
+  qualifying category and its score after the final statistics. Ties preserve the original record holder and do not
+  rewrite the records file. Suppress the celebration if record storage fails.
+- Reading records, saving, and quitting an unfinished run must not submit or celebrate records. Celebrations do not
+  change gameplay state, turns, RNG, or the save format.
+
+Keep record comparisons, eligibility, ties, and storage-error coverage in [records_test.go](../src/records_test.go),
+and compiled-game save/load, victory, and death coverage in [replay_test.go](../src/replay_test.go).
+
 ## Campaign replay
 
 [campaign_test.go](../tests/campaign_test.go) runs the compiled game from a fresh seed using the ordinary commands in
