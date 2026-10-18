@@ -68,7 +68,7 @@ func (g *game) addRoomSideStory(lvl *level, hidden *secretRoom) {
 	}
 	for _, p := range hidden.Tiles {
 		if g.itemAt(lvl, p) == nil && g.fountainAt(lvl, p) == nil && (!lvl.HasEscapeStair || p != lvl.EscapeStairs) {
-			lvl.Items = append(lvl.Items, item{Pos: p, Kind: itemSideStoryScroll, Name: "Side-story scroll: " + ghostDogSideStories[id-1].Title, Glyph: '?', SideStoryID: id})
+			lvl.Items = append(lvl.Items, item{Pos: p, Kind: itemSideStoryScroll, Name: "Side-story scroll: " + ghostDogSideStories[id-1].Title, Glyph: itemGlyphs[itemSideStoryScroll], SideStoryID: id})
 			return
 		}
 	}

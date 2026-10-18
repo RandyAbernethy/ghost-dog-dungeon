@@ -44,6 +44,8 @@ Start with `src/main.go` for startup, `src/commands.go` for actions, `src/render
 - Use the game's saved RNG for all gameplay randomness. Avoid wall-clock or global randomness after seeding. Do not
   choose outcomes by ranging over a map.
 - Keep rendering and inspection free of gameplay mutations, except existing codex visibility bookkeeping.
+- Keep map symbols unique across monster species, item types, trap kinds, and other features. Reserve `F`/`f` for
+  fountains and use the shared catalog in `src/glyphs.go`; older saves must display current symbols without state repair.
 - Successful gameplay actions spend one turn. Reading event choices, reading the book, escaping a command screen,
   saving, and failed actions do not.
 - Keep the complete current turn's log in action order, beginning with the player's action. Replace it only when

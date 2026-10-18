@@ -34,11 +34,11 @@ func (g *game) themedItems(lvl *level) []item {
 		}
 		switch lvl.Theme {
 		case themeChapel:
-			items[i] = item{Kind: itemWardingCharm, Name: "warding charm", Glyph: '*'}
+			items[i] = item{Kind: itemWardingCharm, Name: "warding charm", Glyph: itemGlyphs[itemWardingCharm]}
 		case themeKennel:
-			items[i] = item{Kind: itemPotion, Name: "healing potion", Glyph: '!'}
+			items[i] = item{Kind: itemPotion, Name: "healing potion", Glyph: itemGlyphs[itemPotion]}
 		case themeOvergrown:
-			items[i] = item{Kind: itemBlinkStone, Name: "blink stone", Glyph: '*'}
+			items[i] = item{Kind: itemBlinkStone, Name: "blink stone", Glyph: itemGlyphs[itemBlinkStone]}
 		}
 		break
 	}

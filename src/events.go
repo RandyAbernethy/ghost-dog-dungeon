@@ -20,15 +20,15 @@ type floorEvent struct {
 func (e *floorEvent) glyph() rune {
 	switch e.Kind {
 	case eventGhost:
-		return 'G'
+		return glyphFriendlyGhost
 	case eventKeepsake:
-		return '&'
+		return glyphKeepsake
 	case eventLever:
-		return '+'
+		return glyphLever
 	case eventShrine:
-		return '^'
+		return glyphShrine
 	}
-	return '.'
+	return glyphFloor
 }
 
 func (lvl *level) eventAt(p pos) *floorEvent {
@@ -145,7 +145,7 @@ func (g *game) interactEvent() bool {
 			g.addMessage("A faded collar lies here. Ghost Dog may remember it when he is with you.")
 			return false
 		}
-		g.dog.HP = min(g.dog.MaxHP, g.dog.HP+5)
+		g.dog.HP = min(g.dog.MaxHP, g.dog.HP+8)
 		g.player.WardingCharms++
 		g.addMessage("Ash recognizes the old collar and brightens. Beneath it you find one warding charm.")
 		g.ashMoment("collar", "Ash waits while you lift the collar, then bows his head. Some habits survive even silver chains.")

@@ -36,11 +36,11 @@ func (o *objectiveRoom) marker(p pos) rune {
 		return 0
 	}
 	if o.Kind == objectiveSpirit && o.Pos == p {
-		return 'S'
+		return glyphLostSpirit
 	}
 	for _, s := range o.Sigils {
 		if s.Pos == p && !s.Broken {
-			return 'O'
+			return glyphRitualSigil
 		}
 	}
 	return 0
@@ -102,9 +102,9 @@ func (g *game) addObjectiveRoom() {
 		o.Sigils = []ritualSigil{{Pos: pos{c.area.X, c.area.Y}}, {Pos: pos{c.area.X + 2, c.area.Y}}, {Pos: pos{c.area.X + 1, c.area.Y + 2}}}
 	}
 	pool := []item{
-		{Kind: itemPotion, Name: "healing potion", Glyph: '!'},
-		{Kind: itemWardingCharm, Name: "warding charm", Glyph: '*'},
-		{Kind: itemFrostCharm, Name: "frost charm", Glyph: '*'},
+		{Kind: itemPotion, Name: "healing potion", Glyph: itemGlyphs[itemPotion]},
+		{Kind: itemWardingCharm, Name: "warding charm", Glyph: itemGlyphs[itemWardingCharm]},
+		{Kind: itemFrostCharm, Name: "frost charm", Glyph: itemGlyphs[itemFrostCharm]},
 	}
 	o.Reward = pool[g.rng.Intn(len(pool))]
 	g.levels[c.floor].Objective = o

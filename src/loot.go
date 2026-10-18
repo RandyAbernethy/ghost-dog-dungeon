@@ -5,7 +5,7 @@ import (
 )
 
 func makeWeaponItem(w weapon) item {
-	return item{Kind: itemWeapon, Name: w.Name, Glyph: ')', Weapon: w}
+	return item{Kind: itemWeapon, Name: w.Name, Glyph: itemGlyphs[itemWeapon], Weapon: w}
 }
 
 func makeWeaponLoot(w weapon) item {
@@ -14,7 +14,7 @@ func makeWeaponLoot(w weapon) item {
 }
 
 func makeArmorItem(a armor) item {
-	return item{Kind: itemArmor, Name: a.Name, Glyph: '[', Armor: a}
+	return item{Kind: itemArmor, Name: a.Name, Glyph: itemGlyphs[itemArmor], Armor: a}
 }
 
 func (g *game) weaponLootForLevel(depth int) item {
@@ -108,33 +108,33 @@ func armorPoolForLevel(depth int) []armor {
 func (g *game) itemsForLevel(depth int) []item {
 	items := []item{}
 	if depth < levelCount-1 {
-		items = append(items, item{Kind: itemStoryScroll, Name: fmt.Sprintf("Ghost Dog story scroll %d", depth+1), Glyph: '?', StoryChapter: depth + 1})
+		items = append(items, item{Kind: itemStoryScroll, Name: fmt.Sprintf("Ghost Dog story scroll %d", depth+1), Glyph: itemGlyphs[itemStoryScroll], StoryChapter: depth + 1})
 	}
 	if depth%2 == 0 {
-		items = append(items, item{Kind: itemPotion, Name: "healing potion", Glyph: '!'})
+		items = append(items, item{Kind: itemPotion, Name: "healing potion", Glyph: itemGlyphs[itemPotion]})
 	}
 	items = append(items, g.weaponLootForLevel(depth), g.armorLootForLevel(depth))
 	switch depth {
 	case 0:
-		items = append(items, item{Kind: itemFireScroll, Name: "fire scroll", Glyph: '?'})
+		items = append(items, item{Kind: itemFireScroll, Name: "fire scroll", Glyph: itemGlyphs[itemFireScroll]})
 	case 1:
-		items = append(items, item{Kind: itemBlinkStone, Name: "blink stone", Glyph: '*'})
+		items = append(items, item{Kind: itemBlinkStone, Name: "blink stone", Glyph: itemGlyphs[itemBlinkStone]})
 	case 2:
-		items = append(items, item{Kind: itemFrostCharm, Name: "frost charm", Glyph: '*'})
+		items = append(items, item{Kind: itemFrostCharm, Name: "frost charm", Glyph: itemGlyphs[itemFrostCharm]})
 	case 3:
-		items = append(items, item{Kind: itemWardingCharm, Name: "warding charm", Glyph: '*'})
+		items = append(items, item{Kind: itemWardingCharm, Name: "warding charm", Glyph: itemGlyphs[itemWardingCharm]})
 	case 4:
-		items = append(items, item{Kind: itemSunOrb, Name: "sun orb", Glyph: '*'})
+		items = append(items, item{Kind: itemSunOrb, Name: "sun orb", Glyph: itemGlyphs[itemSunOrb]})
 	case 5:
-		items = append(items, item{Kind: itemFrostCharm, Name: "frost charm", Glyph: '*'})
+		items = append(items, item{Kind: itemFrostCharm, Name: "frost charm", Glyph: itemGlyphs[itemFrostCharm]})
 	case 6:
-		items = append(items, item{Kind: itemWardingCharm, Name: "warding charm", Glyph: '*'})
+		items = append(items, item{Kind: itemWardingCharm, Name: "warding charm", Glyph: itemGlyphs[itemWardingCharm]})
 	case 7:
-		items = append(items, item{Kind: itemFireScroll, Name: "fire scroll", Glyph: '?'})
+		items = append(items, item{Kind: itemFireScroll, Name: "fire scroll", Glyph: itemGlyphs[itemFireScroll]})
 	case 8:
-		items = append(items, item{Kind: itemBlinkStone, Name: "blink stone", Glyph: '*'})
+		items = append(items, item{Kind: itemBlinkStone, Name: "blink stone", Glyph: itemGlyphs[itemBlinkStone]})
 	case 9:
-		items = append(items, item{Kind: itemSunOrb, Name: "sun orb", Glyph: '*'})
+		items = append(items, item{Kind: itemSunOrb, Name: "sun orb", Glyph: itemGlyphs[itemSunOrb]})
 	}
 	return items
 }

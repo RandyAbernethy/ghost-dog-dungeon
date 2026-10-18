@@ -12,7 +12,7 @@ func (g *game) cryptDoorGlyph(p pos) rune {
 	}
 	if g.inCrypt {
 		if c.ExitRevealed && p == c.Exit {
-			return '}'
+			return glyphCryptExit
 		}
 		return 0
 	}
@@ -21,12 +21,12 @@ func (g *game) cryptDoorGlyph(p pos) rune {
 	}
 	if c.EntranceRevealed && p == c.Entrance {
 		if c.Floor.Visited {
-			return '|'
+			return glyphSealedCrypt
 		}
-		return '{'
+		return glyphCryptEntrance
 	}
 	if c.ReturnRevealed && p == c.ReturnDoor {
-		return '}'
+		return glyphCryptExit
 	}
 	return 0
 }
@@ -177,7 +177,7 @@ func (g *game) renderCryptFeatures(w io.Writer) {
 	fmt.Fprintln(w, "Crypt rules: sight 3 tiles; no fountains; Blink Stones and Warding Charms are consumed without effect. The entrance is sealed.")
 	for _, t := range g.crypt.Traps {
 		if t.Discovered && !t.Spent && g.canSee(t.Pos) {
-			fmt.Fprintf(w, "Trap: %s, %s. Press y beside it to disarm.\n", t.Kind, relativeTo(g.player.Pos, t.Pos))
+			fmt.Fprintf(w, "Trap: %s (%c), %s. Press y beside it to disarm.\n", t.Kind, t.glyph(), relativeTo(g.player.Pos, t.Pos))
 		}
 	}
 }

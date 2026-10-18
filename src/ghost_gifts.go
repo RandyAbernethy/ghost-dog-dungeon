@@ -6,15 +6,15 @@ func (g *game) rollGhostGifts(depth int) []item {
 	pool := []item{
 		g.armorLootForLevel(depth),
 		g.weaponLootForLevel(depth),
-		{Kind: itemPotion, Name: "healing potion", Glyph: '!'},
-		{Kind: itemBlinkStone, Name: "blink stone", Glyph: '*'},
-		{Kind: itemFireScroll, Name: "fire scroll", Glyph: '?'},
-		{Kind: itemWardingCharm, Name: "warding charm", Glyph: '*'},
-		{Kind: itemSunOrb, Name: "sun orb", Glyph: '*'},
-		{Kind: itemFrostCharm, Name: "frost charm", Glyph: '*'},
-		{Kind: itemStarfireOrb, Name: "starfire orb", Glyph: '*'},
-		{Kind: itemPhoenixAsh, Name: "phoenix ash", Glyph: '*'},
-		{Kind: itemGhostRecallScroll, Name: "Ghost Dog recall scroll", Glyph: '?'},
+		{Kind: itemPotion, Name: "healing potion", Glyph: itemGlyphs[itemPotion]},
+		{Kind: itemBlinkStone, Name: "blink stone", Glyph: itemGlyphs[itemBlinkStone]},
+		{Kind: itemFireScroll, Name: "fire scroll", Glyph: itemGlyphs[itemFireScroll]},
+		{Kind: itemWardingCharm, Name: "warding charm", Glyph: itemGlyphs[itemWardingCharm]},
+		{Kind: itemSunOrb, Name: "sun orb", Glyph: itemGlyphs[itemSunOrb]},
+		{Kind: itemFrostCharm, Name: "frost charm", Glyph: itemGlyphs[itemFrostCharm]},
+		{Kind: itemStarfireOrb, Name: "starfire orb", Glyph: itemGlyphs[itemStarfireOrb]},
+		{Kind: itemPhoenixAsh, Name: "phoenix ash", Glyph: itemGlyphs[itemPhoenixAsh]},
+		{Kind: itemGhostRecallScroll, Name: "Ghost Dog recall scroll", Glyph: itemGlyphs[itemGhostRecallScroll]},
 	}
 	// Sample distinct categories so the player always has three different options.
 	for i := 0; i < 3; i++ {

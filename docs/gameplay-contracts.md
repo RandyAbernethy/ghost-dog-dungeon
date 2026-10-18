@@ -1,8 +1,24 @@
 # Gameplay contracts
 
-This document defines intended gameplay invariants and links them to source and regression tests. Player-facing
-usage and mechanics are in the [README](../README.md); repository workflow and shared safeguards are in
+> **Spoiler warning:** These contracts reveal hidden content, generation rules, and ending behavior.
+
+This document defines intended gameplay invariants and links them to source and regression tests. Setup, controls,
+and general play are in the [README](../README.md); detailed player-facing mechanics are in the
+[gameplay guide (spoilers)](gameplay-guide.md). Repository workflow and shared safeguards are in
 [AGENTS.md](../AGENTS.md). Read the relevant sections before changing these systems.
+
+## Map symbols
+
+- Give each monster species, item type, trap kind, and other feature its own printable ASCII symbol. Weapon and armor
+  variants retain their equipment-type symbol; repeated instances of the same type retain the same symbol.
+- Reserve `F` and `f` for fresh and spent fountains, `D`/`d` for Ghost Dog, and `X` for Epic attack warnings.
+  The eight Epics use `1`–`8`; Frost Monarch uses `5`. Shrines retain `^`; each discovered trap has its own symbol.
+- Maintain the shared catalog in [glyphs.go](../src/glyphs.go). Constructors, map, codex, inventory, inspection,
+  and legends must agree. Render older saves by entity kind, retaining their serialized glyph fields unchanged.
+  Displaying current symbols must not spend turns, draw RNG, or alter the dungeon or rewards.
+
+The complete player reference is in [Map symbols](gameplay-guide.md#map-symbols). Preserve the global uniqueness,
+rendering, trap visibility, and compiled-executable older-save coverage in [glyphs_test.go](../src/glyphs_test.go).
 
 ## Generation and secret rooms
 
@@ -81,6 +97,8 @@ Signature cadence, dodge space, cancellation, companion movement, and persistenc
 
 - Fountains refill on leaving their floor. Event gifts and shrine blessings are one-use and stay used after revisiting
   or loading.
+- Ash's keepsakes restore 8 HP, capped at maximum health, to a freed, living Ghost Dog within two tiles of the keepsake
+  and grant one warding charm. Activation spends one turn; saving or revisiting cannot renew either reward.
 - Blink Stones exclude all secret chambers, including discovered and additional rooms, and move active companions together.
 - Track whether a movement hold comes from webs, ice, silver chains, or rift magic; the log and status display must
   name the actual effect. Preserve the one-movement-turn cost and Oracle Crown immunity, including save/load and equipment.

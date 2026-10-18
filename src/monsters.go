@@ -76,43 +76,43 @@ func newMonster(kind monsterKind) monster {
 	}
 	switch kind {
 	case monsterRat:
-		return monster{Kind: kind, Name: "Dungeon Rat", Glyph: 'r', HP: 8, MaxHP: 8, MinDamage: 2, MaxDamage: 4}
+		return monster{Kind: kind, Name: "Dungeon Rat", Glyph: monsterGlyphs[kind], HP: 8, MaxHP: 8, MinDamage: 2, MaxDamage: 4}
 	case monsterSkeleton:
-		return monster{Kind: kind, Name: "Skeleton", Glyph: 's', HP: 11, MaxHP: 11, MinDamage: 3, MaxDamage: 5, Undead: true}
+		return monster{Kind: kind, Name: "Skeleton", Glyph: monsterGlyphs[kind], HP: 11, MaxHP: 11, MinDamage: 3, MaxDamage: 5, Undead: true}
 	case monsterGoblin:
-		return monster{Kind: kind, Name: "Goblin Knifer", Glyph: 'g', HP: 10, MaxHP: 10, MinDamage: 3, MaxDamage: 6}
+		return monster{Kind: kind, Name: "Goblin Knifer", Glyph: monsterGlyphs[kind], HP: 10, MaxHP: 10, MinDamage: 3, MaxDamage: 6}
 	case monsterOrc:
-		return monster{Kind: kind, Name: "Orc Brute", Glyph: 'o', HP: 16, MaxHP: 16, MinDamage: 4, MaxDamage: 7}
+		return monster{Kind: kind, Name: "Orc Brute", Glyph: monsterGlyphs[kind], HP: 16, MaxHP: 16, MinDamage: 4, MaxDamage: 7}
 	case monsterCultist:
-		return monster{Kind: kind, Name: "Cultist", Glyph: 'c', HP: 12, MaxHP: 12, MinDamage: 3, MaxDamage: 6}
+		return monster{Kind: kind, Name: "Cultist", Glyph: monsterGlyphs[kind], HP: 12, MaxHP: 12, MinDamage: 3, MaxDamage: 6}
 	case monsterSlime:
-		return monster{Kind: kind, Name: "Caustic Slime", Glyph: 'm', HP: 14, MaxHP: 14, MinDamage: 3, MaxDamage: 5}
+		return monster{Kind: kind, Name: "Caustic Slime", Glyph: monsterGlyphs[kind], HP: 14, MaxHP: 14, MinDamage: 3, MaxDamage: 5}
 	case monsterSpider:
-		return monster{Kind: kind, Name: "Web Spider", Glyph: 'w', HP: 13, MaxHP: 13, MinDamage: 3, MaxDamage: 5}
+		return monster{Kind: kind, Name: "Web Spider", Glyph: monsterGlyphs[kind], HP: 13, MaxHP: 13, MinDamage: 3, MaxDamage: 5}
 	case monsterWraith:
-		return monster{Kind: kind, Name: "Wraith", Glyph: 'W', HP: 15, MaxHP: 15, MinDamage: 4, MaxDamage: 7, Undead: true}
+		return monster{Kind: kind, Name: "Wraith", Glyph: monsterGlyphs[kind], HP: 15, MaxHP: 15, MinDamage: 4, MaxDamage: 7, Undead: true}
 	case monsterBlinker:
-		return monster{Kind: kind, Name: "Blink Stalker", Glyph: 'b', HP: 16, MaxHP: 16, MinDamage: 4, MaxDamage: 7}
+		return monster{Kind: kind, Name: "Blink Stalker", Glyph: monsterGlyphs[kind], HP: 16, MaxHP: 16, MinDamage: 4, MaxDamage: 7}
 	case monsterHexPriest:
-		return monster{Kind: kind, Name: "Hex Priest", Glyph: 'h', HP: 18, MaxHP: 18, MinDamage: 4, MaxDamage: 7}
+		return monster{Kind: kind, Name: "Hex Priest", Glyph: monsterGlyphs[kind], HP: 18, MaxHP: 18, MinDamage: 4, MaxDamage: 7}
 	case monsterMirrorShade:
-		return monster{Kind: kind, Name: "Mirror Shade", Glyph: 'M', HP: 20, MaxHP: 20, MinDamage: 5, MaxDamage: 8, Undead: true}
+		return monster{Kind: kind, Name: "Mirror Shade", Glyph: monsterGlyphs[kind], HP: 20, MaxHP: 20, MinDamage: 5, MaxDamage: 8, Undead: true}
 	case monsterBoneHound:
-		return monster{Kind: kind, Name: "Bone Hound", Glyph: 'H', HP: 18, MaxHP: 18, MinDamage: 4, MaxDamage: 7, Undead: true}
+		return monster{Kind: kind, Name: "Bone Hound", Glyph: monsterGlyphs[kind], HP: 18, MaxHP: 18, MinDamage: 4, MaxDamage: 7, Undead: true}
 	case monsterGargoyle:
-		return monster{Kind: kind, Name: "Stone Gargoyle", Glyph: 'Y', HP: 24, MaxHP: 24, MinDamage: 5, MaxDamage: 8}
+		return monster{Kind: kind, Name: "Stone Gargoyle", Glyph: monsterGlyphs[kind], HP: 24, MaxHP: 24, MinDamage: 5, MaxDamage: 8}
 	case monsterGraveKnight:
-		return monster{Kind: kind, Name: "Grave Knight", Glyph: 'K', HP: 26, MaxHP: 26, MinDamage: 6, MaxDamage: 9, Undead: true}
+		return monster{Kind: kind, Name: "Grave Knight", Glyph: monsterGlyphs[kind], HP: 26, MaxHP: 26, MinDamage: 6, MaxDamage: 9, Undead: true}
 	case monsterCinderDrake:
-		return monster{Kind: kind, Name: "Cinder Drake", Glyph: 'A', HP: 27, MaxHP: 27, MinDamage: 5, MaxDamage: 9}
+		return monster{Kind: kind, Name: "Cinder Drake", Glyph: monsterGlyphs[kind], HP: 27, MaxHP: 27, MinDamage: 5, MaxDamage: 9}
 	case monsterVoidSeer:
-		return monster{Kind: kind, Name: "Void Seer", Glyph: 'V', HP: 23, MaxHP: 23, MinDamage: 5, MaxDamage: 8, Undead: true}
+		return monster{Kind: kind, Name: "Void Seer", Glyph: monsterGlyphs[kind], HP: 23, MaxHP: 23, MinDamage: 5, MaxDamage: 8, Undead: true}
 	case monsterSoulLeech:
-		return monster{Kind: kind, Name: "Soul Leech", Glyph: 'L', HP: 25, MaxHP: 25, MinDamage: 5, MaxDamage: 8, Undead: true}
+		return monster{Kind: kind, Name: "Soul Leech", Glyph: monsterGlyphs[kind], HP: 25, MaxHP: 25, MinDamage: 5, MaxDamage: 8, Undead: true}
 	case monsterStormHerald:
-		return monster{Kind: kind, Name: "Storm Herald", Glyph: 'T', HP: 28, MaxHP: 28, MinDamage: 6, MaxDamage: 9}
+		return monster{Kind: kind, Name: "Storm Herald", Glyph: monsterGlyphs[kind], HP: 28, MaxHP: 28, MinDamage: 6, MaxDamage: 9}
 	case monsterBoss:
-		return monster{Kind: kind, Name: "Dread Lich", Glyph: 'B', HP: 48, MaxHP: 48, MinDamage: 6, MaxDamage: 10, Undead: true, Boss: true}
+		return monster{Kind: kind, Name: "Dread Lich", Glyph: monsterGlyphs[kind], HP: 48, MaxHP: 48, MinDamage: 6, MaxDamage: 10, Undead: true, Boss: true}
 	default:
 		panic("unknown monster kind")
 	}
@@ -242,27 +242,27 @@ func newMonsterSpec(kind monsterKind) (monster, bool) {
 	var m monster
 	switch kind {
 	case monsterUnderLich:
-		m = monster{Glyph: 'U', MaxHP: 160, MinDamage: 11, MaxDamage: 17, Undead: true}
+		m = monster{Glyph: monsterGlyphs[kind], MaxHP: 160, MinDamage: 11, MaxDamage: 17, Undead: true}
 	case monsterAshBeetle:
-		m = monster{Glyph: 'b', MaxHP: 9, MinDamage: 1, MaxDamage: 3}
+		m = monster{Glyph: monsterGlyphs[kind], MaxHP: 9, MinDamage: 1, MaxDamage: 3}
 	case monsterChainImp:
-		m = monster{Glyph: 'i', MaxHP: 12, MinDamage: 2, MaxDamage: 4}
+		m = monster{Glyph: monsterGlyphs[kind], MaxHP: 12, MinDamage: 2, MaxDamage: 4}
 	case monsterLanternWisp:
-		m = monster{Glyph: 'l', MaxHP: 10, MinDamage: 2, MaxDamage: 4, Undead: true}
+		m = monster{Glyph: monsterGlyphs[kind], MaxHP: 10, MinDamage: 2, MaxDamage: 4, Undead: true}
 	case monsterChapelSentinel:
-		m = monster{Glyph: 'C', MaxHP: 18, MinDamage: 3, MaxDamage: 6}
+		m = monster{Glyph: monsterGlyphs[kind], MaxHP: 18, MinDamage: 3, MaxDamage: 6}
 	case monsterGloomArcher:
-		m = monster{Glyph: 'a', MaxHP: 17, MinDamage: 3, MaxDamage: 5}
+		m = monster{Glyph: monsterGlyphs[kind], MaxHP: 17, MinDamage: 3, MaxDamage: 5}
 	case monsterBellRevenant:
-		m = monster{Glyph: 'R', MaxHP: 20, MinDamage: 3, MaxDamage: 6, Undead: true}
+		m = monster{Glyph: monsterGlyphs[kind], MaxHP: 20, MinDamage: 3, MaxDamage: 6, Undead: true}
 	case monsterIronrootBrute:
-		m = monster{Glyph: 'I', MaxHP: 26, MinDamage: 4, MaxDamage: 7}
+		m = monster{Glyph: monsterGlyphs[kind], MaxHP: 26, MinDamage: 4, MaxDamage: 7}
 	case monsterFrostHound:
-		m = monster{Glyph: 'H', MaxHP: 23, MinDamage: 4, MaxDamage: 7, Undead: true}
+		m = monster{Glyph: monsterGlyphs[kind], MaxHP: 23, MinDamage: 4, MaxDamage: 7, Undead: true}
 	case monsterRiftWeaver:
-		m = monster{Glyph: 'R', MaxHP: 24, MinDamage: 4, MaxDamage: 7}
+		m = monster{Glyph: monsterGlyphs[kind], MaxHP: 24, MinDamage: 4, MaxDamage: 7}
 	case monsterCrownlessKnight:
-		m = monster{Glyph: 'K', MaxHP: 32, MinDamage: 5, MaxDamage: 8, Undead: true}
+		m = monster{Glyph: monsterGlyphs[kind], MaxHP: 32, MinDamage: 5, MaxDamage: 8, Undead: true}
 	default:
 		if m, ok := additionalMonsterSpec(kind); ok {
 			return m, true

@@ -54,32 +54,32 @@ func (g *game) render(w io.Writer) {
 			event := lvl.eventAt(p)
 			switch {
 			case g.player.Pos == p:
-				ch = '@'
+				ch = glyphPlayer
 			case m != nil:
-				ch = m.Glyph
+				ch = m.glyph()
 			case g.dog.Freed && g.dog.Alive && g.dog.Pos == p:
-				ch = 'D'
+				ch = glyphDog
 			case g.cryptDoorGlyph(p) != 0:
 				ch = g.cryptDoorGlyph(p)
 			case g.trapAt(p) != nil && g.trapAt(p).Discovered && !g.trapAt(p).Spent:
-				ch = '^'
+				ch = g.trapAt(p).glyph()
 			case ch != '#' && g.epicDangerAt(p):
-				line.WriteString("\x1b[1;31mX" + ansiReset)
+				line.WriteString("\x1b[1;31m" + string(glyphEpicWarning) + ansiReset)
 				continue
 			case lvl.DogChain != nil && *lvl.DogChain == p && !g.dog.Freed:
-				ch = 'd'
+				ch = glyphChainedDog
 			case lvl.HasStair && lvl.Stairs == p:
-				ch = '>'
+				ch = glyphStairsDown
 			case lvl.HasUpStair && lvl.UpStairs == p:
-				ch = '<'
+				ch = glyphStairsUp
 			case lvl.HasEscapeStair && lvl.EscapeStairs == p && (lvl.primarySecret() == nil || lvl.primarySecret().Revealed):
-				ch = '<'
+				ch = glyphStairsUp
 			case ch != '#' && f != nil && !f.Used:
-				ch = 'F'
+				ch = glyphFountain
 			case ch != '#' && f != nil:
-				ch = 'f'
+				ch = glyphSpentFountain
 			case ch != '#' && it != nil:
-				ch = it.Glyph
+				ch = it.glyph()
 			case ch != '#' && event != nil && !event.Used:
 				ch = event.glyph()
 			case ch != '#' && lvl.Objective.marker(p) != 0:
@@ -95,12 +95,12 @@ func (g *game) render(w io.Writer) {
 		}
 		fmt.Fprintln(w, line.String())
 	}
-	fmt.Fprintln(w, "Legend: @ you  D ghost dog  d chained ghost dog  > down  < up/out  F/f fountain/spent  ) weapon  [ armor  ! potion  ? scroll  * magic  G friendly ghost  + lever  & keepsake  ^ shrine  S lost spirit  O sigil  red X Epic strike")
+	g.renderLegend(w)
 	g.renderEpicWarnings(w)
 	g.renderObjective(w)
 	g.renderCryptFeatures(w)
 	if g.crypt != nil {
-		fmt.Fprintln(w, "Crypt legend: { secret entrance  } secret exit  | sealed entrance; in the crypt, ^ marks a discovered trap.")
+		fmt.Fprintf(w, "Crypt legend: %c secret entrance  %c secret exit  %c sealed entrance. Discovered traps show their own symbols.\n", glyphCryptEntrance, glyphCryptExit, glyphSealedCrypt)
 	}
 	if note := g.contextHint(); note != "" {
 		fmt.Fprintln(w, "Here: "+note)
@@ -113,6 +113,15 @@ func (g *game) render(w io.Writer) {
 	for _, msg := range g.messages {
 		fmt.Fprintln(w, "- "+msg)
 	}
+}
+
+func (g *game) renderLegend(w io.Writer) {
+	fmt.Fprintf(w, "Legend: %c wall  %c floor  %c you  %c ghost dog  %c chained ghost dog  %c down  %c up/out  %c/%c fountain/spent\n",
+		glyphWall, glyphFloor, glyphPlayer, glyphDog, glyphChainedDog, glyphStairsDown, glyphStairsUp, glyphFountain, glyphSpentFountain)
+	fmt.Fprintf(w, "Items: %c weapon  %c armor  %c potion  %c fire scroll  %c blink  %c ward  %c sun  %c frost  %c starfire  %c phoenix ash  %c recall  %c chapter  %c side story\n",
+		itemGlyphs[itemWeapon], itemGlyphs[itemArmor], itemGlyphs[itemPotion], itemGlyphs[itemFireScroll], itemGlyphs[itemBlinkStone], itemGlyphs[itemWardingCharm], itemGlyphs[itemSunOrb], itemGlyphs[itemFrostCharm], itemGlyphs[itemStarfireOrb], itemGlyphs[itemPhoenixAsh], itemGlyphs[itemGhostRecallScroll], itemGlyphs[itemStoryScroll], itemGlyphs[itemSideStoryScroll])
+	fmt.Fprintf(w, "Events: %c friendly ghost  %c lever  %c keepsake  %c shrine  %c lost spirit  %c sigil  red %c Epic strike\n",
+		glyphFriendlyGhost, glyphLever, glyphKeepsake, glyphShrine, glyphLostSpirit, glyphRitualSigil, glyphEpicWarning)
 }
 
 func (g *game) renderInventory(w io.Writer) {
@@ -131,7 +140,7 @@ func (g *game) renderInventory(w io.Writer) {
 	fmt.Fprintf(w, "Optional challenges: %d turns, %d kills, %d Ghost Dog falls. Press j for records.\n", g.stats.Turns, g.stats.MonstersKilled, g.stats.GhostDogFalls)
 	fmt.Fprintln(w, "Consumables:")
 	for i, line := range g.inventoryLines() {
-		fmt.Fprintf(w, "%d. %s x%d\n  %s\n", len(g.player.Weapons)+len(g.player.Armors)+i+1, line.name, *line.quantity, line.description)
+		fmt.Fprintf(w, "%d. %s x%d (map %c)\n  %s\n", len(g.player.Weapons)+len(g.player.Armors)+i+1, line.name, *line.quantity, line.glyph, line.description)
 	}
 	companion := "The ghost dog is still chained somewhere below."
 	if g.dog.Freed && g.dog.Alive {
@@ -197,7 +206,7 @@ func (g *game) renderInspect(w io.Writer) {
 		fmt.Fprintln(w, "- None close enough to matter right now.")
 	} else {
 		for _, m := range threats {
-			fmt.Fprintf(w, "- %s: %s (%c) HP %d/%d damage %d-%d difficulty %d. %s\n", relativeTo(g.player.Pos, m.Pos), m.Name, m.Glyph, m.HP, m.MaxHP, m.MinDamage, m.MaxDamage, monsterDifficulty(*m), monsterPower(m.Kind))
+			fmt.Fprintf(w, "- %s: %s (%c) HP %d/%d damage %d-%d difficulty %d. %s\n", relativeTo(g.player.Pos, m.Pos), m.Name, m.glyph(), m.HP, m.MaxHP, m.MinDamage, m.MaxDamage, monsterDifficulty(*m), monsterPower(m.Kind))
 		}
 	}
 	fmt.Fprintln(w, "Nearby loot:")
@@ -206,7 +215,7 @@ func (g *game) renderInspect(w io.Writer) {
 		fmt.Fprintln(w, "- No notable loot nearby.")
 	} else {
 		for _, it := range loot {
-			fmt.Fprintf(w, "- %s: %s\n", relativeTo(g.player.Pos, it.Pos), inspectItemText(it))
+			fmt.Fprintf(w, "- %s: %s (map %c)\n", relativeTo(g.player.Pos, it.Pos), inspectItemText(it), it.glyph())
 		}
 	}
 	if g.dog.Freed && g.dog.Alive && g.canSee(g.dog.Pos) {
@@ -341,15 +350,15 @@ type inventoryLine struct {
 
 func (g *game) inventoryLines() []inventoryLine {
 	return []inventoryLine{
-		{"Healing Potion", &g.player.Potions, "Use p to restore 12-18 health instantly.", itemPotion, '!'},
-		{"Fire Scroll", &g.player.FireScrolls, "Use f to blast the nearest monster within 6 tiles and scorch adjacent foes.", itemFireScroll, '?'},
-		{"Blink Stone", &g.player.BlinkStones, "Use g to teleport you and Ghost Dog far from monsters, outside secret rooms.", itemBlinkStone, '*'},
-		{"Warding Charm", &g.player.WardingCharms, "Use b to reduce incoming damage to you and your Ghost Dog for the next 3 enemy turns.", itemWardingCharm, '*'},
-		{"Sun Orb", &g.player.SunOrbs, "Use u to burn every undead monster on the current floor.", itemSunOrb, '*'},
-		{"Frost Charm", &g.player.FrostCharms, "Use t to freeze and damage the nearest enemy for two turns.", itemFrostCharm, '*'},
-		{"Starfire Orb", &g.player.StarfireOrbs, "Use o to deal 18-24 damage to the nearest enemy within 6 tiles.", itemStarfireOrb, '*'},
-		{"Phoenix Ash", &g.player.PhoenixAshes, "Use n to restore 22-30 health below full health.", itemPhoenixAsh, '*'},
-		{"Ghost Dog Recall Scroll", &g.player.GhostRecallScrolls, "Use r to summon a fallen Ghost Dog at full hit points.", itemGhostRecallScroll, '?'},
+		{"Healing Potion", &g.player.Potions, "Use p to restore 12-18 health instantly.", itemPotion, itemGlyphs[itemPotion]},
+		{"Fire Scroll", &g.player.FireScrolls, "Use f to blast the nearest monster within 6 tiles and scorch adjacent foes.", itemFireScroll, itemGlyphs[itemFireScroll]},
+		{"Blink Stone", &g.player.BlinkStones, "Use g to teleport you and Ghost Dog far from monsters, outside secret rooms.", itemBlinkStone, itemGlyphs[itemBlinkStone]},
+		{"Warding Charm", &g.player.WardingCharms, "Use b to reduce incoming damage to you and your Ghost Dog for the next 3 enemy turns.", itemWardingCharm, itemGlyphs[itemWardingCharm]},
+		{"Sun Orb", &g.player.SunOrbs, "Use u to burn every undead monster on the current floor.", itemSunOrb, itemGlyphs[itemSunOrb]},
+		{"Frost Charm", &g.player.FrostCharms, "Use t to freeze and damage the nearest enemy for two turns.", itemFrostCharm, itemGlyphs[itemFrostCharm]},
+		{"Starfire Orb", &g.player.StarfireOrbs, "Use o to deal 18-24 damage to the nearest enemy within 6 tiles.", itemStarfireOrb, itemGlyphs[itemStarfireOrb]},
+		{"Phoenix Ash", &g.player.PhoenixAshes, "Use n to restore 22-30 health below full health.", itemPhoenixAsh, itemGlyphs[itemPhoenixAsh]},
+		{"Ghost Dog Recall Scroll", &g.player.GhostRecallScrolls, "Use r to summon a fallen Ghost Dog at full hit points.", itemGhostRecallScroll, itemGlyphs[itemGhostRecallScroll]},
 	}
 }
 

@@ -76,6 +76,37 @@ func TestHealingShrineAndKeepsakeSupportOnlyALivingCompanion(t *testing.T) {
 	}
 }
 
+func TestKeepsakeHealingThroughExecutableAndSaveLoad(t *testing.T) {
+	g := openArena()
+	g.current().Events = []floorEvent{{Kind: eventKeepsake, Pos: pos{6, 5}}}
+	g.dog.Freed, g.dog.Pos, g.dog.HP = true, pos{5, 4}, 10
+	wards := g.player.WardingCharms
+	g.saveDir = t.TempDir()
+	if err := g.save(); err != nil {
+		t.Fatal(err)
+	}
+	cmd := gameCommand(t, "--load-file", g.saveFile, "--save-file-path", g.saveDir)
+	cmd.Stdin = strings.NewReader("y\nsave\nload\ny\nsave\nquit\n")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("executable: %v\n%s", err, output)
+	}
+	loaded, err := loadGame(lastSavePath(t, string(output)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if loaded.dog.HP != 18 || loaded.player.WardingCharms != wards+1 || !loaded.current().Events[0].Used || loaded.stats.Turns != 1 {
+		t.Fatalf("keepsake should heal 8 HP and grant one ward once across save/load: dog HP=%d wards=%d used=%t turns=%d",
+			loaded.dog.HP, loaded.player.WardingCharms, loaded.current().Events[0].Used, loaded.stats.Turns)
+	}
+	if loaded.rng.State != g.rng.State {
+		t.Fatal("keepsake healing should preserve RNG through save/load")
+	}
+	if !strings.Contains(string(output), "Ghost dog: adopted (18/34 HP)") || !strings.Contains(string(output), "nothing nearby") {
+		t.Fatalf("keepsake healing should appear in the status and remain spent after loading:\n%s", output)
+	}
+}
+
 func TestLeverCreatesAndPreservesAShortcut(t *testing.T) {
 	g := blinkArena()
 	lvl := g.current()
