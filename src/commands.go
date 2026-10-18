@@ -24,10 +24,11 @@ func (g *game) processCommand(cmd string) {
 		}
 		g.stats.Turns++
 		g.advanceEnemies()
+		g.finishAdventureTurn()
 		return
 	}
 
-	previousLevel, previousPos := g.currentLevel, g.player.Pos
+	previousLevel, previousPos, previouslyInCrypt := g.currentLevel, g.player.Pos, g.inCrypt
 	acted := false
 	if strings.HasPrefix(cmd, "equip ") {
 		acted = g.equipCommand(cmd)
@@ -79,12 +80,16 @@ func (g *game) processCommand(cmd string) {
 
 	if acted {
 		g.stats.Turns++
-		if g.currentLevel != previousLevel || g.player.Pos != previousPos {
+		if g.inCrypt && previouslyInCrypt && g.player.Pos != previousPos {
+			g.triggerCryptTrap(previousPos)
+		}
+		if g.currentLevel != previousLevel || g.inCrypt != previouslyInCrypt || g.player.Pos != previousPos {
 			g.describeNearbyObjects(previousLevel, previousPos)
 		}
 		if !g.won && g.player.HP > 0 {
 			g.advanceEnemies()
 		}
+		g.finishAdventureTurn()
 	} else {
 		g.messages = append(previousMessages, g.messages...)
 	}
@@ -219,6 +224,9 @@ func (g *game) tryMove(cmd string) bool {
 		g.attackMonster(m)
 		return true
 	}
+	if handled, acted := g.useCryptDoor(next); handled {
+		return acted
+	}
 	for step := 2; step <= g.player.Weapon.effectiveReach(); step++ {
 		target := pos{X: g.player.Pos.X + dx*step, Y: g.player.Pos.Y + dy*step}
 		if !g.inBounds(target) || lvl.Tiles[target.Y][target.X] == '#' {
@@ -246,6 +254,8 @@ func (g *game) tryMove(cmd string) bool {
 		g.dog.Freed = true
 		g.placeDogNearPlayer()
 		g.addMessage("You free the ghost dog from its silver chain. It chooses you immediately.")
+		g.adventure.RescueFloor = g.currentLevel + 1
+		g.ashMoment("rescue", "Ash presses his pale head against your hand, then falls into step beside you.")
 	}
 	g.collectItems()
 	return true
@@ -274,10 +284,13 @@ func (g *game) canDogOccupyAfterPlayerMove(p, futurePlayer pos) bool {
 	if !g.inBounds(p) || g.current().Tiles[p.Y][p.X] == '#' || p == futurePlayer {
 		return false
 	}
-	return g.monsterAt(g.current(), p) == nil
+	return !g.epicDangerAt(p) && g.monsterAt(g.current(), p) == nil
 }
 
 func (g *game) search() bool {
+	if g.searchCrypt() {
+		return true
+	}
 	lvl := g.current()
 	hidden := lvl.hiddenRoomNear(g.player.Pos)
 	if hidden == nil {
@@ -381,7 +394,7 @@ func (g *game) regenerateStairGuardians(lvl *level) {
 					(!g.dog.Freed && lvl.DogChain != nil && p == *lvl.DogChain) {
 					continue
 				}
-				if g.monsterAt(lvl, p) != nil || g.itemAt(lvl, p) != nil || g.fountainAt(lvl, p) != nil || lvl.eventAt(p) != nil || (g.dog.Freed && g.dog.Alive && g.dog.Pos == p) {
+				if g.cryptDoorGlyph(p) != 0 || lvl.Objective.marker(p) != 0 || g.monsterAt(lvl, p) != nil || g.itemAt(lvl, p) != nil || g.fountainAt(lvl, p) != nil || lvl.eventAt(p) != nil || (g.dog.Freed && g.dog.Alive && g.dog.Pos == p) {
 					continue
 				}
 				spots = append(spots, p)

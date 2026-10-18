@@ -132,7 +132,7 @@ func (g *game) nearestMonsterFromLimit(origin pos, limit int) *monster {
 	var best *monster
 	bestDist := math.MaxInt
 	for _, m := range g.current().Monsters {
-		if m.HP <= 0 {
+		if m.HP <= 0 || !g.canSee(m.Pos) {
 			continue
 		}
 		d := distance(origin, m.Pos)

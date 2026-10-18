@@ -13,10 +13,14 @@ func (g *game) restoreGhostDogAfterLichDeath() {
 	g.dog.HP = g.dog.MaxHP
 	g.placeDogNearPlayer()
 	g.addMessage("The Dread Lich's death frees the Ghost Dog. It reappears at full hit points.")
+	g.ashMoment("return", "Ash finds your hand again, as if the darkness between you had only been a bad dream.")
 }
 
 func (g *game) dogTurn() {
 	if !g.dog.Alive {
+		return
+	}
+	if g.dodgeEpicWarning() {
 		return
 	}
 	if focus := g.activeDogFocus(); focus != nil {
@@ -108,7 +112,7 @@ func (g *game) stepDogTowardPlayersFight(target pos) bool {
 			return true
 		}
 		for _, next := range g.openNeighbors(current.position, true) {
-			if seen[next] || distance(next, g.player.Pos) > 2 {
+			if seen[next] || distance(next, g.player.Pos) > 2 || g.epicDangerAt(next) {
 				continue
 			}
 			seen[next] = true
@@ -157,7 +161,7 @@ func (g *game) placeDogNearPlayer() bool {
 	for y := 1; y < mapHeight-1; y++ {
 		for x := 1; x < mapWidth-1; x++ {
 			p := pos{X: x, Y: y}
-			if lvl.Tiles[y][x] == '#' || p == g.player.Pos || g.monsterAt(lvl, p) != nil {
+			if lvl.Tiles[y][x] == '#' || p == g.player.Pos || g.monsterAt(lvl, p) != nil || g.epicDangerAt(p) {
 				continue
 			}
 			if d := distance(p, g.player.Pos); d < bestDistance {

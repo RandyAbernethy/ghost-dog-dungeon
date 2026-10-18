@@ -13,18 +13,22 @@ import (
 const saveFormatVersion = 2
 
 type saveState struct {
-	FormatVersion int           `json:"format_version"`
-	RNGState      uint64        `json:"rng_state"`
-	Seed          int64         `json:"seed"`
-	Levels        []*level      `json:"levels"`
-	CurrentLevel  int           `json:"current_level"`
-	Player        player        `json:"player"`
-	Dog           ghostDog      `json:"dog"`
-	Messages      []string      `json:"messages"`
-	KnownMonsters []monsterKind `json:"known_monsters"`
-	Won           bool          `json:"won"`
-	LevelTiles    []string      `json:"level_tiles"`
-	Stats         runStats      `json:"stats"`
+	FormatVersion int            `json:"format_version"`
+	RNGState      uint64         `json:"rng_state"`
+	Seed          int64          `json:"seed"`
+	Levels        []*level       `json:"levels"`
+	CurrentLevel  int            `json:"current_level"`
+	Player        player         `json:"player"`
+	Dog           ghostDog       `json:"dog"`
+	Messages      []string       `json:"messages"`
+	KnownMonsters []monsterKind  `json:"known_monsters"`
+	Won           bool           `json:"won"`
+	LevelTiles    []string       `json:"level_tiles"`
+	Stats         runStats       `json:"stats"`
+	Adventure     adventureState `json:"adventure,omitempty"`
+	Crypt         *lichCrypt     `json:"crypt,omitempty"`
+	CryptTiles    string         `json:"crypt_tiles,omitempty"`
+	InCrypt       bool           `json:"in_crypt,omitempty"`
 }
 
 func prepareSaveDirectory(path string) (string, error) {
@@ -54,11 +58,17 @@ func (g *game) save() error {
 		RNGState:      g.rng.State, Seed: g.seed, Levels: g.levels,
 		CurrentLevel: g.currentLevel, Player: g.player, Dog: g.dog,
 		Messages:      append([]string(nil), g.messages...),
+		Adventure:     g.adventure,
+		Crypt:         g.crypt,
+		InCrypt:       g.inCrypt,
 		KnownMonsters: g.knownMonsterKinds(), Won: g.won, Stats: g.stats,
 		LevelTiles: make([]string, len(g.levels)),
 	}
 	for i, lvl := range g.levels {
 		state.LevelTiles[i] = encodeTiles(lvl.Tiles)
+	}
+	if g.crypt != nil {
+		state.CryptTiles = encodeTiles(g.crypt.Floor.Tiles)
 	}
 	data, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {
@@ -129,6 +139,31 @@ func loadGame(path string) (*game, error) {
 		}
 		lvl.Tiles = tiles
 	}
+	if state.InCrypt && state.Crypt == nil {
+		return nil, errors.New("save file is inside the crypt but is missing its dungeon")
+	}
+	if state.Crypt != nil {
+		c := state.Crypt
+		if c.ParentFloor < 3 || c.ParentFloor > 6 || c.Floor == nil || c.Floor.Index != cryptDepth || (state.InCrypt && c.ParentFloor != state.CurrentLevel) {
+			return nil, errors.New("save file has an invalid crypt floor or entrance")
+		}
+		tiles, err := decodeTiles(state.CryptTiles)
+		if err != nil {
+			return nil, fmt.Errorf("decode crypt: %w", err)
+		}
+		c.Floor.Tiles = tiles
+		for _, p := range []pos{c.Entrance, c.ReturnDoor, c.Exit, c.Floor.Start} {
+			if p.X < 0 || p.X >= mapWidth || p.Y < 0 || p.Y >= mapHeight {
+				return nil, errors.New("save file has an invalid crypt door position")
+			}
+		}
+		if state.InCrypt {
+			p := state.Player.Pos
+			if p.X < 0 || p.X >= mapWidth || p.Y < 0 || p.Y >= mapHeight || tiles[p.Y][p.X] == '#' {
+				return nil, errors.New("save file places the player outside the crypt's open terrain")
+			}
+		}
+	}
 	known := map[monsterKind]bool{}
 	for _, kind := range state.KnownMonsters {
 		known[kind] = true
@@ -138,7 +173,8 @@ func loadGame(path string) (*game, error) {
 		saveFile: path, saveDir: filepath.Dir(path), levels: state.Levels,
 		currentLevel: state.CurrentLevel, player: state.Player, dog: state.Dog,
 		messages: append([]string(nil), state.Messages...), knownMonsters: known,
-		won: state.Won, stats: state.Stats,
+		won: state.Won, stats: state.Stats, adventure: state.Adventure,
+		crypt: state.Crypt, inCrypt: state.InCrypt,
 	}, nil
 }
 

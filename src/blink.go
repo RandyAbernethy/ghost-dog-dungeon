@@ -20,7 +20,7 @@ func (g *game) safestBlinkLanding() (blinkLanding, bool) {
 	for y := 1; y < mapHeight-1; y++ {
 		for x := 1; x < mapWidth-1; x++ {
 			p := pos{X: x, Y: y}
-			if lvl.Tiles[y][x] == '#' || secret[p] || g.monsterAt(lvl, p) != nil || (!g.dog.Freed && lvl.DogChain != nil && p == *lvl.DogChain) {
+			if lvl.Tiles[y][x] == '#' || secret[p] || g.epicDangerAt(p) || g.monsterAt(lvl, p) != nil || (!g.dog.Freed && lvl.DogChain != nil && p == *lvl.DogChain) {
 				continue
 			}
 			nearest := math.MaxInt

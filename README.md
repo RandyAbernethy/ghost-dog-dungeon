@@ -293,16 +293,93 @@ consumables, and positioning still matters. Epics never return as stairwell guar
 to defeat the Dread Lich or escape. The Oracle Crown prevents the Frost Monarch's binding and Dusk Tyrant's hex;
 spell wards reduce the Storm Leviathan's lightning damage to you.
 
+Each Epic also has a signature attack: **Hammerfall**, **Grave Cross**, **Cinder Lane**, **Soul Scythe**,
+**Ice Bloom**, **Thunder Marks**, **Eclipse**, or **Shard Fan**, respectively. Within two tiles, it can prepare
+the attack on its last rest turn. **Red X** tiles show exactly where it will strike on its next active turn,
+replacing its usual attack or movement. You have one action to move clear; the tiles never follow you.
+Your `@` and Ash's `D` turn red when threatened, and the warning names the attack below the map and in **m** inspection.
+Ash spends his action dodging rather than attacking, and avoids walking or blinking onto marked tiles.
+Freezing or stunning the Epic delays its warning; fleeing or death cancels it. Walls block warnings, and the
+Epic does not prepare a pattern if every neighboring escape tile is blocked. Reading screens and saving are free.
+
 Defeating any Epic guarantees one elite treasure on its final tile: rare equipment or a powerful consumable. Kills by
 Ghost Dog, magic items, and gear powers earn the same reward. Walk onto the tile to collect it; equipment still needs
 to be equipped. Rewards persist through save/load. Exact generation and reward rules are in the
 [gameplay contracts](docs/gameplay-contracts.md#relics-and-epic-encounters).
 
 
+## Optional Objective Rooms
+
+A new dungeon has a 35% chance to receive one optional objective room on floors 3–8, if suitable space exists.
+They use existing open terrain and monsters, and are never required to descend or escape. Press **m** to inspect
+their rules and progress. Two objectives are possible:
+
+- **The Vigil of the Lost Spirit:** press **y** beside `S` to begin. Over the next three successful turns, keep
+  yourself or freed, living Ash within three tiles. Adjacent enemies erode the spirit's three points of resolve;
+  protect it before they extinguish its light. Moving away from both protectors or leaving the floor abandons it.
+- **The Broken Ritual:** stand on each of three `O` sigils and press **y**. Each distinct sigil costs one turn
+  to break; partial progress persists while you explore elsewhere.
+
+Completing either grants one healing potion, warding charm, or frost charm, chosen when the dungeon is generated.
+Progress, failure, completion, and the fixed reward survive saving and revisiting. Rewards can be earned only once.
+Reading instructions or trying to break a spent sigil takes no turn.
+
+
+## This Lich's crypt
+
+Every new dungeon has a secret crypt entrance on one of floors **4–7**. Search beside the burial seal with **k**
+to reveal `{`. Its warning explains the danger before you enter. Stepping through takes one turn and seals the
+entrance permanently. This is an extra hidden floor; the main dungeon still has ten floors.
+
+The crypt fills the map with small burial rooms and winding passages. You arrive at one end. The **Under Lich**
+holds the maze's only central crossing: a tough undead guardian with 160 HP and 6 guard, attacking every other turn
+with claws or nearby grave-fire and hexes. He cannot be frightened away from his post. His defeat counts toward
+your kills and difficulty, but does not break the Dread Lich's curse or revive Ash.
+
+- All hostile monsters are undead. Their combined difficulty, **including the Under Lich**, matches floor eight.
+- There are **no fountains**, ordinary stairs, or secret rooms inside. Floor-eight weapons, armor, and magic can be
+  found; equipment is placed on the entrance side of the guardian.
+- You can see only **three tiles** around you, with walls blocking sight. Map, inspection, codex discovery, and
+  targeted consumables honor this limit. Sun Orbs retain their floor-wide effect against undead.
+- **Blink Stones and Warding Charms are consumed without effect**, spending one turn. Entry also dispels an active
+  ward. Armor and its passive traits retain their ordinary behavior.
+- Find the far wall where cold air leaks through, then search with **k** to reveal `}`. Stepping through returns
+  you to a different secret door on the entrance floor. There is no return through the sealed entrance.
+
+The maze has **1–4 traps**, chosen without repeating a type. Each search within one tile rolls a **50% chance**
+to discover each nearby hidden trap. A discovered trap appears as `^`; stand beside it and press **y** to disarm
+it safely, spending one turn. Stepping onto it before disarming still triggers it. Ash does not trigger traps.
+
+| Trap | Effect |
+| --- | --- |
+| Falling stone block | Heavy physical damage from the ceiling. |
+| Collapsing pit | Physical damage; your next attempted move climbs out instead. |
+| Dart volley | Physical damage from hidden wall slits. |
+| Flame jet | A burst of fire damage; spell wards apply. |
+| Frost rune | Spell damage and an ice hold; Oracle Crown prevents the hold. |
+| Grave bell | Spell damage and a hex weakening your next strike. |
+| Choking gas | Two poison damage on each of three action turns, including the trigger turn; armor cannot block it. |
+| Repulsion rune | Spell damage and a push back onto your previous tile if it is clear. |
+
+The Oracle Crown cannot remove a physical pit hold. Already inhaled poison continues after leaving the crypt;
+reading, saving, and failed actions do not advance it. Discovered, triggered, and disarmed traps, the guardian,
+loot, and both doors persist exactly through save/load. Completing the crypt is optional and does not finish the run.
+Existing format-2 saves still load unchanged; start a new game to receive the crypt.
+
+
 ## Book of Ghost Dog and Records
 
 Your inventory includes the **Book of Ghost Dog** from the start. Press **B** or type `book` in line-input mode to read
 collected chapters and side stories without spending a turn. The ten numbered chapters tell Ash's main story.
+Every collected side story contributes a memory to the escape ending. The dream and unfinished song also respond
+to whether Ash escapes with you; unread stories remain undisclosed.
+
+Living Ash has occasional personality moments at his rescue, fountains, keepsake, and return from the mist.
+During quiet exploration he may react to the floor or your injuries, at most once per floor and at least fifteen
+turns after his last moment. These moments add flavor without changing combat stats or spending extra turns or RNG.
+When you escape or die, **Your Adventure** recounts the floors and secrets reached, collected stories, Ash's rescue
+and falls, defeated Epics, completed objectives, and final weapon. It uses recorded events and never invents missing
+history from an older save. Quitting an unfinished run does not produce a chronicle.
 
 Press **j** or type `challenges` to see the current run and personal records:
 
@@ -318,8 +395,10 @@ Movement effects name their cause: spider silk webs you, Frostbound Hounds freez
 silver chains, and Rift Weavers bind you with rift magic. Each costs one attempted movement turn; other actions and
 reading screens keep their existing behavior. The Oracle Crown prevents all four effects and clears them when equipped.
 
-Save format 2 stores each movement effect and the connected chamber layout. Saves from earlier builds are not
-supported; start a new game. Personal records are retained.
+Save format 2 stores each movement effect and the connected chamber layout. Existing format-2 saves remain supported;
+new objective, warning, adventure, and crypt fields are optional. Loading preserves the saved dungeon and RNG without
+adding areas, objective rooms, or past events. Unsupported formats, including format 1, require a new game.
+Personal records are retained.
 
 Records are saved automatically in `~/.ghost-dog-data.json` when you die or escape, without using the save command.
 Personal records appear at game startup and game end, and are shared across runs and save files. Saves retain equipment,

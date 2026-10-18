@@ -1,6 +1,7 @@
 # Working on Ghost Dog Dungeon
 
-This is a Go terminal roguelike with ten dungeon floors. Keep it readable, fair, and reproducible from a seed.
+This is a Go terminal roguelike with ten main dungeon floors and an optional hidden crypt. Keep it readable, fair,
+and reproducible from a seed.
 Keep the save format backward compatible.
 
 
@@ -49,6 +50,8 @@ Start with `src/main.go` for startup, `src/commands.go` for actions, `src/render
   another action spends a turn; never truncate busy turns.
 - Save/load must preserve the full dungeon, RNG, rewards, and challenge progress exactly, without repairing,
   rerolling, or renewing one-time rewards. Use one list of secret-room roots.
+- Use `g.current()` for the active area. The crypt is saved separately from the ten main floors; while inside it,
+  `currentLevel` retains the entrance floor for the return journey. Never use that index to select active terrain.
 - Every save creates a fresh timestamped snapshot under `--save-file-path` (default: current directory). Create missing
   directories at startup and report useful errors. Loading preserves current save-directory and record-storage
   settings; never overwrite the source snapshot or previous saves.

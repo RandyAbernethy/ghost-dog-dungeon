@@ -199,7 +199,7 @@ func TestThemesPreserveFloorDifficultyAndSeedReproduction(t *testing.T) {
 					if m.Boss {
 						bosses++
 					}
-					if !allowed[m.Kind] || m != scaleMonsterForDepth(newMonster(m.Kind), depth) {
+					if !allowed[m.Kind] || !reflect.DeepEqual(m, scaleMonsterForDepth(newMonster(m.Kind), depth)) {
 						t.Fatal("theme changed monster stats or exceeded the floor's pool")
 					}
 				}

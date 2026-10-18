@@ -16,6 +16,9 @@ type game struct {
 	won             bool
 	quit            bool
 	stats           runStats
+	adventure       adventureState
+	crypt           *lichCrypt
+	inCrypt         bool
 	recordsFile     string
 	generationError error
 }
@@ -57,6 +60,11 @@ func newGameWithSaveDir(seed int64, saveDir string) *game {
 	for _, lvl := range g.levels {
 		g.prepareGhostGifts(lvl)
 	}
+	g.addObjectiveRoom()
+	if err := g.addLichCrypt(); err != nil {
+		g.generationError = err
+		return g
+	}
 
 	g.levels[0].Visited = true
 	g.messages = []string{
@@ -70,4 +78,9 @@ func (g *game) addMessage(msg string) {
 	g.messages = append(g.messages, msg)
 }
 
-func (g *game) current() *level { return g.levels[g.currentLevel] }
+func (g *game) current() *level {
+	if g.inCrypt {
+		return g.crypt.Floor
+	}
+	return g.levels[g.currentLevel]
+}

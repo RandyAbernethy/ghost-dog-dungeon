@@ -56,6 +56,15 @@ test assertions as the balance baseline rather than an unspecified previous vers
   use the existing one-move/next-strike effects and Oracle Crown immunity. Lightning affects only the player and a freed,
   living Ghost Dog within two tiles, only after a damaging melee strike; player spell wards apply. See
   [epic_monsters.go](../src/epic_monsters.go).
+- During the last rest turn, an Epic within two tiles may prepare its named signature. Store the exact warning tiles
+  without drawing RNG; on its next active turn, strike those tiles instead of moving or making a normal attack.
+  Never retarget after the warning. Walls block its line, and every threatened actor must initially have an open
+  neighboring escape tile. Signature damage uses the monster's saved damage range; magical signatures respect spell
+  wards. Existing melee powers remain tied to melee hits. Ice Bloom and Eclipse apply existing binding/hex immunity.
+- Map and inspect show the pending attack, including when the player or Ash occupies a warning tile. Reading,
+  rendering, failed actions and saves cannot advance it. Freezing/stunning delays it; fleeing or death clears it.
+  Ash spends his action dodging if threatened, avoids marked movement destinations, and never dodges while inactive.
+  Blink excludes warning tiles for both companions. Pending warnings survive save/load exactly.
 - Gear powers require equipped pieces and must not revive Ghost Dog. God protection is powerful but not invulnerability.
 - Defeated Epics guarantee one additional elite treasure at their final position, independently of linked rooms:
   God armor, an Artifact weapon, a Starfire Orb, a Sun Orb, Phoenix Ash, or Ghost Dog Recall. Avoid duplicate equipment.
@@ -65,6 +74,8 @@ test assertions as the balance baseline rather than an unspecified previous vers
 Preserve placement, rarity, equipment-power, kill-source, and persistence coverage in
 [relics_test.go](../src/relics_test.go), [epic_monsters_test.go](../src/epic_monsters_test.go), and
 [epic_loot_test.go](../src/epic_loot_test.go).
+Signature cadence, dodge space, cancellation, companion movement, and persistence are covered in
+[epic_strikes_test.go](../src/epic_strikes_test.go) and [adventure_cli_test.go](../src/adventure_cli_test.go).
 
 ## Events and movement effects
 
@@ -78,6 +89,73 @@ Use [events_test.go](../src/events_test.go), [ghost_gifts_test.go](../src/ghost_
 [prompts_test.go](../src/prompts_test.go), [blink_test.go](../src/blink_test.go), and
 [conditions_test.go](../src/conditions_test.go) for event, arrival, movement, and persistence regressions. Interactive
 gift offers live in [ghost_gifts.go](../src/ghost_gifts.go).
+
+## Optional objectives and adventure narrative
+
+- Generate at most one optional objective in a new dungeon: one 35% roll, then a suitable existing 3-by-3 open area on
+  floors 3–8. Keep the whole area clear of features, actors, secret footprints and special rooms; do not carve terrain,
+  add enemies or change ordinary budgets. Choose its kind and consumable reward through the saved RNG during generation.
+  Loading never adds objectives. Preserve reproducibility and the rarity/placement sweep in
+  [objectives_test.go](../src/objectives_test.go).
+- Starting the spirit vigil spends one turn; the following three successful turns provide protection after enemies
+  act. Player or freed, living Ash must remain within three tiles on that floor. Adjacent enemies remove one resolve
+  per turn from its initial three. Losing all resolve, abandoning the area, or leaving the floor permanently fails it.
+  Death or escape cannot advance a vigil. Breaking each distinct ritual sigil requires standing on it and spending
+  one interaction turn; broken sigils, partial progress and terminal states persist.
+- Completing an objective awards its saved consumable directly once through ordinary collection. No interaction,
+  revisit, rendering or loading can reroll or duplicate it. Reading rules and interacting with spent markers are free.
+  Arrival prompts follow existing proximity boundaries. Record successful completion in the adventure state.
+- Ash's personality moments require him freed and alive, are one-time by ID, and change only narrative state and the
+  current turn's log. Ambient moments require no living enemy within six tiles of either companion, at most one moment
+  on that floor, and a fifteen-turn cooldown. Contextual rescue, fountain, keepsake and revival moments remain tied to
+  those actions. Use no extra RNG or turns; no moment revives or buffs him.
+- Escape callbacks use only collected side-story IDs, in catalog order, and reflect Ash's final survival. The finished
+  run chronicle uses visited/revealed terrain, collected stories, recorded rescue floor, Epic deaths, objective successes,
+  final equipment and existing fall statistics. Only death or escape shows it, before final statistics and celebrations.
+  Rendering never records new history. Missing history in older format-2 saves stays absent; new fields are additive.
+
+Keep narrative, older-save, free-action, one-time reward and executable coverage in
+[adventure_test.go](../src/adventure_test.go), [objectives_test.go](../src/objectives_test.go), and
+[adventure_cli_test.go](../src/adventure_cli_test.go).
+
+## Hidden crypt
+
+- Every new dungeon receives one extra crypt, saved separately from the ten main levels. Generate it once with the
+  saved RNG after ordinary generation. Select two distinct concealed wall doors on one main floor 4–7, away from
+  secret-room footprints and existing features. Existing format-2 saves without a crypt stay unchanged on load.
+- Searching beside the entrance reveals it and warns about all travel/magic/sight restrictions before commitment.
+  Walking through spends one turn, permanently seals that entrance, clears active wards, and moves only a freed,
+  living companion. Leaving the parent floor refills its fountains and abandons any started spirit vigil. The far
+  exit is discovered by searching beside it, then stepping through returns to the other parent-floor door. Ordinary
+  stairs, repeated searches, and suppressed Blink Stones cannot return the player early. No rewards or actors reset.
+- Fill the map with two connected winding mazes and small rooms. A solid central divider has exactly one crossing,
+  occupied by the Under Lich; even eight-direction movement cannot bypass him. He holds that tile under fear,
+  attacks every other turn, and uses normal undead/guard, damage, freezing, companion and death rules. He is not the
+  campaign boss: no escape unlock, chapter ten or automatic companion revival on his death.
+- Include only undead, with the Under Lich included in the floor-eight total difficulty bounds. Use floor-eight
+  equipment and magic pools, without duplicating chapters or adding relics/Epics. Offer equipment on the entrance
+  side. Keep the crypt free of fountains, ordinary stairways, events, optional objectives and secret rooms.
+- Crypt sight has a Chebyshev radius of three and stops at walls. Render unseen tiles as spaces. Inspection, loot
+  lists, codex discovery, and targeted consumables obey sight; Sun Orbs keep their existing floor-wide effect.
+  Unseen ordinary monsters can approach, but cannot cast or attack through walls. Reads remain free of gameplay
+  mutations apart from existing codex bookkeeping.
+- A Warding Charm or Blink Stone with available stock is consumed and spends one action turn with no magic effect
+  or extra RNG. Active wards protect neither companion inside the crypt. Passive equipment traits still work.
+- Generate 1–4 distinct traps from the eight-kind pool, with fixed saved damage, away from actors, loot, the entry
+  and exit approaches, and the guardian. An adjacent search makes one independent 50% roll per undiscovered,
+  unspent trap. Known or spent traps do not reroll. A discovered trap can be disarmed with one interaction turn;
+  discovery alone does not make stepping on it safe. Only player movement triggers traps, once each, before the
+  enemy turn. Repulsion never places the player on an occupied tile or triggers another trap recursively.
+- Pit holds cost one attempted move and survive equipment changes; Oracle Crown does not negate a physical pit.
+  Magical ice/hex effects retain their ordinary immunity rules. Gas causes three two-damage ticks including the
+  trigger action, after enemies; it persists through the exit and saving, and only successful actions advance it.
+  Trap effects can kill the player normally. The adventure chronicle records crypt entry, escape and the guardian's
+  defeat from the saved state; leaving the crypt does not submit finished-run records.
+
+Preserve connectivity, mandatory-crossing, difficulty, rarity, placement and reproduction sweeps in
+[crypt_test.go](../src/crypt_test.go), action/discovery/immunity coverage in [traps_test.go](../src/traps_test.go),
+and complete generated-maze traversal through the compiled executable and save/load in
+[crypt_cli_test.go](../src/crypt_cli_test.go).
 
 ## Personal records
 

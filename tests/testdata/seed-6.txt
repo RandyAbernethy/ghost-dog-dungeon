@@ -1,67 +1,70 @@
 # Seed 6: ordinary commands from a fresh dungeon through the hidden escape.
-# Keep the route deterministic; checkpoints are verified by campaign_test.go.
-# Consecutive movement keys may share a line; other commands use one line each.
+# Checkpoints cover all ten floors and a free save/load on floor five.
+# The route bypasses the optional Epic and crypt, using Blink Stones in crowded fights.
 book
 equipment
 save
-az
+a
+f
+z
 equip 2
-aqeeedd
+aqeee
 equip 6
 aaddeedsxeezzqq
 # Descend to floor 2.
 >
 save
-f
-dwwwwdeeaaq
-k
-z
+ddwwwwwdewwwwweaaaa
 equip 3
-azssswwweeewqsxssssssz
+azssswweee
+k
+ww
+v
+qsxssssssz
 # Descend to floor 3.
 >
 save
 b
-wwssssz
-equip 4
-qq
-equip 10
-sssxxxxeeaa
+xas
+p
+saz
+equip 9
+xxsssxxeeaa
 # Descend to floor 4.
 >
 save
 t
-ddq
+ww
 p
+da
 p
-aa
-p
-eex
-equip 5
-aaqdddddeaqedddddd
-equip 12
-aaaaaaaaaaaaaa
+eaaaaq
 y
-aa
+qq
 v
-z
+dddxxdxx
+equip 5
+wweedddddd
+equip 12
+aaaaaazxdaaaaaaaaaaq
 k
-szadddedddddddeeddddddddddddddeeeee
+z
+v
+zadddedddddddeeddddddddddddddeeeee
 # Descend to floor 5.
 >
 save
 load
-# Save again to verify the checkpoint was restored without spending a turn.
 save
 b
 t
-wdweexs
-p
-ssszssszs
+qxsssss
 equip 13
-wwqqqqaaaaaaaaaqazsx
+wweq
+p
+qeqeqaaaaaaaaazz
 equip 6
-dx
+wqdedxdddddddddddeeaaazzaaaaaaaazss
 k
 s
 v
@@ -71,42 +74,47 @@ aewwwedddddddddddddeddxxx
 # Descend to floor 6.
 >
 save
-zzszxx
 u
-qzzqaaqaawqazza
-equip 17
-deqadddddddxxx
-t
-dxd
+dxxx
+g
+dddd
+g
+eedddddddeeeaqddew
 p
-eeeqqqex
+wwed
 v
-xddd
+wazzaaqaaqaqqazza
+equip 16
+deqaddddxsddexxdxdeexxddd
 k
-zx
+zs
 v
+d
 equip 18
 daqqaqwqqaaaaq
 # Descend to floor 7.
 >
 save
-dddxxsssssxddaazzaazz
+dd
+t
+dxxddxssxddaazzaazz
 # Descend to floor 8.
 >
 save
 b
-deqqqwwww
+eeewwa
 p
-we
+wwww
 p
-ww
+www
 p
-wqwwwqqaaa
-equip 19
-w
-r
-weee
+waqwwwaaaqeee
 v
+szzz
+equip 19
+ww
+r
+adeee
 y
 aqqqqsszzzzzzwwwqqq
 k
@@ -117,34 +125,35 @@ zwqdddxxsssssxxx
 >
 save
 f
-x
+qqqws
 n
-xssswwqdeee
+sxd
+r
+ddddsdddddddeeeee
+choose 1
+eeeddddddddde
+v
+aaaaazaawazaaaaaaaaaaz
+equip 22
+eddddddxxxxxxxxxxxxsaq
+p
+aaaaaqaaaaqaaaqqqqq
 k
 ww
-equip 21
+equip 24
 q
-v
-equip 10
-wssxszxxeeeewwwwee
-equip 23
-eddxx
-choose 3
-p
-xxxxxxxxxxsaqaaaawwwwqaww
+equip 12
+wssxsxxddddddddddee
 # Descend to floor 10.
 >
 save
-azssszzzqw
-r
-zzwqqwq
-p
-qqwzazqeeeweewwwwa
-choose 1
-b
-qqzsszqqaqqqqwqqqqqa
+azssasaaqwwawaasqzzzwqqqqawaaaw
 v
-zqsx
-# Save after the Lich falls, before the final escape action.
+aaaaaaaaqaqaazaaaqqaqq
+v
+eazqddxxxxxxxxxdxxxwewe
+choose 1
+xxxxwweewaaaaaaqqaqaazaaaqqaaaq
+# Save after defeating the Lich and reaching the hidden exit.
 save
 <

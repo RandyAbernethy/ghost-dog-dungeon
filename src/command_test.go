@@ -30,7 +30,7 @@ func TestEscapeReturnsToMapFromCommandScreensForFree(t *testing.T) {
 			if strings.Count(out.String(), "=== Ghost Dog Dungeon:") != 2 || strings.Contains(out.String(), "Unknown command") {
 				t.Fatal("Esc should redraw the map after the command screen")
 			}
-			if !reflect.DeepEqual(g.player, beforePlayer) || rat != beforeRat || g.stats != beforeStats || g.rng.State != beforeRNG || !reflect.DeepEqual(g.messages, beforeLog) {
+			if !reflect.DeepEqual(g.player, beforePlayer) || !reflect.DeepEqual(rat, beforeRat) || g.stats != beforeStats || g.rng.State != beforeRNG || !reflect.DeepEqual(g.messages, beforeLog) {
 				t.Fatal("returning to the map must not spend a turn, advance monsters, or change status effects")
 			}
 		})

@@ -62,7 +62,7 @@ func epicMonsterDescription(kind monsterKind) string {
 	default:
 		return ""
 	}
-	return "Epic: wakes within four tiles, acts once every three turns, and can be outrun. Very dangerous without God armor or an Artifact. " + trick + " Defeating it leaves one elite treasure."
+	return "Epic: wakes within four tiles, acts once every three turns, and can be outrun. Very dangerous without God armor or an Artifact. " + trick + " Prepares " + epicStrikeName(kind) + " during its last rest turn: leave the red X tiles before its next active turn. Ash dodges instead of attacking. Defeating it leaves one elite treasure."
 }
 
 func epicTreasurePool() []item {
@@ -109,6 +109,9 @@ func (g *game) epicRest(m *monster) bool {
 		g.awakenEpic(m)
 	}
 	m.ActionTurns++
+	if m.ActionTurns%3 == 0 && len(m.StrikeTiles) == 0 {
+		g.prepareEpicStrike(m)
+	}
 	return (m.ActionTurns-1)%3 != 0
 }
 

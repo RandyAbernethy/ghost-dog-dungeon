@@ -48,6 +48,10 @@ func (g *game) useWardingCharm() bool {
 		return false
 	}
 	g.player.WardingCharms--
+	if g.inCrypt {
+		g.addMessage("The crypt swallows your Warding Charm. It is consumed, but no ward forms.")
+		return true
+	}
 	g.player.ShieldTurns = 3
 	if g.dog.Freed && g.dog.Alive {
 		g.addMessage("A pale ward circles you and the Ghost Dog for the next 3 enemy turns.")
@@ -61,6 +65,11 @@ func (g *game) useBlinkStone() bool {
 	if g.player.BlinkStones == 0 {
 		g.addMessage("You have no blink stones.")
 		return false
+	}
+	if g.inCrypt {
+		g.player.BlinkStones--
+		g.addMessage("The crypt swallows your Blink Stone. It is consumed, but space refuses to fold.")
+		return true
 	}
 	landing, ok := g.safestBlinkLanding()
 	if !ok {
@@ -176,6 +185,7 @@ func (g *game) useGhostRecallScroll() bool {
 	g.player.GhostRecallScrolls--
 	g.dog.HP = g.dog.MaxHP
 	g.addMessage("The recall scroll calls the Ghost Dog back to your side at full hit points.")
+	g.ashMoment("return", "Ash finds your hand again, as if the darkness between you had only been a bad dream.")
 	return true
 }
 
@@ -207,6 +217,7 @@ func (g *game) drinkFromFountain() bool {
 		oldDogHP := g.dog.HP
 		g.dog.HP = min(g.dog.MaxHP, g.dog.HP+dogHeal)
 		g.addMessage(fmt.Sprintf("The fountain restores %d health to Ghost Dog. (%d/%d)", g.dog.HP-oldDogHP, g.dog.HP, g.dog.MaxHP))
+		g.ashMoment("fountain", "Ash laps at the water. Silver ripples spread from a tongue that should not be able to touch it.")
 	}
 	return true
 }

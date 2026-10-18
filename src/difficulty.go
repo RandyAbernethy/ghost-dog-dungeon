@@ -8,6 +8,8 @@ var floorDamageBaselines = [...]int{7, 18, 27, 50, 66, 84, 114, 134, 153, 193}
 func monsterDifficulty(m monster) int {
 	bonus := 0
 	switch m.Kind {
+	case monsterUnderLich:
+		bonus = 16 - (m.MinDamage + m.MaxDamage) // It attacks every other turn.
 	case monsterSlime, monsterWraith, monsterHollowWarden, monsterSpider, monsterCaveCrawler:
 		bonus = 6
 	case monsterBlinker, monsterGloomArcher, monsterBarrowArcher, monsterCrownlessKnight:

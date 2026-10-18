@@ -7,10 +7,13 @@ const (
 	bindingIce    bindingKind = "ice"
 	bindingChains bindingKind = "chains"
 	bindingRift   bindingKind = "rift"
+	bindingPit    bindingKind = "pit"
 )
 
 func (kind bindingKind) label() string {
 	switch kind {
+	case bindingPit:
+		return "pit"
 	case bindingWebs:
 		return "webbed"
 	case bindingIce:
@@ -26,6 +29,8 @@ func (kind bindingKind) label() string {
 
 func (kind bindingKind) blockedMessage() string {
 	switch kind {
+	case bindingPit:
+		return "You climb out of the collapsed pit, spending a movement turn."
 	case bindingWebs:
 		return "Sticky webs hold you in place for a turn."
 	case bindingIce:

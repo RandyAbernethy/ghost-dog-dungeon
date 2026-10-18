@@ -20,7 +20,7 @@ func (g *game) featureTileFree(lvl *level, p pos) bool {
 	if !g.inBounds(p) || lvl.Tiles[p.Y][p.X] == '#' || p == lvl.Start || (lvl.HasStair && p == lvl.Stairs) || (lvl.HasUpStair && p == lvl.UpStairs) || (lvl.DogChain != nil && p == *lvl.DogChain) {
 		return false
 	}
-	return g.itemAt(lvl, p) == nil && g.monsterAt(lvl, p) == nil && g.fountainAt(lvl, p) == nil && lvl.eventAt(p) == nil
+	return lvl.Objective.marker(p) == 0 && g.itemAt(lvl, p) == nil && g.monsterAt(lvl, p) == nil && g.fountainAt(lvl, p) == nil && lvl.eventAt(p) == nil
 }
 
 func (g *game) addSpecialRoom(lvl *level) {

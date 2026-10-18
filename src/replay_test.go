@@ -27,7 +27,7 @@ func TestMonsterGroupsVaryWithinFloorPools(t *testing.T) {
 			}
 			kinds, bosses := []string{}, 0
 			for _, m := range monsters {
-				if !allowed[m.Kind] || m != scaleMonsterForDepth(newMonster(m.Kind), depth) {
+				if !allowed[m.Kind] || !reflect.DeepEqual(m, scaleMonsterForDepth(newMonster(m.Kind), depth)) {
 					t.Fatalf("floor %d spawned a monster outside its difficulty pool: %+v", depth+1, m)
 				}
 				if m.Boss {

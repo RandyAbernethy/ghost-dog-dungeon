@@ -80,7 +80,7 @@ func TestStandaloneEscapeInRawTerminalReturnsWithoutAnotherKey(t *testing.T) {
 	if !strings.HasSuffix(out.String(), fmt.Sprintf("Dungeon seed: %d\n", g.seed)) {
 		t.Fatal("quitting with Ctrl-C should finish by reporting the dungeon seed")
 	}
-	if !reflect.DeepEqual(g.player, beforePlayer) || rat != beforeRat || g.stats != beforeStats || g.rng.State != beforeRNG || len(g.current().Items) != 0 || !reflect.DeepEqual(g.messages, beforeLog) {
+	if !reflect.DeepEqual(g.player, beforePlayer) || !reflect.DeepEqual(rat, beforeRat) || g.stats != beforeStats || g.rng.State != beforeRNG || len(g.current().Items) != 0 || !reflect.DeepEqual(g.messages, beforeLog) {
 		t.Fatal("Esc must cancel the pending drop and leave game time and state unchanged")
 	}
 }

@@ -20,6 +20,7 @@ var allMonsterKinds = []monsterKind{
 	monsterSoulLeech,
 	monsterStormHerald,
 	monsterBoss,
+	monsterUnderLich,
 	monsterAshBeetle, monsterChainImp, monsterLanternWisp, monsterChapelSentinel,
 	monsterGloomArcher, monsterBellRevenant, monsterIronrootBrute, monsterFrostHound,
 	monsterRiftWeaver, monsterCrownlessKnight,
@@ -215,7 +216,7 @@ func monsterPower(kind monsterKind) string {
 
 func (g *game) noteVisibleMonsters() {
 	for _, m := range g.current().Monsters {
-		if m.HP > 0 {
+		if m.HP > 0 && g.canSee(m.Pos) {
 			g.knownMonsters[m.Kind] = true
 		}
 	}
@@ -240,6 +241,8 @@ var newMonsterKindsByFloor = [...]monsterKind{
 func newMonsterSpec(kind monsterKind) (monster, bool) {
 	var m monster
 	switch kind {
+	case monsterUnderLich:
+		m = monster{Glyph: 'U', MaxHP: 160, MinDamage: 11, MaxDamage: 17, Undead: true}
 	case monsterAshBeetle:
 		m = monster{Glyph: 'b', MaxHP: 9, MinDamage: 1, MaxDamage: 3}
 	case monsterChainImp:
@@ -312,6 +315,8 @@ func (g *game) newMonsterPower(m *monster) bool {
 
 func monsterGuard(kind monsterKind) int {
 	switch kind {
+	case monsterUnderLich:
+		return 6
 	case monsterAshBeetle, monsterRustGuard:
 		return 1
 	case monsterChapelSentinel, monsterObsidianGuard:
@@ -339,6 +344,8 @@ func monsterGuard(kind monsterKind) int {
 
 func newMonsterDescription(kind monsterKind) string {
 	switch kind {
+	case monsterUnderLich:
+		return "Undead crypt guardian: 160 health, 6 guard. Holds the maze's only crossing and cannot be driven from it. Acts every other turn; claws adjacent foes or casts grave-fire and a hex within three visible tiles. Killing it does not break the Dread Lich's curse."
 	case monsterAshBeetle:
 		return "Its ash-coated shell blocks 1 damage per hit."
 	case monsterChainImp:

@@ -87,7 +87,7 @@ func (g *game) loop(stdin io.Reader, stdout io.Writer) error {
 		} else {
 			fmt.Fprintln(stdout, "\nYou escaped the dungeon. Victory!")
 		}
-		fmt.Fprintln(stdout, "Beside the door, you see a clean bowl filled with fresh water.")
+		g.renderEnding(stdout)
 	case g.player.HP <= 0:
 		g.render(stdout)
 		fmt.Fprintln(stdout, "\nYou fall in the dark. The Dread Lich keeps the dungeon.")
@@ -95,6 +95,7 @@ func (g *game) loop(stdin io.Reader, stdout io.Writer) error {
 		fmt.Fprintln(stdout, "You retreat before the dungeon can claim you.")
 	}
 	if g.won || g.player.HP <= 0 {
+		g.renderChronicle(stdout)
 		achievements, err := g.recordChallenges()
 		if err != nil {
 			fmt.Fprintf(stdout, "Could not save challenge records: %v\n", err)

@@ -22,9 +22,19 @@ func TestEpicsMoveAndAttackSlowlyAndCanBeOutrun(t *testing.T) {
 		if m.Pos != first {
 			t.Fatalf("%s should rest for two turns between steps", kind)
 		}
+		if len(m.StrikeTiles) == 0 {
+			t.Fatalf("%s should telegraph its next active attack", kind)
+		}
+		hpBeforeDodge := g.player.HP
+		for _, p := range g.openNeighbors(g.player.Pos, true) {
+			if !g.epicDangerAt(p) {
+				g.player.Pos = p
+				break
+			}
+		}
 		g.monsterTurn(&m)
-		if m.Pos == first {
-			t.Fatalf("%s should take its next step on turn four", kind)
+		if m.Pos != first || len(m.StrikeTiles) != 0 || g.player.HP != hpBeforeDodge || !strings.Contains(strings.Join(g.messages, "\n"), "strikes empty stone") {
+			t.Fatalf("%s should spend its fourth turn on the warned tiles and allow a dodge", kind)
 		}
 		g = varietyArena(1)
 		m = newMonster(kind)

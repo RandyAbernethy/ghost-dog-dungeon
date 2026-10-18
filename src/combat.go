@@ -60,7 +60,9 @@ func (g *game) damageMonsterPiercing(m *monster, damage int, verb string, pierci
 		g.addMessage(fmt.Sprintf("%s's armor blocks %d damage.", m.Name, blocked))
 	}
 	damage = max(0, damage-guard)
-	g.knownMonsters[m.Kind] = true
+	if g.canSee(m.Pos) {
+		g.knownMonsters[m.Kind] = true
+	}
 	if g.turnDamage == nil {
 		g.turnDamage = make(map[*monster]int)
 	}
@@ -76,6 +78,7 @@ func (g *game) damageMonsterPiercing(m *monster, damage int, verb string, pierci
 		return
 	}
 	m.HP = 0
+	m.StrikeTiles = nil
 	g.stats.MonstersKilled++
 	g.stats.DifficultyDefeated += monsterDifficulty(*m)
 	g.addMessage(fmt.Sprintf("%s falls.", m.Name))
@@ -92,6 +95,7 @@ func (g *game) damageMonsterPiercing(m *monster, damage int, verb string, pierci
 		}
 	}
 	if epicMonster(m.Kind) {
+		g.adventure.EpicsDefeated = append(g.adventure.EpicsDefeated, m.Name)
 		g.dropEpicTreasure(m)
 	}
 	if g.dog.Freed && !g.dog.Alive && g.rng.Intn(100) < 10 {
@@ -173,7 +177,9 @@ func (g *game) advanceEnemies() {
 }
 
 func (g *game) monsterTurn(m *monster) {
-	g.knownMonsters[m.Kind] = true
+	if g.canSee(m.Pos) {
+		g.knownMonsters[m.Kind] = true
+	}
 	if m.StunnedTurns > 0 {
 		m.StunnedTurns--
 		g.addMessage(fmt.Sprintf("%s is stunned and cannot act.", m.Name))
@@ -185,18 +191,31 @@ func (g *game) monsterTurn(m *monster) {
 		return
 	}
 	if m.FleeTurns > 0 {
+		g.cancelEpicWarning(m)
 		g.fleeMonster(m)
 		m.FleeTurns--
 		return
 	}
-	if g.turnDamage[m] > m.MaxHP/2 && g.rng.Intn(100) < 50 {
+	if m.Kind != monsterUnderLich && g.turnDamage[m] > m.MaxHP/2 && g.rng.Intn(100) < 50 {
 		m.FleeTurns = 1 + g.rng.Intn(4)
 		g.addMessage(fmt.Sprintf("%s panics under the combined assault and flees for %d turn(s).", m.Name, m.FleeTurns))
+		g.cancelEpicWarning(m)
 		g.fleeMonster(m)
 		m.FleeTurns--
+		return
+	}
+	if m.Kind == monsterUnderLich {
+		g.underLichTurn(m)
+		return
+	}
+	if g.inCrypt && !g.canSee(m.Pos) {
+		g.moveMonster(m)
 		return
 	}
 	if g.epicRest(m) {
+		return
+	}
+	if g.resolveEpicStrike(m) {
 		return
 	}
 	if m.Kind == monsterIronrootBrute {
@@ -289,6 +308,10 @@ func (g *game) monsterTurn(m *monster) {
 }
 
 func (g *game) fleeMonster(m *monster) {
+	if m.Kind == monsterUnderLich {
+		g.addMessage("The Under Lich clings to its crossing and refuses to flee.")
+		return
+	}
 	currentThreatDistance := distance(m.Pos, g.player.Pos)
 	if g.dog.Freed && g.dog.Alive {
 		currentThreatDistance = min(currentThreatDistance, distance(m.Pos, g.dog.Pos))
@@ -335,7 +358,7 @@ func (g *game) moveActorToward(from *pos, target pos, isDog bool) {
 			continue
 		}
 		seen[p] = true
-		if g.isWalkable(p, isDog) {
+		if g.isWalkable(p, isDog) && (!isDog || !g.epicDangerAt(p)) {
 			*from = p
 			return
 		}
@@ -407,7 +430,7 @@ func (g *game) attackPlayer(m *monster) {
 
 func (g *game) hurtPlayer(damage int, source string) {
 	incoming := max(0, damage)
-	if g.player.ShieldTurns > 0 {
+	if g.player.ShieldTurns > 0 && !g.inCrypt {
 		incoming = max(0, incoming-3)
 	}
 	damage = max(0, incoming-g.player.armorBlock())
@@ -430,7 +453,7 @@ func (g *game) hurtDog(damage int, source string) {
 	if !g.dog.Alive {
 		return
 	}
-	if g.player.ShieldTurns > 0 && g.dog.Freed && g.dog.Alive {
+	if g.player.ShieldTurns > 0 && g.dog.Freed && g.dog.Alive && !g.inCrypt {
 		damage = max(0, damage-3)
 	}
 	if g.dog.Freed && distance(g.player.Pos, g.dog.Pos) <= 2 && g.player.hasArmorPower(powerSanctuary) {

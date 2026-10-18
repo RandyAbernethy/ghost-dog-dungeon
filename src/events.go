@@ -111,8 +111,18 @@ func (g *game) addShortcutLever(lvl *level) bool {
 }
 
 func (g *game) interactEvent() bool {
+	if g.disarmCryptTrap() {
+		return true
+	}
+	if o := g.current().Objective; o != nil && !o.Completed && !o.Failed &&
+		(o.marker(g.player.Pos) != 0 || (o.Kind == objectiveSpirit && distance(g.player.Pos, o.Pos) <= 1)) {
+		return g.interactObjective()
+	}
 	e := g.nearbyEvent()
 	if e == nil {
+		if o := g.current().Objective; o != nil && !o.Completed && !o.Failed && distance(g.player.Pos, o.Pos) <= 3 {
+			return g.interactObjective()
+		}
 		g.addMessage("There is nothing nearby to interact with.")
 		return false
 	}
@@ -138,6 +148,7 @@ func (g *game) interactEvent() bool {
 		g.dog.HP = min(g.dog.MaxHP, g.dog.HP+5)
 		g.player.WardingCharms++
 		g.addMessage("Ash recognizes the old collar and brightens. Beneath it you find one warding charm.")
+		g.ashMoment("collar", "Ash waits while you lift the collar, then bows his head. Some habits survive even silver chains.")
 	case eventLever:
 		if e.Shortcut == nil {
 			return false
@@ -177,5 +188,8 @@ func (g *game) describeNearbyObjects(previousLevel int, previousPos pos) {
 		if !f.Used && arriving(f.Pos) {
 			g.addMessage("A healing fountain flows nearby. Press v to drink, healing you and a living Ghost Dog. It refills when you leave this floor.")
 		}
+	}
+	if o := lvl.Objective; o != nil && !o.Completed && !o.Failed && arriving(o.Pos) {
+		g.addMessage(o.instructions())
 	}
 }

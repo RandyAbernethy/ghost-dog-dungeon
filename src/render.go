@@ -10,7 +10,11 @@ import (
 func (g *game) render(w io.Writer) {
 	g.noteVisibleMonsters()
 	lvl := g.current()
-	fmt.Fprintf(w, "\n=== Ghost Dog Dungeon: Level %d/%d ===\n", g.currentLevel+1, levelCount)
+	if g.inCrypt {
+		fmt.Fprintln(w, "\n=== Ghost Dog Dungeon: "+cryptName+" ===")
+	} else {
+		fmt.Fprintf(w, "\n=== Ghost Dog Dungeon: Level %d/%d ===\n", g.currentLevel+1, levelCount)
+	}
 	if lvl.Layout != "" {
 		fmt.Fprintf(w, "%s — %s\n", lvl.Theme, lvl.Layout)
 	}
@@ -25,10 +29,13 @@ func (g *game) render(w io.Writer) {
 	} else {
 		fmt.Fprintln(w, "Ghost dog: not yet freed")
 	}
-	if g.player.ShieldTurns > 0 || g.player.HexedTurns > 0 || g.player.BoundTurns > 0 {
+	if g.player.ShieldTurns > 0 || g.player.HexedTurns > 0 || g.player.BoundTurns > 0 || g.player.PoisonTurns > 0 {
 		effects := fmt.Sprintf("Effects: ward %d  hex %d", g.player.ShieldTurns, g.player.HexedTurns)
 		if g.player.BoundTurns > 0 {
 			effects += fmt.Sprintf("  %s %d", g.player.Binding.label(), g.player.BoundTurns)
+		}
+		if g.player.PoisonTurns > 0 {
+			effects += fmt.Sprintf("  poison %d", g.player.PoisonTurns)
 		}
 		fmt.Fprintln(w, effects)
 	}
@@ -36,6 +43,10 @@ func (g *game) render(w io.Writer) {
 		var line strings.Builder
 		for x := 0; x < mapWidth; x++ {
 			p := pos{X: x, Y: y}
+			if !g.canSee(p) {
+				line.WriteRune(' ')
+				continue
+			}
 			ch := lvl.Tiles[y][x]
 			m := g.monsterAt(lvl, p)
 			f := g.fountainAt(lvl, p)
@@ -48,6 +59,13 @@ func (g *game) render(w io.Writer) {
 				ch = m.Glyph
 			case g.dog.Freed && g.dog.Alive && g.dog.Pos == p:
 				ch = 'D'
+			case g.cryptDoorGlyph(p) != 0:
+				ch = g.cryptDoorGlyph(p)
+			case g.trapAt(p) != nil && g.trapAt(p).Discovered && !g.trapAt(p).Spent:
+				ch = '^'
+			case ch != '#' && g.epicDangerAt(p):
+				line.WriteString("\x1b[1;31mX" + ansiReset)
+				continue
 			case lvl.DogChain != nil && *lvl.DogChain == p && !g.dog.Freed:
 				ch = 'd'
 			case lvl.HasStair && lvl.Stairs == p:
@@ -64,14 +82,26 @@ func (g *game) render(w io.Writer) {
 				ch = it.Glyph
 			case ch != '#' && event != nil && !event.Used:
 				ch = event.glyph()
+			case ch != '#' && lvl.Objective.marker(p) != 0:
+				ch = lvl.Objective.marker(p)
 			default:
 				// Keep the terrain glyph.
 			}
-			line.WriteRune(ch)
+			if g.epicDangerAt(p) {
+				line.WriteString("\x1b[1;31m" + string(ch) + ansiReset)
+			} else {
+				line.WriteRune(ch)
+			}
 		}
 		fmt.Fprintln(w, line.String())
 	}
-	fmt.Fprintln(w, "Legend: @ you  D ghost dog  d chained ghost dog  > down  < up/out  F/f fountain/spent  ) weapon  [ armor  ! potion  ? scroll  * magic  G friendly ghost  + lever  & keepsake  ^ shrine")
+	fmt.Fprintln(w, "Legend: @ you  D ghost dog  d chained ghost dog  > down  < up/out  F/f fountain/spent  ) weapon  [ armor  ! potion  ? scroll  * magic  G friendly ghost  + lever  & keepsake  ^ shrine  S lost spirit  O sigil  red X Epic strike")
+	g.renderEpicWarnings(w)
+	g.renderObjective(w)
+	g.renderCryptFeatures(w)
+	if g.crypt != nil {
+		fmt.Fprintln(w, "Crypt legend: { secret entrance  } secret exit  | sealed entrance; in the crypt, ^ marks a discovered trap.")
+	}
 	if note := g.contextHint(); note != "" {
 		fmt.Fprintln(w, "Here: "+note)
 	}
@@ -134,8 +164,15 @@ func (g *game) renderCodex(w io.Writer) {
 func (g *game) renderInspect(w io.Writer) {
 	g.noteVisibleMonsters()
 	fmt.Fprintln(w, "\n=== Inspect ===")
-	fmt.Fprintf(w, "You stand at %s on level %d.\n", pointLabel(g.player.Pos), g.currentLevel+1)
+	if g.inCrypt {
+		fmt.Fprintf(w, "You stand at %s in %s.\n", pointLabel(g.player.Pos), cryptName)
+	} else {
+		fmt.Fprintf(w, "You stand at %s on level %d.\n", pointLabel(g.player.Pos), g.currentLevel+1)
+	}
 	fmt.Fprintln(w, inspectTileDescription(g.current(), g.player.Pos))
+	g.renderEpicWarnings(w)
+	g.renderObjective(w)
+	g.renderCryptFeatures(w)
 	if g.current().HasStair {
 		fmt.Fprintf(w, "Stairs down: %s.\n", relativeTo(g.player.Pos, g.current().Stairs))
 	}
@@ -172,7 +209,7 @@ func (g *game) renderInspect(w io.Writer) {
 			fmt.Fprintf(w, "- %s: %s\n", relativeTo(g.player.Pos, it.Pos), inspectItemText(it))
 		}
 	}
-	if g.dog.Freed && g.dog.Alive {
+	if g.dog.Freed && g.dog.Alive && g.canSee(g.dog.Pos) {
 		fmt.Fprintf(w, "Ghost dog: %s.\n", relativeTo(g.player.Pos, g.dog.Pos))
 	}
 	fmt.Fprintln(w, "Tip: use movement or . to wait, or press k beside suspicious walls to search.")
@@ -242,7 +279,7 @@ func inspectItemText(it item) string {
 func (g *game) visibleThreats(limit int) []*monster {
 	var out []*monster
 	for _, m := range g.current().Monsters {
-		if m.HP > 0 && distance(g.player.Pos, m.Pos) <= limit {
+		if m.HP > 0 && distance(g.player.Pos, m.Pos) <= limit && g.canSee(m.Pos) {
 			out = append(out, m)
 		}
 	}
@@ -259,7 +296,7 @@ func (g *game) visibleThreats(limit int) []*monster {
 func (g *game) visibleItems(limit int) []item {
 	var out []item
 	for _, it := range g.current().Items {
-		if distance(g.player.Pos, it.Pos) <= limit && g.current().Tiles[it.Pos.Y][it.Pos.X] != '#' {
+		if distance(g.player.Pos, it.Pos) <= limit && g.current().Tiles[it.Pos.Y][it.Pos.X] != '#' && g.canSee(it.Pos) {
 			out = append(out, it)
 		}
 	}
@@ -317,6 +354,9 @@ func (g *game) inventoryLines() []inventoryLine {
 }
 
 func (g *game) contextHint() string {
+	if hint := g.cryptHint(); hint != "" {
+		return hint
+	}
 	lvl := g.current()
 	if lvl.HasEscapeStair && lvl.primarySecret() != nil && lvl.primarySecret().Revealed && g.player.Pos == lvl.EscapeStairs {
 		return "stairs up and out — press < to escape."

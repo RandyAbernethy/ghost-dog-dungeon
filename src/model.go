@@ -104,6 +104,7 @@ const (
 	monsterSoulLeech       monsterKind = "Soul Leech"
 	monsterStormHerald     monsterKind = "Storm Herald"
 	monsterBoss            monsterKind = "Dread Lich"
+	monsterUnderLich       monsterKind = "Under Lich"
 	monsterAshBeetle       monsterKind = "Ash Beetle"
 	monsterChainImp        monsterKind = "Chain Imp"
 	monsterLanternWisp     monsterKind = "Lantern Wisp"
@@ -149,6 +150,7 @@ type monster struct {
 	StoryChapter int         `json:"story_chapter,omitempty"`
 	ActionTurns  int         `json:"action_turns,omitempty"`
 	Awakened     bool        `json:"awakened,omitempty"`
+	StrikeTiles  []pos       `json:"strike_tiles,omitempty"`
 }
 
 type player struct {
@@ -176,6 +178,7 @@ type player struct {
 	HexedTurns         int         `json:"hexed_turns"`
 	BoundTurns         int         `json:"bound_turns"`
 	Binding            bindingKind `json:"binding,omitempty"`
+	PoisonTurns        int         `json:"poison_turns,omitempty"`
 }
 
 type ghostDog struct {
@@ -187,28 +190,29 @@ type ghostDog struct {
 }
 
 type level struct {
-	Index             int           `json:"index"`
-	Tiles             [][]rune      `json:"-"`
-	Monsters          []*monster    `json:"monsters"`
-	Items             []item        `json:"items"`
-	Stairs            pos           `json:"stairs"`
-	HasStair          bool          `json:"has_stair"`
-	UpStairs          pos           `json:"up_stairs"`
-	HasUpStair        bool          `json:"has_up_stair"`
-	EscapeStairs      pos           `json:"escape_stairs"`
-	HasEscapeStair    bool          `json:"has_escape_stair"`
-	DogChain          *pos          `json:"dog_chain,omitempty"`
-	Start             pos           `json:"start"`
-	Secrets           []*secretRoom `json:"secrets,omitempty"`
-	Layout            layoutKind    `json:"layout,omitempty"`
-	Theme             floorTheme    `json:"theme,omitempty"`
-	Encounter         encounterKind `json:"encounter,omitempty"`
-	Special           *specialRoom  `json:"special,omitempty"`
-	Events            []floorEvent  `json:"events,omitempty"`
-	Visited           bool          `json:"visited"`
-	Fountains         []fountain    `json:"fountains,omitempty"`
-	DifficultyBudget  int           `json:"difficulty_budget,omitempty"`
-	InitialDifficulty int           `json:"initial_difficulty,omitempty"`
+	Index             int            `json:"index"`
+	Tiles             [][]rune       `json:"-"`
+	Monsters          []*monster     `json:"monsters"`
+	Items             []item         `json:"items"`
+	Stairs            pos            `json:"stairs"`
+	HasStair          bool           `json:"has_stair"`
+	UpStairs          pos            `json:"up_stairs"`
+	HasUpStair        bool           `json:"has_up_stair"`
+	EscapeStairs      pos            `json:"escape_stairs"`
+	HasEscapeStair    bool           `json:"has_escape_stair"`
+	DogChain          *pos           `json:"dog_chain,omitempty"`
+	Start             pos            `json:"start"`
+	Secrets           []*secretRoom  `json:"secrets,omitempty"`
+	Layout            layoutKind     `json:"layout,omitempty"`
+	Theme             floorTheme     `json:"theme,omitempty"`
+	Encounter         encounterKind  `json:"encounter,omitempty"`
+	Special           *specialRoom   `json:"special,omitempty"`
+	Events            []floorEvent   `json:"events,omitempty"`
+	Visited           bool           `json:"visited"`
+	Fountains         []fountain     `json:"fountains,omitempty"`
+	DifficultyBudget  int            `json:"difficulty_budget,omitempty"`
+	InitialDifficulty int            `json:"initial_difficulty,omitempty"`
+	Objective         *objectiveRoom `json:"objective,omitempty"`
 }
 
 type fountain struct {
