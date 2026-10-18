@@ -142,8 +142,8 @@ macOS, that check runs when `make` and the required shell are available; native 
 A separate `make all` creates release binaries to keep. Windows GNU Make can use `make all SHELL=sh` with Git Bash's
 `sh` on `PATH`.
 
-CI runs the full suite and vet on Linux with Go 1.22 and 1.25, plus native Windows and macOS with Go 1.25. The raw-key
-PTY regression runs on Linux; Windows tests exercise command-and-Enter input.
+CI runs the full suite and vet on Ubuntu 24.04 with Go 1.22 and Ubuntu 26.04 with Go 1.25, plus native Windows and
+macOS with Go 1.25. The raw-key PTY regression runs on Linux; Windows tests exercise command-and-Enter input.
 
 The Makefile provides:
 
