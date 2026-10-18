@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 func floorBudget(depth int) int { return 40 + depth*30 }
 
 func cloneTiles(tiles [][]rune) [][]rune {
@@ -66,13 +68,25 @@ func roomsOverlap(a, b room, margin int) bool {
 
 func (g *game) populateLevel(lvl *level) error {
 	occupied := map[pos]bool{lvl.Start: true}
+	// Reserve the relic's Epic before stairs, ordinary loot, and monsters compete
+	// for its distant, bypassable position. Other features see the reserved actor.
+	if lvl.hasRelic() && !g.addEpicEncounter(lvl) {
+		return fmt.Errorf("floor %d has no safe position for its relic's Epic encounter", lvl.Index+1)
+	}
+	for _, m := range lvl.Monsters {
+		occupied[m.Pos] = true
+	}
 	if lvl.Index > 0 {
 		lvl.HasUpStair = true
 		lvl.UpStairs = lvl.Start
 	}
 	if lvl.Index < levelCount-1 {
 		lvl.HasStair = true
-		lvl.Stairs = g.randomOpenTile(lvl, occupied)
+		if epic := lvl.epicEncounter(); epic != nil {
+			lvl.Stairs = g.randomOpenTileFarFrom(lvl, occupied, epic.Pos, 6)
+		} else {
+			lvl.Stairs = g.randomOpenTile(lvl, occupied)
+		}
 		occupied[lvl.Stairs] = true
 	}
 	if lvl.Index == 1 {

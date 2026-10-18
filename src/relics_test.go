@@ -22,8 +22,9 @@ func TestRelicsSpawnRarelyOnlyInInnerRoomsOnFloorsSevenThroughNine(t *testing.T)
 		if g.generationError != nil {
 			t.Fatalf("seed %d: %v", seed, g.generationError)
 		}
-		runRelics, runEpics := 0, 0
+		runRelics, runEpics, nonRelicEpics := 0, 0, 0
 		for _, lvl := range g.levels {
+			floorRelics, floorEpics := 0, 0
 			innerTiles := map[pos]bool{}
 			roots := lvl.Secrets
 			for _, root := range roots {
@@ -44,6 +45,7 @@ func TestRelicsSpawnRarelyOnlyInInnerRoomsOnFloorsSevenThroughNine(t *testing.T)
 					continue
 				}
 				runRelics++
+				floorRelics++
 				if !relicDepth(lvl.Index) || !innerTiles[it.Pos] || lvl.Tiles[it.Pos.Y][it.Pos.X] != '#' || g.fountainAt(lvl, it.Pos) != nil {
 					t.Fatalf("seed %d: relic escaped its hidden inner chamber on floor %d", seed, lvl.Index+1)
 				}
@@ -56,6 +58,7 @@ func TestRelicsSpawnRarelyOnlyInInnerRoomsOnFloorsSevenThroughNine(t *testing.T)
 					continue
 				}
 				runEpics++
+				floorEpics++
 				seenEpics[m.Kind] = true
 				if !relicDepth(lvl.Index) || distance(m.Pos, lvl.Start) < 8 || (lvl.HasStair && distance(m.Pos, lvl.Stairs) < 6) || g.itemAt(lvl, m.Pos) != nil || g.fountainAt(lvl, m.Pos) != nil || lvl.eventAt(m.Pos) != nil {
 					t.Fatal("Epic should be distant and clear of features")
@@ -69,9 +72,15 @@ func TestRelicsSpawnRarelyOnlyInInnerRoomsOnFloorsSevenThroughNine(t *testing.T)
 			if rosterDifficulty(ordinary) != lvl.InitialDifficulty || !fairFloorRoster(ordinary, lvl.Index) {
 				t.Fatal("Epic encounter should not alter ordinary budgets")
 			}
+			if floorEpics > 1 || floorRelics > 0 && floorEpics != 1 {
+				t.Fatalf("seed %d floor %d: %d relics require one Epic, got %d", seed, lvl.Index+1, floorRelics, floorEpics)
+			}
+			if floorRelics == 0 {
+				nonRelicEpics += floorEpics
+			}
 		}
-		if runRelics > 1 || runEpics > 1 {
-			t.Fatal("a dungeon should contain at most one relic and one Epic")
+		if runRelics > 1 || runEpics > 2 || nonRelicEpics > 1 {
+			t.Fatal("a dungeon should contain at most one room relic, its Epic, and one random Epic elsewhere")
 		}
 		relics += runRelics
 		if runEpics > 0 {

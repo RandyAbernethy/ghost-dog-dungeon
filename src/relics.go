@@ -40,6 +40,15 @@ func relicItem(it item) bool {
 	return it.Kind == itemArmor && it.Armor.Rarity == rarityGod || it.Kind == itemWeapon && it.Weapon.Rarity == rarityArtifact
 }
 
+func (lvl *level) hasRelic() bool {
+	for _, it := range lvl.Items {
+		if relicItem(it) {
+			return true
+		}
+	}
+	return false
+}
+
 func relicDepth(depth int) bool { return depth >= 6 && depth <= 8 }
 
 // Relics replace ordinary treasure, preserving room space for the scroll and fountain.

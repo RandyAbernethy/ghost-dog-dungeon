@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const gameVersion = "1.0.1"
+const gameVersion = "1.0.3"
 
 func main() {
 	if err := run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr); err != nil {

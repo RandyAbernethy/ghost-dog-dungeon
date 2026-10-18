@@ -126,6 +126,10 @@ const (
 	monsterGraveTitan      monsterKind = "Epic Grave Titan"
 	monsterAshenWyrm       monsterKind = "Epic Ashen Wyrm"
 	monsterHollowReaper    monsterKind = "Epic Hollow Reaper"
+	monsterFrostMonarch    monsterKind = "Epic Frost Monarch"
+	monsterStormLeviathan  monsterKind = "Epic Storm Leviathan"
+	monsterDuskTyrant      monsterKind = "Epic Dusk Tyrant"
+	monsterObsidianGolem   monsterKind = "Epic Obsidian Golem"
 )
 
 type monster struct {

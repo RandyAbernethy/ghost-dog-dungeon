@@ -251,7 +251,7 @@ func TestEpicDropPickupAndSaveThroughRealExecutable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("run: %v\n%s", err, output)
 	}
-	for _, want := range []string{"Ghost Dog Dungeon version 1.0.1", "Epic Ashen Wyrm drops an elite treasure:", "=== Inventory & Equipment ===", "Game loaded from "} {
+	for _, want := range []string{"Ghost Dog Dungeon version 1.0.3", "Epic Ashen Wyrm drops an elite treasure:", "=== Inventory & Equipment ===", "Game loaded from "} {
 		if !strings.Contains(string(output), want) {
 			t.Fatalf("the executable did not display %q", want)
 		}
@@ -271,5 +271,61 @@ func TestEpicDropPickupAndSaveThroughRealExecutable(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(dir, ".ghost-dog-data.json")); !os.IsNotExist(err) {
 		t.Fatal("killing an Epic and quitting must not submit an unfinished run")
+	}
+}
+
+func TestNewEpicsThroughExecutableCombatCodexAndSaveLoad(t *testing.T) {
+	for _, kind := range []monsterKind{monsterFrostMonarch, monsterStormLeviathan, monsterDuskTyrant, monsterObsidianGolem} {
+		t.Run(string(kind), func(t *testing.T) {
+			g := openArena()
+			g.currentLevel = 6
+			g.saveDir = t.TempDir()
+			g.player.HP, g.player.MaxHP = 200, 200
+			g.player.Weapon = weapon{Name: "Test blade", Min: 1000, Max: 1000}
+			g.player.ensureCarriedEquipment()
+			m := newMonster(kind)
+			m.Pos, m.HP, m.MinDamage, m.MaxDamage = pos{6, 5}, 20, 10, 10
+			g.current().Monsters = []*monster{&m}
+			if err := g.save(); err != nil {
+				t.Fatal(err)
+			}
+			cmd := gameCommand(t, "--load-file", g.saveFile, "--save-file-path", g.saveDir)
+			cmd.Stdin = strings.NewReader(".\nsave\nload\nc\nd\nd\nd\nd\nsave\nload\nquit\n")
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				t.Fatalf("run %s: %v\n%s", kind, err, output)
+			}
+			text := string(output)
+			for _, want := range []string{string(kind) + " awakens!", newMonsterDescription(kind), string(kind) + " drops an elite treasure:", "Game loaded from "} {
+				if !strings.Contains(text, want) {
+					t.Fatalf("the executable did not show %q", want)
+				}
+			}
+			var firstSave string
+			for _, line := range strings.Split(stripANSI(text), "\n") {
+				if path, ok := strings.CutPrefix(line, "- Game saved to "); ok {
+					firstSave = strings.TrimSpace(path)
+					break
+				}
+			}
+			awake, err := loadGame(firstSave)
+			if err != nil {
+				t.Fatal(err)
+			}
+			encounter := awake.current().Monsters[0]
+			if encounter.Kind != kind || !encounter.Awakened || encounter.ActionTurns != 1 || encounter.HP != 20 || awake.stats.Turns != 1 || awake.player.HP >= 200 {
+				t.Fatal("the first checkpoint must preserve the active Epic, cadence, health, and melee attack")
+			}
+			if kind == monsterFrostMonarch && (awake.player.BoundTurns != 1 || awake.player.Binding != bindingIce) || kind == monsterDuskTyrant && awake.player.HexedTurns != 1 {
+				t.Fatal("new Epic movement and curse effects must survive saving")
+			}
+			finished, err := loadGame(lastSavePath(t, text))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(finished.current().Monsters) != 1 || finished.current().Monsters[0].HP != 0 || finished.stats.MonstersKilled != 1 || finished.stats.DifficultyDefeated != monsterDifficulty(m) || finished.stats.Turns != 5 || len(finished.current().Items) != 0 {
+				t.Fatal("the executable must kill each new Epic once, collect its treasure, and preserve that result across loading")
+			}
+		})
 	}
 }

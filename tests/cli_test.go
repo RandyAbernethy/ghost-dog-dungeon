@@ -34,7 +34,7 @@ func TestExecutableBuildSaveAndLoadFromAnotherDirectory(t *testing.T) {
 		}
 		return saved
 	}
-	const banner = "Ghost Dog Dungeon version 1.0.1\n"
+	const banner = "Ghost Dog Dungeon version 1.0.3\n"
 	assertRunIdentity := func(t *testing.T, output string, seed int64) {
 		t.Helper()
 		seedLine := fmt.Sprintf("Dungeon seed: %d\n", seed)

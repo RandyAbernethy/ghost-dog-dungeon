@@ -15,7 +15,7 @@ func (g *game) arrangeEncounters(lvl *level) {
 	lvl.Encounter = encounterKinds[g.rng.Intn(len(encounterKinds))]
 	ranged, melee := false, false
 	for _, m := range lvl.Monsters {
-		if m.Boss {
+		if m.Boss || epicMonster(m.Kind) {
 			continue
 		}
 		if rangedMonster(m.Kind) {
@@ -35,7 +35,7 @@ func (g *game) arrangeEncounters(lvl *level) {
 		guards := 0
 		caster := false
 		for _, m := range lvl.Monsters {
-			if m.Boss {
+			if m.Boss || epicMonster(m.Kind) {
 				continue
 			}
 			if rangedMonster(m.Kind) {
@@ -66,7 +66,7 @@ func (g *game) arrangeEncounters(lvl *level) {
 		occupied[*lvl.DogChain] = true
 	}
 	for _, m := range lvl.Monsters {
-		if m.Boss {
+		if m.Boss || epicMonster(m.Kind) {
 			occupied[m.Pos] = true
 		}
 	}
@@ -91,7 +91,7 @@ func (g *game) arrangeEncounters(lvl *level) {
 	}
 	var dangerousInPack [2]int
 	for i, m := range lvl.Monsters {
-		if m.Boss {
+		if m.Boss || epicMonster(m.Kind) {
 			continue
 		}
 		var near *pos

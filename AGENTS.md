@@ -1,8 +1,8 @@
 # Working on Ghost Dog Dungeon
 
 This is a Go terminal roguelike with ten dungeon floors. Keep it readable, fair, and reproducible from a seed.
-For this first release, support only the current save format: reject unsupported formats with a helpful error,
-avoid compatibility migrations, and notify the user when a format change requires a new game.
+Keep the save format backward compatible.
+
 
 ## Workflow
 
@@ -17,6 +17,7 @@ avoid compatibility migrations, and notify the user when a format change require
   tests together. Update this file when working conventions or shared safeguards change.
 - Share concise progress updates during longer work. Report results, verification, and remaining limitations honestly.
 
+
 ## Source organization
 
 Keep `go.mod`, the README, and the Makefile at the root; supporting documentation lives in `docs/`.
@@ -29,11 +30,13 @@ Start with `src/main.go` for startup, `src/commands.go` for actions, `src/render
 `src/save.go` for persistence. Keep OS APIs in `src/terminal_{linux,darwin,other}.go` and Linux PTY tests in
 `src/terminal_linux_test.go`.
 
+
 ## Go quality
 
 - Use `gofmt`, idiomatic names, and small cohesive functions. Comments should explain constraints or decisions.
 - Prefer the standard library; add dependencies only for a clear need.
 - Return useful errors at I/O and startup boundaries. Do not silently discard failures or panic for expected errors.
+
 
 ## Shared gameplay contracts
 
@@ -56,6 +59,7 @@ Start with `src/main.go` for startup, `src/commands.go` for actions, `src/render
 
 Before changing generation, balance, encounters, equipment, events, or movement effects, read the relevant sections of
 [Gameplay contracts](docs/gameplay-contracts.md). That document holds the specialized rules and regression-test references.
+
 
 ## Verification
 
@@ -86,3 +90,5 @@ git diff --check
 - Use `t.TempDir()` for test saves and records. Reuse the executable helpers for shared builds, process timeouts,
   and isolation of both `HOME` and Windows `USERPROFILE`.
 - Once relevant checks pass, avoid repeating or expanding them without a new change, failure, or unresolved concern.
+- For security remediation, use at least the Go version in `go.mod` and scan the exact rebuilt binaries as well as
+  source. Follow [Security scans](docs/security.md); do not suppress findings to obtain a clean result.

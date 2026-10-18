@@ -43,10 +43,19 @@ test assertions as the balance baseline rather than an unspecified previous vers
   Never roll relics on discovery, revisiting, or loading. See [addLinkedRelic in relics.go](../src/relics.go).
   The boundary cases in [relics_test.go](../src/relics_test.go) check the 25% threshold and prevent extra rolls for
   additional chambers independently of the large rarity sweep.
-- Optional Epic monsters occur only on floors 7–9. While none exists, make one 12% roll per eligible floor, with at most
-  one Epic per dungeon, outside ordinary difficulty budgets and guardian pools. Its initial position must be bypassable
-  and distant from stairs; Epics act once every three turns. See
-  [addEpicEncounter in epic_monsters.go](../src/epic_monsters.go).
+- Epic monsters occur only on floors 7–9, outside ordinary difficulty budgets and guardian pools. Every floor with a
+  generated God armor or Artifact room relic gets one Epic, bypassing the random chance and an Epic on another floor.
+  Reserve its position before ordinary actors and features, and place stairs at least six tiles away. Encounters must
+  preserve that reserved position and remain bypassable and at least eight tiles from the entrance.
+- Without a room relic, make one 12% roll per eligible floor only while no Epic exists anywhere in the dungeon.
+  Keep at most one Epic per floor; with one room relic per dungeon, there can be at most two Epics overall. Existing
+  encounters, including dead ones, prevent duplicates. Epic relic drops already come from an encounter on their floor
+  and must not spawn replacement Epics. Discovery, revisiting, dropping carried gear, and loading do not roll encounters.
+- The eight Epic possibilities are Iron Colossus, Grave Titan, Ashen Wyrm, Hollow Reaper, Frost Monarch, Storm Leviathan,
+  Dusk Tyrant, and Obsidian Golem. All wake within four tiles and act once every three turns. New ice binding and hexes
+  use the existing one-move/next-strike effects and Oracle Crown immunity. Lightning affects only the player and a freed,
+  living Ghost Dog within two tiles, only after a damaging melee strike; player spell wards apply. See
+  [epic_monsters.go](../src/epic_monsters.go).
 - Gear powers require equipped pieces and must not revive Ghost Dog. God protection is powerful but not invulnerability.
 - Defeated Epics guarantee one additional elite treasure at their final position, independently of linked rooms:
   God armor, an Artifact weapon, a Starfire Orb, a Sun Orb, Phoenix Ash, or Ghost Dog Recall. Avoid duplicate equipment.

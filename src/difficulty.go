@@ -35,6 +35,12 @@ func monsterDifficulty(m monster) int {
 		bonus = 15
 	case monsterHollowReaper:
 		bonus = 18
+	case monsterFrostMonarch, monsterDuskTyrant:
+		bonus = 20
+	case monsterStormLeviathan:
+		bonus = 18
+	case monsterObsidianGolem:
+		bonus = 12
 	}
 	score := m.MaxHP + 2*(m.MinDamage+m.MaxDamage) + 3*monsterGuard(m.Kind) + bonus
 	if epicMonster(m.Kind) {

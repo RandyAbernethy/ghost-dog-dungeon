@@ -26,6 +26,7 @@ var allMonsterKinds = []monsterKind{
 	monsterTunnelBat, monsterCaveCrawler, monsterRustGuard, monsterBarrowArcher,
 	monsterGraveAcolyte, monsterEmberHound, monsterObsidianGuard, monsterHollowWarden,
 	monsterIronColossus, monsterGraveTitan, monsterAshenWyrm, monsterHollowReaper,
+	monsterFrostMonarch, monsterStormLeviathan, monsterDuskTyrant, monsterObsidianGolem,
 }
 
 func monsterPoolForLevel(depth int) []monster {
@@ -325,6 +326,12 @@ func monsterGuard(kind monsterKind) int {
 		return 5
 	case monsterHollowReaper:
 		return 4
+	case monsterFrostMonarch, monsterStormLeviathan:
+		return 5
+	case monsterDuskTyrant:
+		return 6
+	case monsterObsidianGolem:
+		return 12
 	default:
 		return 0
 	}

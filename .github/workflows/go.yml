@@ -14,13 +14,13 @@ jobs:
       matrix:
         include:
           - os: ubuntu-24.04
-            go: '1.22'
+            go: '1.26.9'
           - os: ubuntu-26.04
-            go: '1.25'
+            go: '1.27.2'
           - os: windows-latest
-            go: '1.25'
+            go: '1.27.2'
           - os: macos-latest
-            go: '1.25'
+            go: '1.27.2'
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v7

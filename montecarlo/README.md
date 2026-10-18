@@ -1,6 +1,6 @@
 # Monte Carlo dungeon trials
 
-Run the automated player from the repository root with Go 1.22+ and PowerShell:
+Run the automated player from the repository root with Go 1.26.9+ and PowerShell:
 
 ```powershell
 ./montecarlo/run.ps1 -Seconds 60 -SamplingSeed 20261016

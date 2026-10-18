@@ -11,35 +11,35 @@ To play a downloaded copy, execute the binary for your platform in a shell:
 ```bash
 $ ./ghostdog
 
-Ghost Dog Dungeon version 1.0.1
-Dungeon seed: 1791840551477369677
+Ghost Dog Dungeon version 1.0.3
+Dungeon seed: 1792328803698777268
 
 === Personal Records ===
 Fewest turns record: 1527 turns (seed 1791221079717482356).
 Ghost Dog safe escape record: not achieved yet.
-Most monsters killed record: 66 (seed 1791723712363047855).
-Most difficulty defeated record: 4490 points (seed 1791815547262321819).
+Most monsters killed record: 74 (seed 1792015100455577880).
+Most difficulty defeated record: 4912 points (seed 1792271059679411539).
 
 === Ghost Dog Dungeon: Level 1/10 ===
-ruined chapel — narrow crypt passages
+overgrown catacombs — pillared halls
 HP 46/46  Weapon Rusty Knife (3-7)  Armor 2 (block 1)  Potions 3  Fire 1  Blink 0  Ward 0  Sun 0  Frost 0  Starfire 0  Ash 0  Recall 0  Story 0/10
 Reach 1  Spell ward 0  Strike bonus +0  Turns 0  Kills 0  Difficulty defeated 0
 Ghost dog: not yet freed
 ######################################
+#######################[##############
+#############.!)?.........############
+#############......@#..*s#############
+#############.&...>......#############
+###############.##.#.#################
 ######################################
 ######################################
-################################..####
-################################?#####
-############################[.+..#####
-################################..####
-##############################.#.#..)#
-#############################..*...#>#
-###############################.@.##.#
-###############################....###
-##############################..#.####
-###############################!#s####
-##############################..#.####
-###############################.#.####
+######################################
+######################################
+######################################
+######################################
+######################################
+######################################
+######################################
 ######################################
 ######################################
 ######################################
@@ -52,7 +52,7 @@ Dungeon events:
 Command>
 ```
 
-To build and run from source with Go 1.22 or newer, use the repository root:
+To build and run from source with Go 1.26.9 or newer, use the repository root:
 
 ```sh
 go build -o bin/ghostdog ./src
@@ -67,7 +67,7 @@ Use `--help` for command line help (shown here for a source build):
 ```bash
 $ ./bin/ghostdog --help
 
-Usage: ghostdog [--seed N] [--save-file-path directory] [--load-file file] [--records-file file] [--version]
+Usage: ghostdog-dungeon [--seed N] [--save-file-path directory] [--load-file file] [--records-file file] [--version]
 
 Enter the dungeon, free the ghost dog, reach the tenth floor, and escape by finding the hidden way out beyond the Dread Lich.
 Commands: wasd/arrows move, qezx diagonals, . wait, </> stairs, p f b g u t o n r items, v fountain, y interact, i inventory, E equipment, B book, j challenges, c codex, m inspect, k search, :equip NUMBER, :drop NUMBER, :choose 1/2/3, S save, L load, Ctrl-C quit
@@ -81,8 +81,6 @@ Commands: wasd/arrows move, qezx diagonals, . wait, </> stairs, p f b g u t o n 
         random seed for dungeon generation (default is current time in nanoseconds)
   -version
         print the game version and exit
-
-$
 ```
 
 When `--seed` is not set, each new game uses the current time in nanoseconds as its seed, producing a different dungeon
@@ -91,27 +89,30 @@ each run. Explicitly setting a seed (e.g. `--seed 42`) allows you to create that
 
 ## Build
 
-Direct builds and native gameplay tests require Go 1.22 or newer. Makefile recipes require `make` and a POSIX-compatible
-shell, such as Git Bash or WSL on Windows. Local builds go in ignored `bin/`.
+This code base requires Go 1.26.9 or newer. Makefile recipes require `make` and a POSIX-compatible shell, such as Bash or
+Git Bash (or WSL is a good option on Windows). Local builds land in `./bin/`.
 
 The repository layout is:
 
 ```text
-.gitignore  Git ignore file
-AGENTS.md   Agent documentation
-LICENSE     License file
-Makefile    Build automation file
-README.md   This file
-bin/        Local build output (ignored by Git)
-docs/       Developer gameplay contracts and regression-test references
-go.mod      Go module definition
-src/        Game source and tests that exercise private game state
-tests/      Black-box tests of the compiled executable
+.github/            GitHub action CI configuration
+bin/                Local build output (git ignored)
+docs/               Developer gameplay contracts and regression-test references
+montecarlo/         Optional timed experiments with a state-aware automated player
+src/                Game source and tests that exercise private game state
+tests/              Black-box tests of the compiled executable
+.gitignore          File that should not be checked in
+.markdownlint.json  Defines Markdown rules
+AGENTS.md           Agent documentation
+go.mod              Go module definition
+LICENSE             Apache 2 license file
+Makefile            Build automation
+README.md           This file
 ```
 
 This README covers building, running, and player-facing mechanics. For repository workflow and verification, read
-[AGENTS.md](AGENTS.md). Intended gameplay invariants and their source and test references live in
-[Gameplay contracts](docs/gameplay-contracts.md).
+[AGENTS.md](AGENTS.md). Intended gameplay invariants and their source and test references live in [Gameplay
+contracts](docs/gameplay-contracts.md).
 
 Go's package tests live beside the source they exercise. Tests in `tests/` build the game and run it from temporary
 directories with isolated saves and home directories. For a fast development check from the repository root:
@@ -120,8 +121,8 @@ directories with isolated saves and home directories. For a fast development che
 go test -short ./...
 ```
 
-Short mode skips compiled-executable scenarios, the release build matrix, and the large generation, secret-room,
-relic, and roster seed sweeps. Run the complete checks before finishing Go changes:
+Short mode skips compiled-executable scenarios, the release build matrix, and the large generation, secret-room, relic,
+and roster seed sweeps. Run the complete checks before finishing Go changes:
 
 ```sh
 go test -count=1 -timeout 5m ./...
@@ -135,15 +136,17 @@ The command route is in [tests/testdata/seed-6.txt](tests/testdata/seed-6.txt).
 
 Optional timed experiments with a state-aware automated player are documented in [montecarlo/](montecarlo/README.md).
 They run separately from the regression suite and keep results in `montecarlo/data/`, with binaries and temporary
-files under ignored `montecarlo/bin/` and `montecarlo/tmp/`.
+files under `montecarlo/bin/` and `montecarlo/tmp/`.
 
 Full Linux verification requires `make` and builds all six release targets in a temporary directory. On Windows and
 macOS, that check runs when `make` and the required shell are available; native executable tests still run without them.
 A separate `make all` creates release binaries to keep. Windows GNU Make can use `make all SHELL=sh` with Git Bash's
 `sh` on `PATH`.
 
-CI runs the full suite and vet on Ubuntu 24.04 with Go 1.22 and Ubuntu 26.04 with Go 1.25, plus native Windows and
-macOS with Go 1.25. The raw-key PTY regression runs on Linux; Windows tests exercise command-and-Enter input.
+CI runs the full suite and vet on Ubuntu 24.04 with Go 1.26.9 and Ubuntu 26.04 with Go 1.27.2, plus native Windows and
+macOS with Go 1.27.2. The raw-key PTY regression runs on Linux; Windows tests exercise command-and-Enter input.
+The minimum Go version includes standard-library security fixes. Rebuild older binaries with a patched toolchain;
+updating the source does not replace downloaded or previously built executables. See [security scans](docs/security.md).
 
 The Makefile provides:
 
@@ -269,17 +272,26 @@ save/load; returning to a room cannot reroll its treasure.
 
 Deep floors can have a rare **Epic** encounter:
 
-- Iron Colossus
-- Grave Titan
-- Ashen Wyrm
-- Hollow Reaper
+- **Iron Colossus:** crushes warding charms and blocks 9 damage per hit.
+- **Grave Titan:** undead; heals itself after damaging melee attacks.
+- **Ashen Wyrm:** damaging melee strikes erupt in fire around adjacent foes.
+- **Hollow Reaper:** undead; reflects close-range hits. Reach avoids the reflection.
+- **Frost Monarch:** undead; damaging melee strikes freeze your feet when you are adjacent, costing one attempted move.
+- **Storm Leviathan:** damaging melee strikes arc lightning into you and living Ghost Dog within two tiles.
+- **Dusk Tyrant:** undead; damaging melee strikes hex you when you are adjacent, weakening your next strike.
+- **Obsidian Golem:** its enormous stone shell blocks 12 damage per hit. Heavy weapons or Worldsplitter help.
 
-There is at most one Epic in a dungeon. They spawn away from entrances and stairs, with a route around them. They wake
-within four tiles, warn you when they wake, and act once every three turns, letting you retreat. They have enormous
-health, armor, and damage: the Colossus crushes warding charms, the Titan heals from damaging melee attacks, the Wyrm's
-strikes erupt in adjacent fire, and the Reaper reflects close-range hits. God armor or an Artifact helps, but careful
-use of reach, consumables, and positioning still matters. Epics never return as stairwell guardians, and killing one is
-not needed to defeat the Dread Lich or escape.
+A floor that generates God armor or an Artifact weapon as room treasure always gets one Epic. If a random Epic was
+already generated on another floor, the relic floor adds a second encounter; there is at most one Epic per floor and
+two per dungeon. Ordinary floors without relics keep the rare random encounter chance. Epic treasure drops already
+come from an encounter on that floor and do not summon replacements. Discovery, revisiting, dropping carried gear,
+and loading do not create new encounters.
+
+Epics spawn away from entrances and stairs, with a route around them. They wake within four tiles, warn you when they
+wake, and act once every three turns, letting you retreat. God armor or an Artifact helps, but careful use of reach,
+consumables, and positioning still matters. Epics never return as stairwell guardians, and killing one is not needed
+to defeat the Dread Lich or escape. The Oracle Crown prevents the Frost Monarch's binding and Dusk Tyrant's hex;
+spell wards reduce the Storm Leviathan's lightning damage to you.
 
 Defeating any Epic guarantees one elite treasure on its final tile: rare equipment or a powerful consumable. Kills by
 Ghost Dog, magic items, and gear powers earn the same reward. Walk onto the tile to collect it; equipment still needs

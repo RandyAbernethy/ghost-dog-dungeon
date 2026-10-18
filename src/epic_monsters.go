@@ -1,6 +1,9 @@
 package main
 
-var epicMonsterKinds = [...]monsterKind{monsterIronColossus, monsterGraveTitan, monsterAshenWyrm, monsterHollowReaper}
+var epicMonsterKinds = [...]monsterKind{
+	monsterIronColossus, monsterGraveTitan, monsterAshenWyrm, monsterHollowReaper,
+	monsterFrostMonarch, monsterStormLeviathan, monsterDuskTyrant, monsterObsidianGolem,
+}
 
 func epicMonster(kind monsterKind) bool {
 	for _, epic := range epicMonsterKinds {
@@ -22,6 +25,14 @@ func epicMonsterSpec(kind monsterKind) (monster, bool) {
 		m = monster{Glyph: 'A', MaxHP: 180, MinDamage: 28, MaxDamage: 40}
 	case monsterHollowReaper:
 		m = monster{Glyph: 'R', MaxHP: 190, MinDamage: 29, MaxDamage: 41, Undead: true}
+	case monsterFrostMonarch:
+		m = monster{Glyph: 'F', MaxHP: 185, MinDamage: 28, MaxDamage: 40, Undead: true}
+	case monsterStormLeviathan:
+		m = monster{Glyph: 'L', MaxHP: 185, MinDamage: 28, MaxDamage: 40}
+	case monsterDuskTyrant:
+		m = monster{Glyph: 'D', MaxHP: 205, MinDamage: 30, MaxDamage: 42, Undead: true}
+	case monsterObsidianGolem:
+		m = monster{Glyph: 'O', MaxHP: 230, MinDamage: 31, MaxDamage: 43}
 	default:
 		return monster{}, false
 	}
@@ -40,6 +51,14 @@ func epicMonsterDescription(kind monsterKind) string {
 		trick = "Blocks 5 damage per hit; its melee attacks flare into fire that harms adjacent foes."
 	case monsterHollowReaper:
 		trick = "Undead; blocks 4 damage per hit and reflects 12 damage when struck at close range. Use reach."
+	case monsterFrostMonarch:
+		trick = "Undead; blocks 5 damage per hit. Damaging melee strikes freeze your feet when you are adjacent, costing one attempted move."
+	case monsterStormLeviathan:
+		trick = "Blocks 5 damage per hit. Damaging melee strikes arc 9 lightning damage into you and living Ghost Dog within two tiles. Spell wards protect you."
+	case monsterDuskTyrant:
+		trick = "Undead; blocks 6 damage per hit. Damaging melee strikes hex you when you are adjacent, weakening your next strike."
+	case monsterObsidianGolem:
+		trick = "Blocks 12 damage per hit with its obsidian shell. Heavy weapons or Worldsplitter can overcome it."
 	default:
 		return ""
 	}
@@ -93,24 +112,35 @@ func (g *game) epicRest(m *monster) bool {
 	return (m.ActionTurns-1)%3 != 0
 }
 
-// Optional Epics are separate from ordinary budgets, never compulsory stair guards.
-// Removing their spawn tile must leave every ordinary floor tile reachable.
-func (g *game) addEpicEncounter(lvl *level) {
-	if !relicDepth(lvl.Index) {
-		return
-	}
-	for _, floor := range g.levels {
-		if floor == nil {
-			continue
+func (lvl *level) epicEncounter() *monster {
+	for _, m := range lvl.Monsters {
+		if epicMonster(m.Kind) {
+			return m
 		}
-		for _, m := range floor.Monsters {
-			if epicMonster(m.Kind) {
-				return
+	}
+	return nil
+}
+
+// Epics are separate from ordinary budgets, never compulsory stair guards.
+// Removing their spawn tile must leave every ordinary floor tile reachable.
+func (g *game) addEpicEncounter(lvl *level) bool {
+	if !relicDepth(lvl.Index) {
+		return false
+	}
+	if lvl.epicEncounter() != nil {
+		return true
+	}
+	// A generated relic guarantees an encounter on its own floor, even if an
+	// earlier floor already received the dungeon's random Epic encounter.
+	if !lvl.hasRelic() {
+		for _, floor := range g.levels {
+			if floor != nil && floor.epicEncounter() != nil {
+				return false
 			}
 		}
-	}
-	if g.rng.Intn(100) >= 12 {
-		return
+		if g.rng.Intn(100) >= 12 {
+			return false
+		}
 	}
 	var spots []pos
 	for y := 1; y < mapHeight-1; y++ {
@@ -127,11 +157,12 @@ func (g *game) addEpicEncounter(lvl *level) {
 		}
 	}
 	if len(spots) == 0 {
-		return
+		return false
 	}
 	m := scaleMonsterForDepth(newMonster(epicMonsterKinds[g.rng.Intn(len(epicMonsterKinds))]), lvl.Index)
 	m.Pos = spots[g.rng.Intn(len(spots))]
 	lvl.Monsters = append(lvl.Monsters, &m)
+	return true
 }
 
 func (g *game) epicMeleePower(m *monster, dealt int) {
@@ -149,6 +180,24 @@ func (g *game) epicMeleePower(m *monster, dealt int) {
 		}
 		if g.dog.Freed && g.dog.Alive && distance(m.Pos, g.dog.Pos) == 1 {
 			g.hurtDog(12, "Scorching wyrm fire")
+		}
+	case monsterFrostMonarch:
+		if g.player.HP > 0 && distance(m.Pos, g.player.Pos) == 1 {
+			g.addMessage("The Epic Frost Monarch's strike spreads ice around your feet.")
+			g.bindPlayer(bindingIce)
+		}
+	case monsterStormLeviathan:
+		g.addMessage("The Epic Storm Leviathan's strike erupts in forked lightning.")
+		if g.player.HP > 0 && distance(m.Pos, g.player.Pos) <= 2 {
+			g.hurtPlayerSpell(9, "Leviathan lightning")
+		}
+		if g.dog.Freed && g.dog.Alive && distance(m.Pos, g.dog.Pos) <= 2 {
+			g.hurtDog(9, "Leviathan lightning")
+		}
+	case monsterDuskTyrant:
+		if g.player.HP > 0 && distance(m.Pos, g.player.Pos) == 1 {
+			g.addMessage("The Epic Dusk Tyrant's strike brands you with a hex.")
+			g.hexPlayer()
 		}
 	}
 }
