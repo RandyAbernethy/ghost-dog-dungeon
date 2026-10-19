@@ -26,7 +26,7 @@ Exact generation rules, persistence requirements, and regression-test references
 Symbols are case-sensitive. Each monster species, item type, and feature has its own symbol; equipment variants share
 only their weapon or armor category. **F** and **f** are reserved for fresh and spent fountains. Epics use **1–8**.
 The map legend lists objects; inventory and inspection show item symbols, and the codex lists discovered enemies.
-Older saves display these current symbols without changing their saved dungeon, rewards, turns, or RNG.
+Symbols are derived from each monster or item kind and are not stored separately in saves.
 Undiscovered rooms remain concealed as walls, and unseen crypt tiles remain blank.
 
 
@@ -185,8 +185,7 @@ If you leave by stairs, he stays at the same position on that floor until you re
 if you kill the Lich. If he falls, his spirit disperses and ordinary revival mechanics apply.
 
 Free Ash before using the escape stairs to leave together. Escaping while he is chained counts as leaving alone,
-including the ending and safe-companion challenge. Saves preserve the chain, anchor floor, health and RNG exactly;
-older saves without chain fields still load unchanged.
+including the ending and safe-companion challenge. Saves preserve the chain, anchor floor, health and RNG exactly.
 
 
 ## Weapons and Armor
@@ -324,7 +323,6 @@ it. Ash does not trigger traps.
 The Oracle Crown cannot remove a physical pit hold. Already inhaled poison continues after leaving the crypt;
 reading, saving, and failed actions do not advance it. Discovered, triggered, and disarmed traps, the guardian,
 loot, and both doors persist exactly through save/load. Completing the crypt is optional and does not finish the run.
-Existing format-2 saves still load unchanged; start a new game to receive the crypt.
 
 
 ## Book of Ghost Dog and Endings
@@ -341,8 +339,8 @@ Living Ash has occasional personality moments at his rescue, fountains, keepsake
 During quiet exploration he may react to the floor or your injuries, at most once per floor and at least fifteen
 turns after his last moment. These moments add flavor without changing combat stats or spending extra turns or RNG.
 When you escape or die, **Your Adventure** recounts the floors and secrets reached, collected stories, Ash's rescue
-and falls, defeated Epics, completed objectives, and final weapon. It uses recorded events and never invents missing
-history from an older save. Quitting an unfinished run does not produce a chronicle.
+and falls, defeated Epics, completed objectives, and final weapon. It uses recorded events. Quitting an unfinished
+run does not produce a chronicle.
 
 
 ## Movement Effects

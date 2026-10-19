@@ -7,6 +7,24 @@ and general play are in the [README](../README.md); detailed player-facing mecha
 [gameplay guide (spoilers)](gameplay-guide.md). Repository workflow and shared safeguards are in
 [AGENTS.md](../AGENTS.md). Read the relevant sections before changing these systems.
 
+## Save format
+
+- Favor clean, maintainable code over backward compatibility. Break save compatibility only when doing so makes
+  the codebase clearer or easier to work on; avoid unnecessary breaks and compatibility debt.
+- Keep explicit save-format versioning and bump the version for incompatible schema changes. The game supports
+  only the current format, currently format 3. Reject older or unversioned saves and unknown future versions with
+  a useful error asking the player to start a new game. Do not migrate, repair, or overwrite rejected snapshots.
+- Do not retain obsolete fields, compatibility fallbacks, or legacy-format loading code in the game. If support for
+  older saves becomes necessary, build a separate savefile updater that converts them to the current format before
+  loading. The updater is future work; no implementation or scaffolding is needed now.
+- Restore the complete current-format dungeon, player, companion, crypt, rewards, challenge progress and RNG exactly.
+  Carried equipment is initialized for a new game and maintained by pickup, equip and drop actions; reading screens
+  and loading must not rebuild it. Runtime save-directory and records-file settings remain separate.
+- Keep personal records across save-format changes; records have their own file and schema.
+
+Preserve snapshot, rejection and command coverage in [save_test.go](../src/save_test.go), startup rejection in
+[cli_test.go](../tests/cli_test.go), and deterministic continuation in [campaign_test.go](../tests/campaign_test.go).
+
 ## Map symbols
 
 - Give each monster species, item type, trap kind, and other feature its own printable ASCII symbol. Weapon and armor
@@ -14,11 +32,11 @@ and general play are in the [README](../README.md); detailed player-facing mecha
 - Reserve `F` and `f` for fresh and spent fountains, `D`/`d` for Ghost Dog, and `X` for Epic attack warnings.
   The eight Epics use `1`–`8`; Frost Monarch uses `5`. Shrines retain `^`; each discovered trap has its own symbol.
 - Maintain the shared catalog in [glyphs.go](../src/glyphs.go). Constructors, map, codex, inventory, inspection,
-  and legends must agree. Render older saves by entity kind, retaining their serialized glyph fields unchanged.
+  and legends must agree. Derive symbols by entity kind instead of serializing duplicate glyph fields.
   Displaying current symbols must not spend turns, draw RNG, or alter the dungeon or rewards.
 
 The complete player reference is in [Map symbols](gameplay-guide.md#map-symbols). Preserve the global uniqueness,
-rendering, trap visibility, and compiled-executable older-save coverage in [glyphs_test.go](../src/glyphs_test.go).
+rendering, trap visibility, and compiled-executable save/load coverage in [glyphs_test.go](../src/glyphs_test.go).
 
 ## Generation and secret rooms
 
@@ -68,8 +86,8 @@ test assertions as the balance baseline rather than an unspecified previous vers
 - Living Ash remains chained when the Lich dies, until the player reaches him. Dispersion clears the physical chain
   and counts a fall once; existing explicit revival rules still apply. Leaving Ash chained behind is an escape alone
   in victory text, ending memories, the chronicle, and safe-companion record eligibility.
-- Save format 2 persists chains and their anchor exactly. Missing optional fields in older saves mean unchained;
-  do not repair, reroll, revive or rebalance anything on load. Reject invalid chained-dog anchors with useful errors.
+- Saves persist chains and their anchor exactly. Do not repair, reroll, revive or rebalance anything on load.
+  Reject invalid chained-dog anchors with useful errors.
 
 Preserve the chance-boundary sweep, rescue, inactivity, travel, targeting, records and executable save/load checks in
 [lich_test.go](../src/lich_test.go), the generated boss-stat assertions and balance sweeps in
@@ -161,9 +179,9 @@ gift offers live in [ghost_gifts.go](../src/ghost_gifts.go).
 - The finished run chronicle uses visited/revealed terrain, collected stories, recorded rescue floor, Epic deaths,
   objective successes, final equipment and existing fall statistics. Only death or escape shows it, before final
   statistics and celebrations.
-  Rendering never records new history. Missing history in older format-2 saves stays absent; new fields are additive.
+  Rendering never records new history.
 
-Keep narrative, older-save, free-action, one-time reward and executable coverage in
+Keep narrative, save/load, free-action, one-time reward and executable coverage in
 [adventure_test.go](../src/adventure_test.go), [objectives_test.go](../src/objectives_test.go), and
 [adventure_cli_test.go](../src/adventure_cli_test.go).
 
@@ -171,7 +189,7 @@ Keep narrative, older-save, free-action, one-time reward and executable coverage
 
 - Every new dungeon receives one extra crypt, saved separately from the ten main levels. Generate it once with the
   saved RNG after ordinary generation. Select two distinct concealed wall doors on one main floor 4–7, away from
-  secret-room footprints and existing features. Existing format-2 saves without a crypt stay unchanged on load.
+  secret-room footprints and existing features.
 - Searching beside the entrance reveals it and warns about all travel/magic/sight restrictions before commitment.
   Walking through spends one turn, permanently seals that entrance, clears active wards, and moves only a freed,
   living companion. Leaving the parent floor refills its fountains and abandons any started spirit vigil. The far

@@ -13,13 +13,13 @@ func assertEliteTreasure(t *testing.T, treasure item) {
 	switch treasure.Kind {
 	case itemWeapon:
 		for _, w := range artifactWeapons {
-			if treasure.Weapon == w && treasure.Name == w.Name && treasure.Glyph == ')' {
+			if treasure.Weapon == w && treasure.Name == w.Name && treasure.glyph() == ')' {
 				return
 			}
 		}
 	case itemArmor:
 		for _, a := range godArmorPieces {
-			if treasure.Armor == a && treasure.Name == a.Name && treasure.Glyph == '[' {
+			if treasure.Armor == a && treasure.Name == a.Name && treasure.glyph() == '[' {
 				return
 			}
 		}

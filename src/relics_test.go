@@ -168,7 +168,7 @@ func TestAllRelicsArePossibleAndExcludedFromOrdinaryLootAndGifts(t *testing.T) {
 		lvl.Index = 6
 		inner := &secretRoom{Tiles: []pos{{12, 8}, {13, 8}, {12, 9}, {13, 9}}}
 		lvl.Secrets = []*secretRoom{{Tiles: []pos{{11, 8}}, Next: inner}}
-		lvl.Items = []item{{Pos: pos{12, 8}, Kind: itemPotion, Name: "healing potion", Glyph: '!'}}
+		lvl.Items = []item{{Pos: pos{12, 8}, Kind: itemPotion, Name: "healing potion"}}
 		g.addLinkedRelic(lvl)
 		if relicItem(lvl.Items[0]) {
 			seen[lvl.Items[0].Name] = true

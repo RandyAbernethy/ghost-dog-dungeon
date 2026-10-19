@@ -92,7 +92,7 @@ func (g *game) damageMonsterPiercing(m *monster, damage int, verb string, pierci
 		g.restoreGhostDogAfterLichDeath()
 		g.unlockEscapeRoute()
 		if m.StoryChapter > 0 {
-			lvl.Items = append(lvl.Items, item{Pos: m.Pos, Kind: itemStoryScroll, Name: fmt.Sprintf("Ghost Dog story scroll %d", m.StoryChapter), Glyph: itemGlyphs[itemStoryScroll], StoryChapter: m.StoryChapter})
+			lvl.Items = append(lvl.Items, item{Pos: m.Pos, Kind: itemStoryScroll, Name: fmt.Sprintf("Ghost Dog story scroll %d", m.StoryChapter), StoryChapter: m.StoryChapter})
 			g.addMessage("The Dread Lich drops the tenth Ghost Dog story scroll.")
 		}
 	}
@@ -101,7 +101,7 @@ func (g *game) damageMonsterPiercing(m *monster, damage int, verb string, pierci
 		g.dropEpicTreasure(m)
 	}
 	if g.dog.Freed && !g.dog.Alive && g.rng.Intn(100) < 10 {
-		lvl.Items = append(lvl.Items, item{Pos: m.Pos, Kind: itemGhostRecallScroll, Name: "Ghost Dog recall scroll", Glyph: itemGlyphs[itemGhostRecallScroll]})
+		lvl.Items = append(lvl.Items, item{Pos: m.Pos, Kind: itemGhostRecallScroll, Name: "Ghost Dog recall scroll"})
 		g.addMessage("A fallen foe leaves behind a Ghost Dog recall scroll.")
 	}
 }

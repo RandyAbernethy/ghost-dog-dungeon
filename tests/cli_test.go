@@ -108,6 +108,36 @@ func TestExecutableBuildSaveAndLoadFromAnotherDirectory(t *testing.T) {
 			}
 		}
 	})
+	t.Run("unsupported_save_formats", func(t *testing.T) {
+		workdir := t.TempDir()
+		output, err := run(t, workdir, "save\nquit\n", "--seed", "42")
+		if err != nil {
+			t.Fatalf("create current save: %v\n%s", err, output)
+		}
+		saved := readSave(t, executableSavePath(t, output))
+		if string(saved["format_version"]) != "3" {
+			t.Fatal("new games must write save format 3")
+		}
+		for _, version := range []int{0, 1, 2, 4} {
+			saved["format_version"] = json.RawMessage(fmt.Sprint(version))
+			data, err := json.Marshal(saved)
+			if err != nil {
+				t.Fatal(err)
+			}
+			path := filepath.Join(workdir, fmt.Sprintf("unsupported-%d.json", version))
+			if err := os.WriteFile(path, data, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			output, err = run(t, workdir, "", "--load-file", path)
+			if err == nil || !strings.Contains(output, fmt.Sprintf("unsupported save format %d", version)) || !strings.Contains(output, "requires format 3, so start a new game") || strings.Contains(output, "=== Ghost Dog Dungeon:") {
+				t.Fatalf("format %d must fail clearly before gameplay: %v\n%s", version, err, output)
+			}
+			unchanged, err := os.ReadFile(path)
+			if err != nil || !bytes.Equal(unchanged, data) {
+				t.Fatal("rejecting an unsupported save must leave it untouched")
+			}
+		}
+	})
 	t.Run("startup_flags", func(t *testing.T) {
 		output, err := run(t, dir, "", "--help")
 		if err != nil || !strings.Contains(output, "Usage: ghostdog-dungeon") || !strings.Contains(output, "-save-file-path string") || !strings.Contains(output, "random seed for dungeon generation (default is current time in nanoseconds)\n") || strings.Contains(output, "  -load\n") || strings.Contains(output, "  -save-file string") {

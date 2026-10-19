@@ -46,10 +46,7 @@ func TestMapSymbolsAreUniqueAcrossFeaturesMonstersItemsAndTraps(t *testing.T) {
 	}
 	for _, kind := range allMonsterKinds {
 		m := newMonster(kind)
-		claim(m.Glyph, string(kind))
-		if m.glyph() != m.Glyph {
-			t.Fatalf("%s constructor and display disagree", kind)
-		}
+		claim(m.glyph(), string(kind))
 	}
 	if len(itemGlyphs) != int(itemSideStoryScroll)+1 || len(trapGlyphs) != len(cryptTrapKinds) {
 		t.Fatal("the symbol catalog must cover all item and trap kinds")
@@ -85,24 +82,24 @@ func TestEveryMonsterAndItemDisplaysItsCurrentSymbol(t *testing.T) {
 	g := openArena()
 	for i, kind := range allMonsterKinds {
 		m := newMonster(kind)
-		m.Pos, m.Glyph = pos{2 + i%30, 2 + i/30}, 'F'
+		m.Pos = pos{2 + i%30, 2 + i/30}
 		g.current().Monsters = append(g.current().Monsters, &m)
 	}
 	for kind := itemWeapon; kind <= itemSideStoryScroll; kind++ {
-		g.current().Items = append(g.current().Items, item{Kind: kind, Pos: pos{2 + int(kind), 7}, Glyph: '*'})
+		g.current().Items = append(g.current().Items, item{Kind: kind, Pos: pos{2 + int(kind), 7}})
 	}
 	rng, turns := g.rng.State, g.stats.Turns
 	var output bytes.Buffer
 	g.render(&output)
 	rows := symbolMapRows(t, output.String())
 	for _, m := range g.current().Monsters {
-		if rune(rows[m.Pos.Y][m.Pos.X]) != monsterGlyphs[m.Kind] || m.Glyph != 'F' {
-			t.Fatalf("%s should display its current symbol without rewriting the saved symbol", m.Kind)
+		if rune(rows[m.Pos.Y][m.Pos.X]) != monsterGlyphs[m.Kind] {
+			t.Fatalf("%s should display the symbol for its kind", m.Kind)
 		}
 	}
 	for _, it := range g.current().Items {
-		if rune(rows[it.Pos.Y][it.Pos.X]) != itemGlyphs[it.Kind] || it.Glyph != '*' {
-			t.Fatalf("item kind %d should display its current symbol without rewriting the saved symbol", it.Kind)
+		if rune(rows[it.Pos.Y][it.Pos.X]) != itemGlyphs[it.Kind] {
+			t.Fatalf("item kind %d should display the symbol for its kind", it.Kind)
 		}
 	}
 	if g.rng.State != rng || g.stats.Turns != turns {
@@ -132,13 +129,13 @@ func TestDiscoveredTrapsDisplayDistinctSymbolsAndSpentTrapsDisappear(t *testing.
 	}
 }
 
-func TestLegacyMapSymbolsThroughExecutableAndSaveLoad(t *testing.T) {
+func TestMapSymbolsThroughExecutableAndSaveLoad(t *testing.T) {
 	g := openArena()
 	m := newMonster(monsterFrostMonarch)
-	m.Pos, m.Glyph = pos{8, 5}, 'F'
+	m.Pos = pos{8, 5}
 	g.current().Monsters = []*monster{&m}
 	g.current().Fountains = []fountain{{Pos: pos{6, 5}}, {Pos: pos{6, 6}, Used: true}}
-	g.current().Items = []item{{Kind: itemWardingCharm, Name: "warding charm", Glyph: '*', Pos: pos{7, 5}}}
+	g.current().Items = []item{{Kind: itemWardingCharm, Name: "warding charm", Pos: pos{7, 5}}}
 	g.player.WardingCharms = 1
 	g.saveDir = t.TempDir()
 	if err := g.save(); err != nil {
@@ -152,7 +149,7 @@ func TestLegacyMapSymbolsThroughExecutableAndSaveLoad(t *testing.T) {
 	}
 	rows := symbolMapRows(t, string(output))
 	if rows[5][6] != 'F' || rows[6][6] != 'f' || rows[5][7] != ']' || rows[5][8] != '5' {
-		t.Fatal("the fountain, spent fountain, warding charm and Frost Monarch must be visually distinct in old saves")
+		t.Fatal("the fountain, spent fountain, warding charm and Frost Monarch must be visually distinct after loading")
 	}
 	for _, want := range []string{"Epic Frost Monarch (5)", "- 5 Epic Frost Monarch", "Warding Charm x1 (map ])", "F/f fountain/spent"} {
 		if !strings.Contains(string(output), want) {
@@ -164,6 +161,6 @@ func TestLegacyMapSymbolsThroughExecutableAndSaveLoad(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(loaded.levels, g.levels) || !reflect.DeepEqual(loaded.player, g.player) || loaded.dog != g.dog || loaded.stats != g.stats || loaded.rng.State != g.rng.State {
-		t.Fatal("displaying and saving an older run must preserve gameplay state, including serialized legacy symbols")
+		t.Fatal("displaying and saving a run must preserve gameplay state")
 	}
 }

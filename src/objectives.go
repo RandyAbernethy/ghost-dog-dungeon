@@ -102,9 +102,9 @@ func (g *game) addObjectiveRoom() {
 		o.Sigils = []ritualSigil{{Pos: pos{c.area.X, c.area.Y}}, {Pos: pos{c.area.X + 2, c.area.Y}}, {Pos: pos{c.area.X + 1, c.area.Y + 2}}}
 	}
 	pool := []item{
-		{Kind: itemPotion, Name: "healing potion", Glyph: itemGlyphs[itemPotion]},
-		{Kind: itemWardingCharm, Name: "warding charm", Glyph: itemGlyphs[itemWardingCharm]},
-		{Kind: itemFrostCharm, Name: "frost charm", Glyph: itemGlyphs[itemFrostCharm]},
+		{Kind: itemPotion, Name: "healing potion"},
+		{Kind: itemWardingCharm, Name: "warding charm"},
+		{Kind: itemFrostCharm, Name: "frost charm"},
 	}
 	o.Reward = pool[g.rng.Intn(len(pool))]
 	g.levels[c.floor].Objective = o

@@ -146,7 +146,7 @@ func (g *game) renderInventory(w io.Writer) {
 	fmt.Fprintf(w, "Optional challenges: %d turns, %d kills, %d Ghost Dog falls. Press j for records.\n", g.stats.Turns, g.stats.MonstersKilled, g.stats.GhostDogFalls)
 	fmt.Fprintln(w, "Consumables:")
 	for i, line := range g.inventoryLines() {
-		fmt.Fprintf(w, "%d. %s x%d (map %c)\n  %s\n", len(g.player.Weapons)+len(g.player.Armors)+i+1, line.name, *line.quantity, line.glyph, line.description)
+		fmt.Fprintf(w, "%d. %s x%d (map %c)\n  %s\n", len(g.player.Weapons)+len(g.player.Armors)+i+1, line.name, *line.quantity, itemGlyphs[line.kind], line.description)
 	}
 	companion := "The ghost dog is still chained somewhere below."
 	if g.dog.active() {
@@ -171,7 +171,7 @@ func (g *game) renderCodex(w io.Writer) {
 	}
 	for _, kind := range known {
 		m := newMonster(kind)
-		fmt.Fprintf(w, "- %c %s  HP %d  Damage %d-%d  Base difficulty %d\n", m.Glyph, m.Name, m.MaxHP, m.MinDamage, m.MaxDamage, monsterDifficulty(m))
+		fmt.Fprintf(w, "- %c %s  HP %d  Damage %d-%d  Base difficulty %d\n", m.glyph(), m.Name, m.MaxHP, m.MinDamage, m.MaxDamage, monsterDifficulty(m))
 		fmt.Fprintln(w, "  "+monsterSummary(kind))
 		fmt.Fprintln(w, "  Trick: "+monsterPower(kind))
 	}
@@ -356,20 +356,19 @@ type inventoryLine struct {
 	quantity    *int
 	description string
 	kind        itemKind
-	glyph       rune
 }
 
 func (g *game) inventoryLines() []inventoryLine {
 	return []inventoryLine{
-		{"Healing Potion", &g.player.Potions, "Use p to restore 12-18 health instantly.", itemPotion, itemGlyphs[itemPotion]},
-		{"Fire Scroll", &g.player.FireScrolls, "Use f to blast the nearest monster within 6 tiles and scorch adjacent foes.", itemFireScroll, itemGlyphs[itemFireScroll]},
-		{"Blink Stone", &g.player.BlinkStones, "Use g to teleport you and an unchained Ghost Dog far from monsters, outside secret rooms.", itemBlinkStone, itemGlyphs[itemBlinkStone]},
-		{"Warding Charm", &g.player.WardingCharms, "Use b to reduce incoming damage to you and your Ghost Dog for the next 3 enemy turns.", itemWardingCharm, itemGlyphs[itemWardingCharm]},
-		{"Sun Orb", &g.player.SunOrbs, "Use u to burn every undead monster on the current floor.", itemSunOrb, itemGlyphs[itemSunOrb]},
-		{"Frost Charm", &g.player.FrostCharms, "Use t to freeze and damage the nearest enemy for two turns.", itemFrostCharm, itemGlyphs[itemFrostCharm]},
-		{"Starfire Orb", &g.player.StarfireOrbs, "Use o to deal 18-24 damage to the nearest enemy within 6 tiles.", itemStarfireOrb, itemGlyphs[itemStarfireOrb]},
-		{"Phoenix Ash", &g.player.PhoenixAshes, "Use n to restore 22-30 health below full health.", itemPhoenixAsh, itemGlyphs[itemPhoenixAsh]},
-		{"Ghost Dog Recall Scroll", &g.player.GhostRecallScrolls, "Use r to summon a fallen Ghost Dog at full hit points.", itemGhostRecallScroll, itemGlyphs[itemGhostRecallScroll]},
+		{"Healing Potion", &g.player.Potions, "Use p to restore 12-18 health instantly.", itemPotion},
+		{"Fire Scroll", &g.player.FireScrolls, "Use f to blast the nearest monster within 6 tiles and scorch adjacent foes.", itemFireScroll},
+		{"Blink Stone", &g.player.BlinkStones, "Use g to teleport you and an unchained Ghost Dog far from monsters, outside secret rooms.", itemBlinkStone},
+		{"Warding Charm", &g.player.WardingCharms, "Use b to reduce incoming damage to you and your Ghost Dog for the next 3 enemy turns.", itemWardingCharm},
+		{"Sun Orb", &g.player.SunOrbs, "Use u to burn every undead monster on the current floor.", itemSunOrb},
+		{"Frost Charm", &g.player.FrostCharms, "Use t to freeze and damage the nearest enemy for two turns.", itemFrostCharm},
+		{"Starfire Orb", &g.player.StarfireOrbs, "Use o to deal 18-24 damage to the nearest enemy within 6 tiles.", itemStarfireOrb},
+		{"Phoenix Ash", &g.player.PhoenixAshes, "Use n to restore 22-30 health below full health.", itemPhoenixAsh},
+		{"Ghost Dog Recall Scroll", &g.player.GhostRecallScrolls, "Use r to summon a fallen Ghost Dog at full hit points.", itemGhostRecallScroll},
 	}
 }
 

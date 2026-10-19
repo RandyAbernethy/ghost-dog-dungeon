@@ -5,7 +5,7 @@ import (
 )
 
 func makeWeaponItem(w weapon) item {
-	return item{Kind: itemWeapon, Name: w.Name, Glyph: itemGlyphs[itemWeapon], Weapon: w}
+	return item{Kind: itemWeapon, Name: w.Name, Weapon: w}
 }
 
 func makeWeaponLoot(w weapon) item {
@@ -14,7 +14,7 @@ func makeWeaponLoot(w weapon) item {
 }
 
 func makeArmorItem(a armor) item {
-	return item{Kind: itemArmor, Name: a.Name, Glyph: itemGlyphs[itemArmor], Armor: a}
+	return item{Kind: itemArmor, Name: a.Name, Armor: a}
 }
 
 func (g *game) weaponLootForLevel(depth int) item {
@@ -108,33 +108,33 @@ func armorPoolForLevel(depth int) []armor {
 func (g *game) itemsForLevel(depth int) []item {
 	items := []item{}
 	if depth < levelCount-1 {
-		items = append(items, item{Kind: itemStoryScroll, Name: fmt.Sprintf("Ghost Dog story scroll %d", depth+1), Glyph: itemGlyphs[itemStoryScroll], StoryChapter: depth + 1})
+		items = append(items, item{Kind: itemStoryScroll, Name: fmt.Sprintf("Ghost Dog story scroll %d", depth+1), StoryChapter: depth + 1})
 	}
 	if depth%2 == 0 {
-		items = append(items, item{Kind: itemPotion, Name: "healing potion", Glyph: itemGlyphs[itemPotion]})
+		items = append(items, item{Kind: itemPotion, Name: "healing potion"})
 	}
 	items = append(items, g.weaponLootForLevel(depth), g.armorLootForLevel(depth))
 	switch depth {
 	case 0:
-		items = append(items, item{Kind: itemFireScroll, Name: "fire scroll", Glyph: itemGlyphs[itemFireScroll]})
+		items = append(items, item{Kind: itemFireScroll, Name: "fire scroll"})
 	case 1:
-		items = append(items, item{Kind: itemBlinkStone, Name: "blink stone", Glyph: itemGlyphs[itemBlinkStone]})
+		items = append(items, item{Kind: itemBlinkStone, Name: "blink stone"})
 	case 2:
-		items = append(items, item{Kind: itemFrostCharm, Name: "frost charm", Glyph: itemGlyphs[itemFrostCharm]})
+		items = append(items, item{Kind: itemFrostCharm, Name: "frost charm"})
 	case 3:
-		items = append(items, item{Kind: itemWardingCharm, Name: "warding charm", Glyph: itemGlyphs[itemWardingCharm]})
+		items = append(items, item{Kind: itemWardingCharm, Name: "warding charm"})
 	case 4:
-		items = append(items, item{Kind: itemSunOrb, Name: "sun orb", Glyph: itemGlyphs[itemSunOrb]})
+		items = append(items, item{Kind: itemSunOrb, Name: "sun orb"})
 	case 5:
-		items = append(items, item{Kind: itemFrostCharm, Name: "frost charm", Glyph: itemGlyphs[itemFrostCharm]})
+		items = append(items, item{Kind: itemFrostCharm, Name: "frost charm"})
 	case 6:
-		items = append(items, item{Kind: itemWardingCharm, Name: "warding charm", Glyph: itemGlyphs[itemWardingCharm]})
+		items = append(items, item{Kind: itemWardingCharm, Name: "warding charm"})
 	case 7:
-		items = append(items, item{Kind: itemFireScroll, Name: "fire scroll", Glyph: itemGlyphs[itemFireScroll]})
+		items = append(items, item{Kind: itemFireScroll, Name: "fire scroll"})
 	case 8:
-		items = append(items, item{Kind: itemBlinkStone, Name: "blink stone", Glyph: itemGlyphs[itemBlinkStone]})
+		items = append(items, item{Kind: itemBlinkStone, Name: "blink stone"})
 	case 9:
-		items = append(items, item{Kind: itemSunOrb, Name: "sun orb", Glyph: itemGlyphs[itemSunOrb]})
+		items = append(items, item{Kind: itemSunOrb, Name: "sun orb"})
 	}
 	return items
 }
@@ -157,7 +157,6 @@ func (g *game) collectItem(it item) {
 	switch it.Kind {
 	case itemWeapon:
 		cmp := compareWeapon(it.Weapon, g.player.Weapon)
-		g.player.ensureCarriedEquipment()
 		g.player.carryWeapon(it.Weapon)
 		g.addMessage(fmt.Sprintf("You pack %s (%d-%d, reach %d). %s Press i to choose equipment.", coloredWeaponName(it.Weapon), it.Weapon.Min, it.Weapon.Max, it.Weapon.effectiveReach(), cmp))
 		if it.Weapon.Power != "" {
@@ -167,7 +166,6 @@ func (g *game) collectItem(it item) {
 		equipped := g.player.armorForSlot(it.Armor.Slot)
 		cmp := compareArmor(it.Armor, equipped)
 		candidateName := coloredArmorName(it.Armor)
-		g.player.ensureCarriedEquipment()
 		g.player.carryArmor(it.Armor)
 		g.addMessage(fmt.Sprintf("You pack %s for your %s slot. %s %s Press i to choose equipment.", candidateName, slotLabel(it.Armor.Slot), cmp, armorTraits(it.Armor)))
 	case itemPotion:

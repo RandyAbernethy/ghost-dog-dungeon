@@ -122,7 +122,7 @@ func TestCryptSightLimitsMapInspectCodexAndTargeting(t *testing.T) {
 	behindWall.Pos = pos{10, 10}
 	g.current().Tiles[9][10] = '#'
 	g.current().Monsters = []*monster{&near, &far, &behindWall}
-	g.current().Items = []item{{Kind: itemPotion, Name: "near potion", Pos: pos{12, 8}, Glyph: '!'}, {Kind: itemPotion, Name: "hidden treasure", Pos: pos{15, 8}, Glyph: '!'}}
+	g.current().Items = []item{{Kind: itemPotion, Name: "near potion", Pos: pos{12, 8}}, {Kind: itemPotion, Name: "hidden treasure", Pos: pos{15, 8}}}
 	beforeTiles, beforeRNG, beforeStats := encodeTiles(g.current().Tiles), g.rng.State, g.stats
 	var out bytes.Buffer
 	g.render(&out)
@@ -212,39 +212,6 @@ func TestUnderLichFightContinuesExactlyAcrossSaveLoad(t *testing.T) {
 	}
 	if m.HP != 0 || g.player.HP <= 0 || g.stats.MonstersKilled != 1 {
 		t.Fatal("the continued arena fight must defeat the guardian once")
-	}
-}
-
-func TestOlderSavesDoNotAcquireACryptOnLoad(t *testing.T) {
-	g := newGameWithSaveDir(6, t.TempDir())
-	if err := g.save(); err != nil {
-		t.Fatal(err)
-	}
-	data, err := os.ReadFile(g.saveFile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var state map[string]json.RawMessage
-	if err := json.Unmarshal(data, &state); err != nil {
-		t.Fatal(err)
-	}
-	for _, key := range []string{"crypt", "crypt_tiles", "in_crypt"} {
-		delete(state, key)
-	}
-	data, err = json.Marshal(state)
-	if err != nil {
-		t.Fatal(err)
-	}
-	path := filepath.Join(t.TempDir(), "before-crypt.json")
-	if err := os.WriteFile(path, data, 0600); err != nil {
-		t.Fatal(err)
-	}
-	loaded, err := loadGame(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if loaded.crypt != nil || loaded.inCrypt || loaded.rng.State != g.rng.State || !reflect.DeepEqual(g.levels, loaded.levels) {
-		t.Fatal("older format-two saves must load unchanged without generating missing crypt content")
 	}
 }
 

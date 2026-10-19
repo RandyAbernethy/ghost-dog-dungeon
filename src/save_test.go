@@ -136,7 +136,7 @@ func TestLoadRejectsUnsupportedSaveFormats(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, version := range []int{0, 1, saveFormatVersion + 1} {
+	for _, version := range []int{0, 1, 2, saveFormatVersion + 1} {
 		var state saveState
 		if err := json.Unmarshal(data, &state); err != nil {
 			t.Fatal(err)
@@ -152,6 +152,19 @@ func TestLoadRejectsUnsupportedSaveFormats(t *testing.T) {
 		}
 		if _, err := loadGame(path); err == nil || !strings.Contains(err.Error(), "unsupported save format") || !strings.Contains(err.Error(), "start a new game") {
 			t.Fatal("unsupported saves must fail with a helpful message instead of being migrated")
+		}
+		g.saveFile = path
+		beforePlayer, beforeDog, beforeStats, beforeRNG := g.player, g.dog, g.stats, g.rng.State
+		g.processCommand("load")
+		if !strings.Contains(g.messages[len(g.messages)-1], "Load failed: unsupported save format") {
+			t.Fatal("the load command must report unsupported saves")
+		}
+		if !reflect.DeepEqual(g.player, beforePlayer) || g.dog != beforeDog || g.stats != beforeStats || g.rng.State != beforeRNG {
+			t.Fatal("rejecting a save must preserve the running game and spend no turn")
+		}
+		unchanged, err := os.ReadFile(path)
+		if err != nil || !bytes.Equal(unchanged, invalid) {
+			t.Fatal("rejecting an unsupported save must leave the snapshot untouched")
 		}
 	}
 }

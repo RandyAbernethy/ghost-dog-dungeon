@@ -36,7 +36,7 @@ func TestGhostGiftsVaryAcrossAllCategoriesWithinFloorLootRanges(t *testing.T) {
 			}
 			kinds := map[itemKind]bool{}
 			for _, gift := range offer {
-				if !allowed[gift.Kind] || kinds[gift.Kind] || gift.Name == "" || gift.Glyph == 0 {
+				if !allowed[gift.Kind] || kinds[gift.Kind] || gift.Name == "" || gift.glyph() == 0 {
 					t.Fatalf("floor %d seed %d has an invalid or duplicate gift: %+v", depth+1, seed, gift)
 				}
 				if gift.Kind == itemWeapon && !weapons[gift.Weapon] || gift.Kind == itemArmor && !armors[gift.Armor] {

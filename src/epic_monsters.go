@@ -18,21 +18,21 @@ func epicMonsterSpec(kind monsterKind) (monster, bool) {
 	var m monster
 	switch kind {
 	case monsterIronColossus:
-		m = monster{Glyph: monsterGlyphs[kind], MaxHP: 220, MinDamage: 32, MaxDamage: 46}
+		m = monster{MaxHP: 220, MinDamage: 32, MaxDamage: 46}
 	case monsterGraveTitan:
-		m = monster{Glyph: monsterGlyphs[kind], MaxHP: 200, MinDamage: 30, MaxDamage: 42, Undead: true}
+		m = monster{MaxHP: 200, MinDamage: 30, MaxDamage: 42, Undead: true}
 	case monsterAshenWyrm:
-		m = monster{Glyph: monsterGlyphs[kind], MaxHP: 180, MinDamage: 28, MaxDamage: 40}
+		m = monster{MaxHP: 180, MinDamage: 28, MaxDamage: 40}
 	case monsterHollowReaper:
-		m = monster{Glyph: monsterGlyphs[kind], MaxHP: 190, MinDamage: 29, MaxDamage: 41, Undead: true}
+		m = monster{MaxHP: 190, MinDamage: 29, MaxDamage: 41, Undead: true}
 	case monsterFrostMonarch:
-		m = monster{Glyph: monsterGlyphs[kind], MaxHP: 185, MinDamage: 28, MaxDamage: 40, Undead: true}
+		m = monster{MaxHP: 185, MinDamage: 28, MaxDamage: 40, Undead: true}
 	case monsterStormLeviathan:
-		m = monster{Glyph: monsterGlyphs[kind], MaxHP: 185, MinDamage: 28, MaxDamage: 40}
+		m = monster{MaxHP: 185, MinDamage: 28, MaxDamage: 40}
 	case monsterDuskTyrant:
-		m = monster{Glyph: monsterGlyphs[kind], MaxHP: 205, MinDamage: 30, MaxDamage: 42, Undead: true}
+		m = monster{MaxHP: 205, MinDamage: 30, MaxDamage: 42, Undead: true}
 	case monsterObsidianGolem:
-		m = monster{Glyph: monsterGlyphs[kind], MaxHP: 230, MinDamage: 31, MaxDamage: 43}
+		m = monster{MaxHP: 230, MinDamage: 31, MaxDamage: 43}
 	default:
 		return monster{}, false
 	}
@@ -67,10 +67,10 @@ func epicMonsterDescription(kind monsterKind) string {
 
 func epicTreasurePool() []item {
 	return append(relicPool(),
-		item{Kind: itemStarfireOrb, Name: "starfire orb", Glyph: itemGlyphs[itemStarfireOrb]},
-		item{Kind: itemSunOrb, Name: "sun orb", Glyph: itemGlyphs[itemSunOrb]},
-		item{Kind: itemPhoenixAsh, Name: "phoenix ash", Glyph: itemGlyphs[itemPhoenixAsh]},
-		item{Kind: itemGhostRecallScroll, Name: "Ghost Dog recall scroll", Glyph: itemGlyphs[itemGhostRecallScroll]},
+		item{Kind: itemStarfireOrb, Name: "starfire orb"},
+		item{Kind: itemSunOrb, Name: "sun orb"},
+		item{Kind: itemPhoenixAsh, Name: "phoenix ash"},
+		item{Kind: itemGhostRecallScroll, Name: "Ghost Dog recall scroll"},
 	)
 }
 

@@ -66,20 +66,12 @@ var trapGlyphs = map[trapKind]rune{
 	trapRepulsion: '-',
 }
 
-// Glyph fields remain serialized for save compatibility. Display by kind so old
-// saves use the current symbols without rewriting their saved gameplay state.
 func (m monster) glyph() rune {
-	if ch := monsterGlyphs[m.Kind]; ch != 0 {
-		return ch
-	}
-	return m.Glyph
+	return monsterGlyphs[m.Kind]
 }
 
 func (it item) glyph() rune {
-	if it.Kind >= 0 && int(it.Kind) < len(itemGlyphs) {
-		return itemGlyphs[it.Kind]
-	}
-	return it.Glyph
+	return itemGlyphs[it.Kind]
 }
 
 func (t cryptTrap) glyph() rune {

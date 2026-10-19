@@ -86,7 +86,7 @@ func TestEachSuccessfulActionReplacesThePreviousTurnLog(t *testing.T) {
 	if !reflect.DeepEqual(g.messages, []string{"You move east."}) || g.stats.Turns != 1 {
 		t.Fatal("quiet movement should begin its own turn")
 	}
-	potion := item{Pos: pos{6, 4}, Kind: itemPotion, Name: "healing potion", Glyph: '!'}
+	potion := item{Pos: pos{6, 4}, Kind: itemPotion, Name: "healing potion"}
 	g.current().Items = []item{potion}
 	g.processCommand("w")
 	if len(g.messages) != 2 || g.messages[0] != "You move north." || !strings.Contains(g.messages[1], "stash a healing potion") || g.stats.Turns != 2 {

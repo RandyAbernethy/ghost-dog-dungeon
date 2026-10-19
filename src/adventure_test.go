@@ -2,8 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
-	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -201,37 +199,5 @@ func TestChronicleUsesRecordedEventsAndOnlyFinishedRuns(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "=== Your Adventure ===") || strings.Contains(out.String(), "You freed Ash") || strings.Contains(out.String(), "You defeated Epic") || strings.Contains(out.String(), "You completed The") {
 		t.Fatal("death must show the chronicle without inventing missing history")
-	}
-}
-
-func TestOlderFormatTwoSavesLoadWithoutInventedFeatures(t *testing.T) {
-	g := openArena()
-	g.saveDir = t.TempDir()
-	if err := g.save(); err != nil {
-		t.Fatal(err)
-	}
-	data, err := os.ReadFile(g.saveFile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var old map[string]json.RawMessage
-	if err := json.Unmarshal(data, &old); err != nil {
-		t.Fatal(err)
-	}
-	delete(old, "adventure")
-	data, err = json.Marshal(old)
-	if err != nil {
-		t.Fatal(err)
-	}
-	path := filepath.Join(g.saveDir, "older-format-2.json")
-	if err := os.WriteFile(path, data, 0600); err != nil {
-		t.Fatal(err)
-	}
-	loaded, err := loadGame(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if saveFormatVersion != 2 || !reflect.DeepEqual(g.levels, loaded.levels) || !reflect.DeepEqual(g.adventure, loaded.adventure) || g.dog != loaded.dog || g.rng.State != loaded.rng.State {
-		t.Fatal("older format-2 saves must load without regeneration, RNG draws or invented events")
 	}
 }

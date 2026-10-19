@@ -75,7 +75,6 @@ type item struct {
 	Pos          pos      `json:"pos"`
 	Kind         itemKind `json:"kind"`
 	Name         string   `json:"name"`
-	Glyph        rune     `json:"glyph"`
 	Weapon       weapon   `json:"weapon"`
 	Armor        armor    `json:"armor"`
 	StoryChapter int      `json:"story_chapter,omitempty"`
@@ -136,7 +135,6 @@ const (
 type monster struct {
 	Kind         monsterKind `json:"kind"`
 	Name         string      `json:"name"`
-	Glyph        rune        `json:"glyph"`
 	Pos          pos         `json:"pos"`
 	HP           int         `json:"hp"`
 	MaxHP        int         `json:"max_hp"`

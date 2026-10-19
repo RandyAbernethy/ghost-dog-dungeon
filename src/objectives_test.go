@@ -11,7 +11,7 @@ func objectiveArena(kind objectiveKind) *game {
 	g := openArena()
 	g.current().Objective = &objectiveRoom{
 		Kind: kind, Pos: pos{5, 5}, Area: room{4, 4, 3, 3}, Integrity: 3,
-		Reward: item{Kind: itemWardingCharm, Name: "warding charm", Glyph: '*'},
+		Reward: item{Kind: itemWardingCharm, Name: "warding charm"},
 	}
 	if kind == objectiveSigils {
 		g.current().Objective.Sigils = []ritualSigil{{Pos: pos{5, 5}}, {Pos: pos{6, 5}}, {Pos: pos{6, 6}}}

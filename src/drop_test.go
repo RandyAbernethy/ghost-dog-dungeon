@@ -82,7 +82,7 @@ func TestDropEachConsumableReleasesOneAndCanBeRecovered(t *testing.T) {
 			*line.quantity = 2
 			n := len(g.player.Weapons) + len(g.player.Armors) + i + 1
 			g.processCommand(fmt.Sprintf("drop %d", n))
-			if *line.quantity != 1 || len(g.current().Items) != 1 || g.current().Items[0].Kind != line.kind || g.current().Items[0].Glyph != line.glyph || g.stats.Turns != 1 {
+			if *line.quantity != 1 || len(g.current().Items) != 1 || g.current().Items[0].Kind != line.kind || g.current().Items[0].glyph() != itemGlyphs[line.kind] || g.stats.Turns != 1 {
 				t.Fatal("dropping a consumable should release exactly one of the numbered kind")
 			}
 			g.processCommand("d")

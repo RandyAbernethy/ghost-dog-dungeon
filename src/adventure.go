@@ -6,7 +6,6 @@ import (
 	"strings"
 )
 
-// Optional fields keep format-2 saves readable without inventing past events.
 type adventureState struct {
 	RescueFloor     int      `json:"rescue_floor,omitempty"`
 	AshMoments      []string `json:"ash_moments,omitempty"`
@@ -109,7 +108,7 @@ func (g *game) renderEnding(w io.Writer) {
 	}
 	if len(eligible) > 0 {
 		// A copy keeps the choice stable across redraws and save/load without
-		// advancing gameplay randomness or adding state to older saves.
+		// advancing gameplay randomness.
 		rng := *g.rng
 		fmt.Fprintln(w, eligible[rng.Intn(len(eligible))])
 	}

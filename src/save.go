@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-const saveFormatVersion = 2
+const saveFormatVersion = 3
 
 type saveState struct {
 	FormatVersion int            `json:"format_version"`

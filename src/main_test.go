@@ -216,7 +216,7 @@ func TestInspectScreenShowsThreatsLootAndStairs(t *testing.T) {
 	lvl.HasStair = true
 	lvl.Stairs = pos{X: 7, Y: 5}
 	lvl.Items = []item{{Pos: pos{X: 6, Y: 5}, Kind: itemWeapon, Weapon: weapon{Name: "Short Sword", Min: 4, Max: 7}}, {Pos: pos{X: 6, Y: 6}, Kind: itemArmor, Armor: armor{Name: "Leather Jerkin", Slot: slotBody, Defense: 2, Rarity: rarityUncommon}}}
-	lvl.Monsters = []*monster{{Kind: monsterRat, Name: "Dungeon Rat", Glyph: 'r', Pos: pos{X: 7, Y: 6}, HP: 8, MaxHP: 8, MinDamage: 2, MaxDamage: 4}}
+	lvl.Monsters = []*monster{{Kind: monsterRat, Name: "Dungeon Rat", Pos: pos{X: 7, Y: 6}, HP: 8, MaxHP: 8, MinDamage: 2, MaxDamage: 4}}
 	var out bytes.Buffer
 	g.renderInspect(&out)
 	plain := stripANSI(out.String())
@@ -239,7 +239,7 @@ func TestNormalizeCommandSupportsArrowKeys(t *testing.T) {
 func TestWaitCommandAdvancesEnemies(t *testing.T) {
 	g := openArena()
 	g.player.Pos = pos{X: 5, Y: 5}
-	g.current().Monsters = []*monster{{Kind: monsterOrc, Name: "Orc Brute", Glyph: 'o', Pos: pos{X: 6, Y: 5}, HP: 16, MaxHP: 16, MinDamage: 4, MaxDamage: 7}}
+	g.current().Monsters = []*monster{{Kind: monsterOrc, Name: "Orc Brute", Pos: pos{X: 6, Y: 5}, HP: 16, MaxHP: 16, MinDamage: 4, MaxDamage: 7}}
 	startHP := g.player.HP
 	g.processCommand(".")
 	if g.player.HP >= startHP {
@@ -250,7 +250,7 @@ func TestWaitCommandAdvancesEnemies(t *testing.T) {
 func TestDiagonalMoveLetsPlayerAttackDiagonally(t *testing.T) {
 	g := openArena()
 	g.player.Pos = pos{X: 5, Y: 5}
-	g.current().Monsters = []*monster{{Kind: monsterRat, Name: "Dungeon Rat", Glyph: 'r', Pos: pos{X: 6, Y: 6}, HP: 1, MaxHP: 8, MinDamage: 2, MaxDamage: 4}}
+	g.current().Monsters = []*monster{{Kind: monsterRat, Name: "Dungeon Rat", Pos: pos{X: 6, Y: 6}, HP: 1, MaxHP: 8, MinDamage: 2, MaxDamage: 4}}
 	if !g.tryMove("x") {
 		t.Fatal("expected diagonal action to succeed")
 	}
@@ -265,7 +265,7 @@ func TestGhostDogTargetsPlayersFight(t *testing.T) {
 	g.dog.Alive = true
 	g.player.Pos = pos{X: 5, Y: 5}
 	g.dog.Pos = pos{X: 4, Y: 5}
-	target := &monster{Kind: monsterOrc, Name: "Orc Brute", Glyph: 'o', Pos: pos{X: 6, Y: 5}, HP: 12, MaxHP: 12, MinDamage: 4, MaxDamage: 7}
+	target := &monster{Kind: monsterOrc, Name: "Orc Brute", Pos: pos{X: 6, Y: 5}, HP: 12, MaxHP: 12, MinDamage: 4, MaxDamage: 7}
 	g.current().Monsters = []*monster{target}
 	g.attackMonster(target)
 	if g.dogFocus != target {
@@ -477,7 +477,7 @@ func TestSearchRevealsSecretRoomAndHiddenLoot(t *testing.T) {
 		Door:  pos{X: 4, Y: 3},
 		Tiles: []pos{{X: 5, Y: 2}, {X: 5, Y: 3}, {X: 5, Y: 4}, {X: 6, Y: 2}, {X: 6, Y: 3}, {X: 6, Y: 4}},
 	}}
-	lvl.Items = []item{{Pos: pos{X: 5, Y: 3}, Kind: itemSunOrb, Name: "sun orb", Glyph: '*'}}
+	lvl.Items = []item{{Pos: pos{X: 5, Y: 3}, Kind: itemSunOrb, Name: "sun orb"}}
 	if got := len(g.visibleItems(10)); got != 0 {
 		t.Fatalf("hidden loot should stay invisible before reveal, got %d visible items", got)
 	}

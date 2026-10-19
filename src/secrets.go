@@ -99,16 +99,16 @@ func (g *game) filterFoundSecretEquipment(pool []item) []item {
 
 func (g *game) secretTreasurePool(depth int) []item {
 	pool := []item{
-		{Kind: itemPotion, Name: "healing potion", Glyph: itemGlyphs[itemPotion]},
-		{Kind: itemWardingCharm, Name: "warding charm", Glyph: itemGlyphs[itemWardingCharm]},
-		{Kind: itemBlinkStone, Name: "blink stone", Glyph: itemGlyphs[itemBlinkStone]},
-		{Kind: itemFrostCharm, Name: "frost charm", Glyph: itemGlyphs[itemFrostCharm]},
+		{Kind: itemPotion, Name: "healing potion"},
+		{Kind: itemWardingCharm, Name: "warding charm"},
+		{Kind: itemBlinkStone, Name: "blink stone"},
+		{Kind: itemFrostCharm, Name: "frost charm"},
 	}
 	if depth >= 4 {
 		pool = append(pool,
-			item{Kind: itemSunOrb, Name: "sun orb", Glyph: itemGlyphs[itemSunOrb]},
-			item{Kind: itemStarfireOrb, Name: "starfire orb", Glyph: itemGlyphs[itemStarfireOrb]},
-			item{Kind: itemPhoenixAsh, Name: "phoenix ash", Glyph: itemGlyphs[itemPhoenixAsh]},
+			item{Kind: itemSunOrb, Name: "sun orb"},
+			item{Kind: itemStarfireOrb, Name: "starfire orb"},
+			item{Kind: itemPhoenixAsh, Name: "phoenix ash"},
 			makeWeaponLoot(weapon{Name: "Emberbrand", Min: 11, Max: 16, Magic: true}),
 			makeWeaponLoot(weapon{Name: "Tempest Spear", Min: 9, Max: 13, Magic: true, Reach: 2}),
 			makeWeaponLoot(weapon{Name: "Voidglass Dagger", Min: 13, Max: 18, Magic: true}),

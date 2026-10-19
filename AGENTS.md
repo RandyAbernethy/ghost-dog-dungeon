@@ -2,7 +2,6 @@
 
 This is a Go terminal roguelike with ten main dungeon floors and an optional hidden crypt. Keep it readable, fair,
 and reproducible from a seed.
-Keep the save format backward compatible.
 
 
 ## Workflow
@@ -17,6 +16,19 @@ Keep the save format backward compatible.
 - When changing behavior or build interfaces, update the affected README sections, gameplay contracts, and regression
   tests together. Update this file when working conventions or shared safeguards change.
 - Share concise progress updates during longer work. Report results, verification, and remaining limitations honestly.
+
+
+## Code quality and compatibility
+
+- Prioritize clean, maintainable code and avoiding technical debt over backward compatibility. Make breaking changes
+  only when they make the codebase clearer or easier to work on; avoid unnecessary compatibility breaks or churn.
+- Keep explicit save-format versioning. Bump the version when a schema change makes existing saves incompatible.
+- The game supports only the current save format. Reject older, unversioned, and unknown future formats clearly.
+  Remove obsolete fields and compatibility fallbacks instead of retaining them for older saves. Keep migration and
+  legacy-format loading code out of the game.
+- If older saves need support in the future, create a separate savefile updater that converts them to the current
+  format before the game loads them. That updater is a future task; do not implement or scaffold it now.
+- Personal records are separate from dungeon saves and must be retained across save-format changes.
 
 
 ## Source organization
@@ -45,7 +57,7 @@ Start with `src/main.go` for startup, `src/commands.go` for actions, `src/render
   choose outcomes by ranging over a map.
 - Keep rendering and inspection free of gameplay mutations, except existing codex visibility bookkeeping.
 - Keep map symbols unique across monster species, item types, trap kinds, and other features. Reserve `F`/`f` for
-  fountains and use the shared catalog in `src/glyphs.go`; older saves must display current symbols without state repair.
+  fountains and derive symbols by entity kind from `src/glyphs.go`; do not serialize duplicate glyph fields.
 - Successful gameplay actions spend one turn. Reading event choices, reading the book, escaping a command screen,
   saving, and failed actions do not.
 - Keep the complete current turn's log in action order, beginning with the player's action. Replace it only when

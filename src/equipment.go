@@ -303,7 +303,6 @@ func (g *game) equipCommand(cmd string) bool {
 		return false
 	}
 	n, err := strconv.Atoi(fields[1])
-	g.player.ensureCarriedEquipment()
 	if err != nil || n < 1 || n > len(g.player.Weapons)+len(g.player.Armors) {
 		g.addMessage("Choose an equipment number shown in your inventory.")
 		return false
@@ -344,7 +343,6 @@ func (g *game) dropCommand(cmd string) bool {
 		return false
 	}
 	n, err := strconv.Atoi(fields[1])
-	g.player.ensureCarriedEquipment()
 	lines := g.inventoryLines()
 	gearCount := len(g.player.Weapons) + len(g.player.Armors)
 	if err != nil || n < 1 || n > gearCount+len(lines) {
@@ -378,7 +376,7 @@ func (g *game) dropCommand(cmd string) bool {
 			return false
 		}
 		*line.quantity--
-		dropped = item{Kind: line.kind, Name: line.name, Glyph: line.glyph}
+		dropped = item{Kind: line.kind, Name: line.name}
 	}
 	dropped.Pos = g.player.Pos
 	g.current().Items = append(g.current().Items, dropped)
@@ -387,7 +385,6 @@ func (g *game) dropCommand(cmd string) bool {
 }
 
 func (g *game) renderEquipment(w io.Writer) {
-	g.player.ensureCarriedEquipment()
 	fmt.Fprintln(w, "\nCarried equipment (equip NUMBER or drop NUMBER; in immediate-key mode prefix with : and press Enter):")
 	for i, carried := range g.player.Weapons {
 		active := ""

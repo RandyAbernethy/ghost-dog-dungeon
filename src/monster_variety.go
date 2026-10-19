@@ -15,21 +15,21 @@ func additionalMonsterSpec(kind monsterKind) (monster, bool) {
 	var m monster
 	switch kind {
 	case monsterTunnelBat:
-		m = monster{Glyph: monsterGlyphs[kind], MaxHP: 6, MinDamage: 1, MaxDamage: 3}
+		m = monster{MaxHP: 6, MinDamage: 1, MaxDamage: 3}
 	case monsterCaveCrawler:
-		m = monster{Glyph: monsterGlyphs[kind], MaxHP: 7, MinDamage: 2, MaxDamage: 3}
+		m = monster{MaxHP: 7, MinDamage: 2, MaxDamage: 3}
 	case monsterRustGuard:
-		m = monster{Glyph: monsterGlyphs[kind], MaxHP: 12, MinDamage: 3, MaxDamage: 6}
+		m = monster{MaxHP: 12, MinDamage: 3, MaxDamage: 6}
 	case monsterBarrowArcher:
-		m = monster{Glyph: monsterGlyphs[kind], MaxHP: 18, MinDamage: 3, MaxDamage: 5, Undead: true}
+		m = monster{MaxHP: 18, MinDamage: 3, MaxDamage: 5, Undead: true}
 	case monsterGraveAcolyte:
-		m = monster{Glyph: monsterGlyphs[kind], MaxHP: 18, MinDamage: 4, MaxDamage: 6, Undead: true}
+		m = monster{MaxHP: 18, MinDamage: 4, MaxDamage: 6, Undead: true}
 	case monsterEmberHound:
-		m = monster{Glyph: monsterGlyphs[kind], MaxHP: 22, MinDamage: 4, MaxDamage: 7}
+		m = monster{MaxHP: 22, MinDamage: 4, MaxDamage: 7}
 	case monsterObsidianGuard:
-		m = monster{Glyph: monsterGlyphs[kind], MaxHP: 29, MinDamage: 5, MaxDamage: 8}
+		m = monster{MaxHP: 29, MinDamage: 5, MaxDamage: 8}
 	case monsterHollowWarden:
-		m = monster{Glyph: monsterGlyphs[kind], MaxHP: 28, MinDamage: 5, MaxDamage: 8, Undead: true}
+		m = monster{MaxHP: 28, MinDamage: 5, MaxDamage: 8, Undead: true}
 	default:
 		return monster{}, false
 	}

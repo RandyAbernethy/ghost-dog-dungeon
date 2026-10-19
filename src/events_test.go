@@ -10,9 +10,9 @@ import (
 
 func testFriendlyGhost(p pos) floorEvent {
 	return floorEvent{Kind: eventGhost, Pos: p, Gifts: []item{
-		{Kind: itemPotion, Name: "healing potion", Glyph: '!'},
-		{Kind: itemBlinkStone, Name: "blink stone", Glyph: '*'},
-		{Kind: itemGhostRecallScroll, Name: "Ghost Dog recall scroll", Glyph: '?'},
+		{Kind: itemPotion, Name: "healing potion"},
+		{Kind: itemBlinkStone, Name: "blink stone"},
+		{Kind: itemGhostRecallScroll, Name: "Ghost Dog recall scroll"},
 	}}
 }
 
