@@ -158,7 +158,7 @@ func (g *game) advanceObjective() {
 			continue
 		}
 		near := distance(g.player.Pos, o.Pos) <= 3 ||
-			(g.dog.Freed && g.dog.Alive && distance(g.dog.Pos, o.Pos) <= 3)
+			(g.dog.active() && distance(g.dog.Pos, o.Pos) <= 3)
 		if g.inCrypt || depth != g.currentLevel || !near {
 			o.Failed = true
 			g.addMessage("The abandoned spirit fades. Its vigil has ended without a reward.")

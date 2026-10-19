@@ -57,7 +57,9 @@ Start with `src/main.go` for startup, `src/commands.go` for actions, `src/render
 - Every save creates a fresh timestamped snapshot under `--save-file-path` (default: current directory). Create missing
   directories at startup and report useful errors. Loading preserves current save-directory and record-storage
   settings; never overwrite the source snapshot or previous saves.
-- Ghost Dog accompanies the player only when freed and alive. Preserve combat expectations in
+- Ghost Dog acts and accompanies the player only when freed, alive, and unchained. Use `g.dog.active()` for actions and
+  following, and `g.dogPresent()` for targeting or passive healing on the current floor. A chained dog remains on his
+  saved anchor floor until the player walks onto his tile. Preserve combat expectations in
   `src/dog_combat_test.go` and the companion tests in `src/main_test.go`; revival requires explicit mechanics.
 - Count kills and defeated difficulty once per dead monster, including companion, consumable, and guardian kills.
   Award death rewards once through the common death handler for every kill source. Only finished runs submit records.

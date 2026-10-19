@@ -139,6 +139,16 @@ func loadGame(path string) (*game, error) {
 		}
 		lvl.Tiles = tiles
 	}
+	if state.Dog.Chained {
+		d := state.Dog
+		if !d.Freed || !d.Alive || d.ChainFloor < 0 || d.ChainFloor >= len(state.Levels) ||
+			d.Pos.X < 0 || d.Pos.X >= mapWidth || d.Pos.Y < 0 || d.Pos.Y >= mapHeight {
+			return nil, errors.New("save file has an invalid chained Ghost Dog or anchor floor")
+		}
+		if state.Levels[d.ChainFloor].Tiles[d.Pos.Y][d.Pos.X] == '#' {
+			return nil, errors.New("save file places chained Ghost Dog inside a wall")
+		}
+	}
 	if state.InCrypt && state.Crypt == nil {
 		return nil, errors.New("save file is inside the crypt but is missing its dungeon")
 	}

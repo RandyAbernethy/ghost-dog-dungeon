@@ -88,7 +88,7 @@ func (g *game) recordChallenges() ([]recordAchievement, error) {
 			changed = true
 		}
 	}
-	if g.won && g.dog.Freed && g.dog.Alive && g.stats.GhostDogFalls == 0 && (records.SafeEscape == nil || result.Turns <= records.SafeEscape.Turns) {
+	if g.won && g.dog.active() && g.stats.GhostDogFalls == 0 && (records.SafeEscape == nil || result.Turns <= records.SafeEscape.Turns) {
 		tied := records.SafeEscape != nil && result.Turns == records.SafeEscape.Turns
 		achievements = append(achievements, recordAchievement{fmt.Sprintf("Ghost Dog safe escape: %d turns", result.Turns), tied})
 		if !tied {
@@ -161,7 +161,7 @@ func (g *game) renderChallenges(w io.Writer) {
 	fmt.Fprintln(w, "Fewest turns: escape as quickly as you can. Most kills: counts kills by you and Ghost Dog in a run ending in escape or death.")
 	if g.stats.GhostDogFalls > 0 {
 		fmt.Fprintln(w, "Escape without Ghost Dog falling: failed this run, even if he is revived.")
-	} else if g.won && g.dog.Freed && g.dog.Alive {
+	} else if g.won && g.dog.active() {
 		fmt.Fprintln(w, "Escape without Ghost Dog falling: achieved this run.")
 	} else if g.won || g.player.HP <= 0 {
 		fmt.Fprintln(w, "Escape without Ghost Dog falling: this run ended without a safe escape together.")

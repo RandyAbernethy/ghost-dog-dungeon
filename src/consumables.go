@@ -53,7 +53,7 @@ func (g *game) useWardingCharm() bool {
 		return true
 	}
 	g.player.ShieldTurns = 3
-	if g.dog.Freed && g.dog.Alive {
+	if g.dogPresent() {
 		g.addMessage("A pale ward circles you and the Ghost Dog for the next 3 enemy turns.")
 	} else {
 		g.addMessage("A pale ward circles you for the next 3 enemy turns.")
@@ -79,7 +79,7 @@ func (g *game) useBlinkStone() bool {
 	g.player.BlinkStones--
 	g.player.Pos = landing.player
 	g.dogFocus = nil
-	if g.dog.Freed && g.dog.Alive {
+	if g.dog.active() {
 		g.dog.Pos = landing.dog
 		g.addMessage("Space folds and carries you and Ghost Dog to the safest open spot on this floor.")
 	} else {
@@ -173,7 +173,11 @@ func (g *game) useGhostRecallScroll() bool {
 		return false
 	}
 	if g.dog.Alive {
-		g.addMessage("The Ghost Dog is already at your side.")
+		if g.dog.Chained {
+			g.addMessage("Ghost Dog is alive but chained. Move onto his d tile to free him; a recall scroll cannot break the chain.")
+		} else {
+			g.addMessage("The Ghost Dog is already at your side.")
+		}
 		return false
 	}
 	g.dog.Alive = true
@@ -202,8 +206,12 @@ func (g *game) drinkFromFountain() bool {
 		g.addMessage("There is no unused fountain close enough to drink from.")
 		return false
 	}
-	if g.player.HP >= g.player.MaxHP && (!g.dog.Freed || !g.dog.Alive || g.dog.HP >= g.dog.MaxHP) {
-		g.addMessage("You and Ghost Dog are already at full health; save the fountain.")
+	if g.player.HP >= g.player.MaxHP && (!g.dogPresent() || g.dog.HP >= g.dog.MaxHP) {
+		if g.dogPresent() {
+			g.addMessage("You and Ghost Dog are already at full health; save the fountain.")
+		} else {
+			g.addMessage("You are already at full health; save the fountain.")
+		}
 		return false
 	}
 	nearby.Used = true
@@ -212,7 +220,7 @@ func (g *game) drinkFromFountain() bool {
 	g.player.HP = min(g.player.MaxHP, g.player.HP+playerHeal)
 	actualPlayerHeal := g.player.HP - oldHP
 	g.addMessage(fmt.Sprintf("You drink from the fountain and recover %d health. (%d/%d)", actualPlayerHeal, g.player.HP, g.player.MaxHP))
-	if g.dog.Freed && g.dog.Alive {
+	if g.dogPresent() {
 		dogHeal := g.randRange(8, 12)
 		oldDogHP := g.dog.HP
 		g.dog.HP = min(g.dog.MaxHP, g.dog.HP+dogHeal)

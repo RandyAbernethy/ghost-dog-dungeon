@@ -182,11 +182,13 @@ type player struct {
 }
 
 type ghostDog struct {
-	Pos   pos  `json:"pos"`
-	HP    int  `json:"hp"`
-	MaxHP int  `json:"max_hp"`
-	Freed bool `json:"freed"`
-	Alive bool `json:"alive"`
+	Pos        pos  `json:"pos"`
+	HP         int  `json:"hp"`
+	MaxHP      int  `json:"max_hp"`
+	Freed      bool `json:"freed"`
+	Alive      bool `json:"alive"`
+	Chained    bool `json:"chained,omitempty"`
+	ChainFloor int  `json:"chain_floor,omitempty"`
 }
 
 type level struct {

@@ -227,6 +227,20 @@ func (g *game) tryMove(cmd string) bool {
 	if handled, acted := g.useCryptDoor(next); handled {
 		return acted
 	}
+	if g.dogPresent() && g.dog.Chained && g.dog.Pos == next {
+		chainFloor := g.dog.ChainFloor
+		g.dog.Chained, g.dog.ChainFloor = false, 0
+		if !g.stepDogAside(next, g.player.Pos) {
+			g.dog.Chained, g.dog.ChainFloor = true, chainFloor
+			g.addMessage("There is no room for Ghost Dog to move after you free him.")
+			return false
+		}
+		g.player.Pos = next
+		g.dogFocus = nil
+		g.addMessage("You move " + moveDirection(cmd) + " and break the silver chain holding Ghost Dog. He is free to act again.")
+		g.collectItems()
+		return true
+	}
 	for step := 2; step <= g.player.Weapon.effectiveReach(); step++ {
 		target := pos{X: g.player.Pos.X + dx*step, Y: g.player.Pos.Y + dy*step}
 		if !g.inBounds(target) || lvl.Tiles[target.Y][target.X] == '#' {
@@ -237,7 +251,7 @@ func (g *game) tryMove(cmd string) bool {
 			return true
 		}
 	}
-	if g.dog.Freed && g.dog.Alive && g.dog.Pos == next {
+	if g.dog.active() && g.dog.Pos == next {
 		if !g.stepDogAside(next, g.player.Pos) {
 			g.addMessage("Ghost dog has no space to drift aside.")
 			return false
@@ -370,7 +384,7 @@ func (g *game) tryAscend() bool {
 
 func (g *game) afterFloorTransition(message string, healDog bool) {
 	g.addMessage(message)
-	if g.dog.Freed && g.dog.Alive {
+	if g.dog.active() {
 		if healDog {
 			heal := g.randRange(2, 3)
 			g.dog.HP = min(g.dog.MaxHP, g.dog.HP+heal)
@@ -394,7 +408,7 @@ func (g *game) regenerateStairGuardians(lvl *level) {
 					(!g.dog.Freed && lvl.DogChain != nil && p == *lvl.DogChain) {
 					continue
 				}
-				if g.cryptDoorGlyph(p) != 0 || lvl.Objective.marker(p) != 0 || g.monsterAt(lvl, p) != nil || g.itemAt(lvl, p) != nil || g.fountainAt(lvl, p) != nil || lvl.eventAt(p) != nil || (g.dog.Freed && g.dog.Alive && g.dog.Pos == p) {
+				if g.cryptDoorGlyph(p) != 0 || lvl.Objective.marker(p) != 0 || g.monsterAt(lvl, p) != nil || g.itemAt(lvl, p) != nil || g.fountainAt(lvl, p) != nil || lvl.eventAt(p) != nil || (g.dogPresent() && g.dog.Pos == p) {
 					continue
 				}
 				spots = append(spots, p)

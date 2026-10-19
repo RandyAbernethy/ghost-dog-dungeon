@@ -50,6 +50,31 @@ distribution, geometric variety, rewards, and seed reproduction.
 Keep existing seed coverage for roster budgets, population variety, and placement. Use the calibrated constants and
 test assertions as the balance baseline rather than an unspecified previous version.
 
+## Dread Lich and companion chains
+
+- The Dread Lich has 60 base HP and 7–11 base damage: the normal depth scaling produces 78 HP and 10–14 damage on
+  floor ten. Keep the existing ordinary-floor budgets, roster bounds, death accounting and escape rewards.
+- On each active Lich turn, make one saved-RNG roll below 10 out of 100 when Ghost Dog is freed, alive, unchained,
+  within five tiles, and visible to the Lich through clear terrain. Successful chaining replaces the Lich's attack;
+  failed rolls allow his normal action. Dead, stunned, frozen or fleeing Liches and ineligible targets do not roll.
+  Reading, failed actions, saving and rendering cannot give the Lich another turn.
+- Store temporary chains separately from the historical `Freed` flag, with the main-floor anchor and dog position.
+  While chained, Ash cannot attack, dodge, guard objectives, follow stairs, or blink with the player. Display `d`
+  rather than `D`, and explain the release action in the log, status, inventory, inspection and nearby hint.
+- Walking onto chained Ash takes one ordinary movement turn, breaks the chain, and lets him act again. Prioritize
+  rescue over a reach attack past him. Preserve his health and original rescue history; avoid overlapping actors.
+  Only present companions can be targeted or receive passive healing. Ash stays anchored when the player leaves;
+  matching coordinates on another floor, blink and recall cannot release or move him.
+- Living Ash remains chained when the Lich dies, until the player reaches him. Dispersion clears the physical chain
+  and counts a fall once; existing explicit revival rules still apply. Leaving Ash chained behind is an escape alone
+  in victory text, ending memories, the chronicle, and safe-companion record eligibility.
+- Save format 2 persists chains and their anchor exactly. Missing optional fields in older saves mean unchained;
+  do not repair, reroll, revive or rebalance anything on load. Reject invalid chained-dog anchors with useful errors.
+
+Preserve the chance-boundary sweep, rescue, inactivity, travel, targeting, records and executable save/load checks in
+[lich_test.go](../src/lich_test.go), the generated boss-stat assertions and balance sweeps in
+[difficulty_test.go](../src/difficulty_test.go), and existing companion combat and campaign replay coverage.
+
 ## Relics and Epic encounters
 
 - God armor and Artifact weapons are rare exceptions to ordinary loot balance. Generate room relics only in chambers
@@ -116,8 +141,8 @@ gift offers live in [ghost_gifts.go](../src/ghost_gifts.go).
   Loading never adds objectives. Preserve reproducibility and the rarity/placement sweep in
   [objectives_test.go](../src/objectives_test.go).
 - Starting the spirit vigil spends one turn; the following three successful turns provide protection after enemies
-  act. Player or freed, living Ash must remain within three tiles on that floor. Adjacent enemies remove one resolve
-  per turn from its initial three. Losing all resolve, abandoning the area, or leaving the floor permanently fails it.
+  act. Player or freed, living, unchained Ash must remain within three tiles on that floor. Adjacent enemies remove one
+  resolve per turn from its initial three. Losing all resolve, abandoning the area, or leaving the floor permanently fails it.
   Death or escape cannot advance a vigil. Breaking each distinct ritual sigil requires standing on it and spending
   one interaction turn; broken sigils, partial progress and terminal states persist.
 - Completing an objective awards its saved consumable directly once through ordinary collection. No interaction,
@@ -127,9 +152,15 @@ gift offers live in [ghost_gifts.go](../src/ghost_gifts.go).
   current turn's log. Ambient moments require no living enemy within six tiles of either companion, at most one moment
   on that floor, and a fifteen-turn cooldown. Contextual rescue, fountain, keepsake and revival moments remain tied to
   those actions. Use no extra RNG or turns; no moment revives or buffs him.
-- Escape callbacks use only collected side-story IDs, in catalog order, and reflect Ash's final survival. The finished
-  run chronicle uses visited/revealed terrain, collected stories, recorded rescue floor, Epic deaths, objective successes,
-  final equipment and existing fall statistics. Only death or escape shows it, before final statistics and celebrations.
+- Escape prints the victory message and bowl, followed by at most one randomly selected reminiscence. Only collected
+  side stories and a freed, living Ash's return after a recorded fall are eligible; dream/song variants reflect his
+  presence at the escape. Keep every candidate on one output line. If none is eligible, print only the bowl.
+  Select using a copy of the saved RNG so repeated rendering and save/load retain the same choice without advancing
+  gameplay RNG, spending turns, or adding save fields. Keep Your Adventure, challenges, records, celebrations, and
+  the final dungeon seed in place.
+- The finished run chronicle uses visited/revealed terrain, collected stories, recorded rescue floor, Epic deaths,
+  objective successes, final equipment and existing fall statistics. Only death or escape shows it, before final
+  statistics and celebrations.
   Rendering never records new history. Missing history in older format-2 saves stays absent; new fields are additive.
 
 Keep narrative, older-save, free-action, one-time reward and executable coverage in
@@ -178,8 +209,8 @@ and complete generated-maze traversal through the compiled executable and save/l
 ## Personal records
 
 - Only escape or death submits records. Fewest turns requires an escape; Ghost Dog safe escape also requires him
-  freed, alive, and never fallen. Both speed records prefer fewer turns. Kills and defeated difficulty prefer higher
-  totals, including on death.
+  freed, alive, unchained with the player, and never fallen. Both speed records prefer fewer turns. Kills and defeated
+  difficulty prefer higher totals, including on death.
 - Compare finished results with the previous records before writing improvements. First qualifying results and strict
   improvements earn a prominent **NEW RECORD!** announcement; equal best scores earn **RECORD TIED!**. Include every
   qualifying category and its score after the final statistics. Ties preserve the original record holder and do not

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -62,21 +63,50 @@ func TestStoryEndingAndChronicleThroughExecutable(t *testing.T) {
 	g.dog.Freed, g.dog.Pos = true, pos{6, 5}
 	g.current().HasEscapeStair, g.current().EscapeStairs = true, g.player.Pos
 	g.current().Secrets = []*secretRoom{{Revealed: true, Tiles: []pos{g.player.Pos}}}
-	g.player.SideStories = []int{9, 10}
+	for i := range ghostDogSideStories {
+		g.player.SideStories = append(g.player.SideStories, i+1)
+	}
+	g.stats.GhostDogFalls = 1
 	g.adventure = adventureState{RescueFloor: 2, EpicsDefeated: []string{"Epic Frost Monarch"}, ObjectivesDone: []string{string(objectiveSpirit)}}
 	g.saveDir = t.TempDir()
 	if err := g.save(); err != nil {
 		t.Fatal(err)
 	}
-	cmd := gameCommand(t, "--load-file", g.saveFile, "--save-file-path", g.saveDir)
-	cmd.Stdin = strings.NewReader("book\nsave\nload\n<\n")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("executable: %v\n%s", err, output)
-	}
-	for _, want := range []string{"Victory!", "Mara's dream", "home is the hand", "=== Your Adventure ===", "silver chain on floor 2", "You defeated Epic Frost Monarch", "You completed " + string(objectiveSpirit), "NEW RECORD!"} {
-		if !strings.Contains(string(output), want) {
-			t.Fatalf("the finished run did not show %q", want)
+	var reference string
+	for _, resume := range []bool{false, true} {
+		name, commands := "uninterrupted", "book\n<\n"
+		if resume {
+			name, commands = "save_and_load", "book\nsave\nload\n<\n"
 		}
+		t.Run(name, func(t *testing.T) {
+			cmd := gameCommand(t, "--load-file", g.saveFile, "--save-file-path", g.saveDir)
+			cmd.Stdin = strings.NewReader(commands)
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				t.Fatalf("executable: %v\n%s", err, output)
+			}
+			text := string(output)
+			for _, want := range []string{"You climb the hidden stairs and leave the dungeon behind.", "Victory!", "=== Your Adventure ===", "silver chain on floor 2", "You defeated Epic Frost Monarch", "You completed " + string(objectiveSpirit), "=== Optional Challenges ===", "=== Personal Records ===", "NEW RECORD!"} {
+				if !strings.Contains(text, want) {
+					t.Fatalf("the finished run did not show %q", want)
+				}
+			}
+			_, afterVictory, ok := strings.Cut(text, "You escaped the dungeon with your ghost dog. Victory!\n")
+			if !ok {
+				t.Fatal("the companion victory message must remain unchanged")
+			}
+			ending, _, ok := strings.Cut(afterVictory, "=== Your Adventure ===")
+			lines := strings.Split(strings.TrimSpace(ending), "\n")
+			if !ok || len(lines) != 2 || lines[0] != "Beside the door, you see a clean bowl filled with fresh rain water." {
+				t.Fatalf("the bowl must be followed by just one reminiscence before the chronicle: %q", ending)
+			}
+			if resume && ending != reference {
+				t.Fatal("save/load must retain the same ending selection")
+			}
+			reference = ending
+			if !strings.HasSuffix(text, fmt.Sprintf("Dungeon seed: %d\n", g.seed)) {
+				t.Fatal("the dungeon seed must still finish the output")
+			}
+		})
 	}
 }

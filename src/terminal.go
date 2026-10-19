@@ -82,7 +82,7 @@ func (g *game) loop(stdin io.Reader, stdout io.Writer) error {
 	switch {
 	case g.won:
 		g.render(stdout)
-		if g.dog.Freed && g.dog.Alive {
+		if g.dog.active() {
 			fmt.Fprintln(stdout, "\nYou escaped the dungeon with your ghost dog. Victory!")
 		} else {
 			fmt.Fprintln(stdout, "\nYou escaped the dungeon. Victory!")

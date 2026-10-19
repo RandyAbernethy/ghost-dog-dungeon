@@ -74,6 +74,9 @@ func TestBudgetedRostersStayBalancedAndVaryAcrossSeeds(t *testing.T) {
 			for _, m := range roster {
 				if m.Boss {
 					bosses++
+					if m.MaxHP != 78 || m.HP != 78 || m.MinDamage != 10 || m.MaxDamage != 14 {
+						t.Fatal("the generated Dread Lich must have 78 HP and a 10–14 damage range")
+					}
 				} else {
 					copies[m.Kind]++
 					if !local[m.Kind] {

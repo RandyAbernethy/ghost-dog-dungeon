@@ -166,7 +166,7 @@ func (g *game) isWalkable(p pos, ignoreDog bool) bool {
 	if !ignoreDog && !g.dog.Freed && g.current().DogChain != nil && *g.current().DogChain == p {
 		return false
 	}
-	if !ignoreDog && g.dog.Freed && g.dog.Alive && g.dog.Pos == p {
+	if !ignoreDog && g.dogPresent() && g.dog.Pos == p {
 		return false
 	}
 	return g.monsterAt(g.current(), p) == nil

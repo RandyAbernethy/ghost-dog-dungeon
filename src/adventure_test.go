@@ -90,35 +90,87 @@ func TestEveryCollectedSideStoryChangesTheEndingWithoutSpoilers(t *testing.T) {
 	g.dog.Freed = true
 	var base bytes.Buffer
 	g.renderEnding(&base)
+	memoryTerms := []string{
+		"Mara's stolen glove", "chains below", "hundred little moons", "share for a hungry traveler",
+		"nest Ash once saved", "weak bell ringing", "wooden soldier", "room for one more",
+		"Mara's dream", "Mara's unfinished song", "room behind Mara's pantry",
+	}
 	for i, story := range ghostDogSideStories {
 		g.player.SideStories = []int{i + 1}
 		var ending bytes.Buffer
 		g.renderEnding(&ending)
-		if ending.String() == base.String() {
+		if ending.String() == base.String() || !strings.Contains(ending.String(), memoryTerms[i]) {
 			t.Fatalf("collected story %q should contribute to the ending", story.Title)
+		}
+		if len(strings.Split(strings.TrimSpace(ending.String()), "\n")) != 2 {
+			t.Fatalf("collected story %q should add exactly one reminiscence after the bowl", story.Title)
 		}
 	}
 	for _, alive := range []bool{false, true} {
 		g.dog.Alive = alive
-		g.player.SideStories = []int{9, 10}
 		beforeRNG, beforeStats := g.rng.State, g.stats
-		beforePlayer := g.player
-		var ending bytes.Buffer
-		g.renderEnding(&ending)
-		if !strings.Contains(ending.String(), "Mara's dream") || !strings.Contains(ending.String(), "final line") ||
-			(!alive && strings.Contains(ending.String(), "Ash crosses the threshold")) ||
-			(alive && !strings.Contains(ending.String(), "Ash crosses the threshold")) {
-			t.Fatal("the dream and song must reflect both collected stories and Ash's survival")
-		}
-		if g.rng.State != beforeRNG || g.stats != beforeStats || !reflect.DeepEqual(beforePlayer, g.player) {
-			t.Fatal("the ending must not change gameplay state")
+		for _, id := range []int{9, 10} {
+			g.player.SideStories = []int{id}
+			beforePlayer := g.player
+			var ending bytes.Buffer
+			g.renderEnding(&ending)
+			if id == 9 && (!strings.Contains(ending.String(), "Mara's dream") ||
+				strings.Contains(ending.String(), "Ash crosses the threshold") != alive) {
+				t.Fatal("the collected dream's memory must reflect Ash's survival")
+			}
+			if id == 10 && (!strings.Contains(ending.String(), "final line") ||
+				strings.Contains(ending.String(), "home is the hand") != alive) {
+				t.Fatal("the collected song's memory must reflect Ash's survival")
+			}
+			if g.rng.State != beforeRNG || g.stats != beforeStats || !reflect.DeepEqual(beforePlayer, g.player) {
+				t.Fatal("the ending must not change gameplay state")
+			}
 		}
 	}
 	var fresh bytes.Buffer
 	g.player.SideStories = nil
 	g.renderEnding(&fresh)
-	if strings.Contains(fresh.String(), "Mara") || strings.Contains(fresh.String(), "song") {
+	if fresh.String() != "Beside the door, you see a clean bowl filled with fresh rain water.\n" {
 		t.Fatal("an uncollected story must not contribute its ending")
+	}
+}
+
+func TestEndingSelectsOneEligibleMemoryAndPreservesItAcrossSaveLoad(t *testing.T) {
+	eligible := map[string]bool{
+		"You remember Mara's stolen glove, and hope there will be small, foolish mornings again.":            true,
+		"Somewhere beyond the door, you imagine a weak bell ringing, and a dog answering louder than grief.": true,
+		"Ash fell in the dark, and you brought him back. This time, he follows you into the light.":          true,
+	}
+	seen := map[string]bool{}
+	for seed := int64(1); seed <= 128; seed++ {
+		g := openArena()
+		g.rng = newSimpleRNG(seed)
+		g.dog.Freed = true
+		g.player.SideStories = []int{1, 6}
+		g.stats.GhostDogFalls = 1
+		rng, stats := g.rng.State, g.stats
+		var first, repeated bytes.Buffer
+		g.renderEnding(&first)
+		g.renderEnding(&repeated)
+		lines := strings.Split(strings.TrimSpace(first.String()), "\n")
+		if len(lines) != 2 || !eligible[lines[1]] {
+			t.Fatalf("the bowl must be followed by exactly one earned memory: %q", first.String())
+		}
+		seen[lines[1]] = true
+		if first.String() != repeated.String() || g.rng.State != rng || g.stats != stats {
+			t.Fatal("redrawing the ending must retain its selection without spending RNG or turns")
+		}
+		if seed == 1 {
+			loaded := saveAndReloadAdventure(t, g)
+			var restored bytes.Buffer
+			loaded.renderEnding(&restored)
+			if restored.String() != first.String() || loaded.rng.State != rng {
+				t.Fatal("save/load must preserve the selected memory without advancing RNG")
+			}
+		}
+	}
+	if len(seen) != len(eligible) {
+		t.Fatal("different run RNG states must be able to select every eligible memory")
 	}
 }
 
@@ -179,7 +231,7 @@ func TestOlderFormatTwoSavesLoadWithoutInventedFeatures(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if saveFormatVersion != 2 || !reflect.DeepEqual(g.levels, loaded.levels) || !reflect.DeepEqual(g.adventure, loaded.adventure) || g.rng.State != loaded.rng.State {
+	if saveFormatVersion != 2 || !reflect.DeepEqual(g.levels, loaded.levels) || !reflect.DeepEqual(g.adventure, loaded.adventure) || g.dog != loaded.dog || g.rng.State != loaded.rng.State {
 		t.Fatal("older format-2 saves must load without regeneration, RNG draws or invented events")
 	}
 }

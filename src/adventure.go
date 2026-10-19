@@ -17,7 +17,7 @@ type adventureState struct {
 }
 
 func (g *game) ashMoment(id, message string) {
-	if !g.dog.Freed || !g.dog.Alive {
+	if !g.dog.active() {
 		return
 	}
 	for _, seen := range g.adventure.AshMoments {
@@ -34,7 +34,7 @@ func (g *game) ashMoment(id, message string) {
 func (g *game) finishAdventureTurn() {
 	g.advancePoison()
 	g.advanceObjective()
-	if g.won || g.player.HP <= 0 || !g.dog.Freed || !g.dog.Alive ||
+	if g.won || g.player.HP <= 0 || !g.dog.active() ||
 		g.adventure.LastMomentFloor == g.currentLevel+1 || g.stats.Turns < g.adventure.LastMomentTurn+15 {
 		return
 	}
@@ -67,8 +67,8 @@ func (g *game) collectedSideStory(title string) bool {
 }
 
 func (g *game) renderEnding(w io.Writer) {
-	fmt.Fprintln(w, "Beside the door, you see a clean bowl filled with fresh water.")
-	together := g.dog.Freed && g.dog.Alive
+	fmt.Fprintln(w, "Beside the door, you see a clean bowl filled with fresh rain water.")
+	together := g.dog.active()
 	memories := []struct {
 		title string
 		line  string
@@ -83,28 +83,35 @@ func (g *game) renderEnding(w io.Writer) {
 		{"Warmth for a Stranger", "If a stranger waits beyond this door, you decide there will be room for one more beside the fire."},
 		{"The Room Behind the Room", "You remember the little room behind Mara's pantry. This time, you leave the door open."},
 	}
+	var eligible []string
 	for _, memory := range memories {
 		if g.collectedSideStory(memory.title) {
-			fmt.Fprintln(w, memory.line)
+			eligible = append(eligible, memory.line)
 		}
 	}
 	if g.collectedSideStory("The Door in a Dream") {
 		if together {
-			fmt.Fprintln(w, "You recognize the bowl from Mara's dream. Ash crosses the threshold as though someone has been waiting all this time.")
+			eligible = append(eligible, "You recognize the bowl from Mara's dream. Ash crosses the threshold as though someone has been waiting all this time.")
 		} else {
-			fmt.Fprintln(w, "You recognize the bowl from Mara's dream. You leave it beside the open door, keeping a place for Ash.")
+			eligible = append(eligible, "You recognize the bowl from Mara's dream. You leave it beside the open door, keeping a place for Ash.")
 		}
 	}
 	if g.collectedSideStory("The Unfinished Song") {
-		fmt.Fprintln(w, "You open Mara's unfinished song. At last, you find its final line:")
+		intro := "You open Mara's unfinished song. At last, you find its final line: "
 		if together {
-			fmt.Fprintln(w, "When the bell rings and the road is open, home is the hand that opens the door.")
+			eligible = append(eligible, intro+"When the bell rings and the road is open, home is the hand that opens the door.")
 		} else {
-			fmt.Fprintln(w, "When the bell rings and the road is open, let the light remain for those still finding home.")
+			eligible = append(eligible, intro+"When the bell rings and the road is open, let the light remain for those still finding home.")
 		}
 	}
 	if together && g.stats.GhostDogFalls > 0 {
-		fmt.Fprintln(w, "Ash fell in the dark, and you brought him back. This time, he follows you into the light.")
+		eligible = append(eligible, "Ash fell in the dark, and you brought him back. This time, he follows you into the light.")
+	}
+	if len(eligible) > 0 {
+		// A copy keeps the choice stable across redraws and save/load without
+		// advancing gameplay randomness or adding state to older saves.
+		rng := *g.rng
+		fmt.Fprintln(w, eligible[rng.Intn(len(eligible))])
 	}
 }
 
@@ -128,6 +135,9 @@ func (g *game) renderChronicle(w io.Writer) {
 	fmt.Fprintf(w, "Secrets uncovered: %d. Your book holds %d chapters and %d side stories.\n", secrets, len(g.player.StoryChapters), len(g.player.SideStories))
 	if g.adventure.RescueFloor > 0 {
 		fmt.Fprintf(w, "You freed Ash from his silver chain on floor %d.\n", g.adventure.RescueFloor)
+	}
+	if g.dog.Chained {
+		fmt.Fprintf(w, "Ash remains bound by a silver chain on floor %d.\n", g.dog.ChainFloor+1)
 	}
 	if g.stats.GhostDogFalls > 0 {
 		if g.stats.GhostDogFalls == 1 {
@@ -159,7 +169,7 @@ func (g *game) renderChronicle(w io.Writer) {
 			}
 		}
 	}
-	if g.won && g.dog.Freed && g.dog.Alive {
+	if g.won && g.dog.active() {
 		fmt.Fprintln(w, "Together, you and Ash found the way home.")
 	} else if g.won {
 		fmt.Fprintln(w, "You found the way out. Ash's place beside you remains empty.")

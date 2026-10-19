@@ -565,6 +565,12 @@ func TestContentPoolsExposeNewMonstersWeaponsArmorAndMagic(t *testing.T) {
 	seenMonsters := map[monsterKind]bool{}
 	seenItems := map[string]bool{}
 	for depth := 0; depth < levelCount; depth++ {
+		for _, w := range weaponPoolForLevel(depth) {
+			seenItems[w.Name] = true
+		}
+		for _, a := range armorPoolForLevel(depth) {
+			seenItems[a.Name] = true
+		}
 		for seed := int64(1); seed <= 100; seed++ {
 			g := &game{rng: newSimpleRNG(seed)}
 			roster, err := g.monstersForLevel(&level{Index: depth})
@@ -577,7 +583,8 @@ func TestContentPoolsExposeNewMonstersWeaponsArmorAndMagic(t *testing.T) {
 		}
 	}
 	for seed := int64(1); seed <= 30; seed++ {
-		g := newGame(seed)
+		// Exercise loot pools independently of RNG consumed by dungeon generation.
+		g := &game{rng: newSimpleRNG(seed)}
 		for depth := 0; depth < levelCount; depth++ {
 			for _, it := range g.itemsForLevel(depth) {
 				seenItems[it.Name] = true

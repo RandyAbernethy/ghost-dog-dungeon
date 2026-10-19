@@ -181,7 +181,7 @@ func (g *game) epicMeleePower(m *monster, dealt int) {
 		if g.player.HP > 0 && distance(m.Pos, g.player.Pos) == 1 {
 			g.hurtPlayerSpell(12, "Scorching wyrm fire")
 		}
-		if g.dog.Freed && g.dog.Alive && distance(m.Pos, g.dog.Pos) == 1 {
+		if g.dogPresent() && distance(m.Pos, g.dog.Pos) == 1 {
 			g.hurtDog(12, "Scorching wyrm fire")
 		}
 	case monsterFrostMonarch:
@@ -194,7 +194,7 @@ func (g *game) epicMeleePower(m *monster, dealt int) {
 		if g.player.HP > 0 && distance(m.Pos, g.player.Pos) <= 2 {
 			g.hurtPlayerSpell(9, "Leviathan lightning")
 		}
-		if g.dog.Freed && g.dog.Alive && distance(m.Pos, g.dog.Pos) <= 2 {
+		if g.dogPresent() && distance(m.Pos, g.dog.Pos) <= 2 {
 			g.hurtDog(9, "Leviathan lightning")
 		}
 	case monsterDuskTyrant:

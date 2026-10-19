@@ -10,7 +10,7 @@ func (g *game) underLichTurn(m *monster) {
 	if m.ActionTurns%2 == 0 {
 		return
 	}
-	if g.dog.Freed && g.dog.Alive && distance(m.Pos, g.dog.Pos) == 1 && distance(m.Pos, g.player.Pos) > 1 {
+	if g.dogPresent() && distance(m.Pos, g.dog.Pos) == 1 && distance(m.Pos, g.player.Pos) > 1 {
 		g.attackDog(m)
 		return
 	}

@@ -5,6 +5,16 @@ import (
 	"math"
 )
 
+func (d ghostDog) active() bool {
+	return d.Freed && d.Alive && !d.Chained
+}
+
+// A chained companion stays on the main floor where the Lich bound him.
+func (g *game) dogPresent() bool {
+	return g.dog.Freed && g.dog.Alive &&
+		(!g.dog.Chained || (!g.inCrypt && g.currentLevel == g.dog.ChainFloor))
+}
+
 func (g *game) restoreGhostDogAfterLichDeath() {
 	if !g.dog.Freed || g.dog.Alive {
 		return
@@ -17,7 +27,7 @@ func (g *game) restoreGhostDogAfterLichDeath() {
 }
 
 func (g *game) dogTurn() {
-	if !g.dog.Alive {
+	if !g.dog.active() {
 		return
 	}
 	if g.dodgeEpicWarning() {
@@ -42,6 +52,9 @@ func (g *game) dogTurn() {
 }
 
 func (g *game) dogAttack(target *monster) {
+	if !g.dog.active() {
+		return
+	}
 	dmg := g.randRange(6, 9)
 	g.addMessage(fmt.Sprintf("Ghost dog tears into %s for %d damage.", target.Name, dmg))
 	g.damageMonster(target, dmg, "mauls")
@@ -150,6 +163,9 @@ func (g *game) bestDogNeighborNearPlayer() *pos {
 }
 
 func (g *game) placeDogNearPlayer() bool {
+	if !g.dog.active() {
+		return false
+	}
 	if best := g.bestDogNeighborNearPlayer(); best != nil {
 		g.dog.Pos = *best
 		return true

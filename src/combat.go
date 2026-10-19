@@ -17,7 +17,9 @@ func (g *game) attackMonster(m *monster) {
 		}
 		g.player.HexedTurns = 0
 	}
-	g.dogFocus = m
+	if g.dog.active() {
+		g.dogFocus = m
+	}
 	g.addMessage(fmt.Sprintf("You strike %s with %s for %d damage.", m.Name, g.player.Weapon.Name, damage))
 	if g.player.Weapon.Magic && m.Undead {
 		g.addMessage(fmt.Sprintf("%s flares against the undead.", g.player.Weapon.Name))
@@ -156,7 +158,7 @@ func (g *game) advanceEnemies() {
 	if g.won || g.player.HP <= 0 {
 		return
 	}
-	if g.dog.Freed && g.dog.Alive {
+	if g.dog.active() {
 		g.dogTurn()
 	}
 	if g.won {
@@ -225,7 +227,10 @@ func (g *game) monsterTurn(m *monster) {
 			return
 		}
 	}
-	if g.dog.Freed && g.dog.Alive && distance(m.Pos, g.dog.Pos) == 1 && distance(m.Pos, g.player.Pos) > 1 {
+	if g.tryLichChain(m) {
+		return
+	}
+	if g.dogPresent() && distance(m.Pos, g.dog.Pos) == 1 && distance(m.Pos, g.player.Pos) > 1 {
 		g.attackDog(m)
 		return
 	}
@@ -292,7 +297,7 @@ func (g *game) monsterTurn(m *monster) {
 	case monsterStormHerald:
 		if distance(m.Pos, g.player.Pos) <= 4 && g.rng.Intn(100) < 30 {
 			g.hurtPlayerSpell(g.randRange(3, 6), "The Storm Herald calls lightning down on you")
-			if g.dog.Freed && g.dog.Alive && distance(m.Pos, g.dog.Pos) <= 4 {
+			if g.dogPresent() && distance(m.Pos, g.dog.Pos) <= 4 {
 				g.hurtDog(g.randRange(3, 6), "Lightning from the Storm Herald")
 			}
 			return
@@ -313,7 +318,7 @@ func (g *game) fleeMonster(m *monster) {
 		return
 	}
 	currentThreatDistance := distance(m.Pos, g.player.Pos)
-	if g.dog.Freed && g.dog.Alive {
+	if g.dogPresent() {
 		currentThreatDistance = min(currentThreatDistance, distance(m.Pos, g.dog.Pos))
 	}
 	best := pos{}
@@ -321,7 +326,7 @@ func (g *game) fleeMonster(m *monster) {
 	found := false
 	for _, p := range g.openNeighbors(m.Pos, false) {
 		threatDistance := distance(p, g.player.Pos)
-		if g.dog.Freed && g.dog.Alive {
+		if g.dogPresent() {
 			threatDistance = min(threatDistance, distance(p, g.dog.Pos))
 		}
 		if !found || threatDistance > bestThreatDistance {
@@ -331,7 +336,7 @@ func (g *game) fleeMonster(m *monster) {
 	if found {
 		m.Pos = best
 		threats := "you"
-		if g.dog.Freed && g.dog.Alive {
+		if g.dogPresent() {
 			threats += " and the Ghost Dog"
 		}
 		g.addMessage(fmt.Sprintf("%s scrambles away from %s.", m.Name, threats))
@@ -340,7 +345,7 @@ func (g *game) fleeMonster(m *monster) {
 
 func (g *game) moveMonster(m *monster) {
 	target := g.player.Pos
-	if g.dog.Freed && g.dog.Alive && distance(m.Pos, g.dog.Pos) < distance(m.Pos, target) && distance(m.Pos, g.dog.Pos) <= 5 {
+	if g.dogPresent() && distance(m.Pos, g.dog.Pos) < distance(m.Pos, target) && distance(m.Pos, g.dog.Pos) <= 5 {
 		target = g.dog.Pos
 	}
 	g.moveActorToward(&m.Pos, target, false)
@@ -366,11 +371,15 @@ func (g *game) moveActorToward(from *pos, target pos, isDog bool) {
 }
 
 func (g *game) attackPlayer(m *monster) {
-	engaged := g.adjacentMonster(g.dog.Pos)
-	if !g.dog.Freed || !g.dog.Alive || engaged == nil {
-		g.dogFocus = m
-	} else if g.dogFocus == nil || g.dogFocus.HP <= 0 || distance(g.dog.Pos, g.dogFocus.Pos) != 1 {
-		g.dogFocus = engaged
+	if g.dog.active() {
+		engaged := g.adjacentMonster(g.dog.Pos)
+		if engaged == nil {
+			g.dogFocus = m
+		} else if g.dogFocus == nil || g.dogFocus.HP <= 0 || distance(g.dog.Pos, g.dogFocus.Pos) != 1 {
+			g.dogFocus = engaged
+		}
+	} else {
+		g.dogFocus = nil
 	}
 	damage := g.randRange(m.MinDamage, m.MaxDamage)
 	if m.Boss {
@@ -453,10 +462,10 @@ func (g *game) hurtDog(damage int, source string) {
 	if !g.dog.Alive {
 		return
 	}
-	if g.player.ShieldTurns > 0 && g.dog.Freed && g.dog.Alive && !g.inCrypt {
+	if g.player.ShieldTurns > 0 && g.dogPresent() && !g.inCrypt {
 		damage = max(0, damage-3)
 	}
-	if g.dog.Freed && distance(g.player.Pos, g.dog.Pos) <= 2 && g.player.hasArmorPower(powerSanctuary) {
+	if g.dogPresent() && distance(g.player.Pos, g.dog.Pos) <= 2 && g.player.hasArmorPower(powerSanctuary) {
 		damage = max(0, damage-6)
 	}
 	g.dog.HP -= damage
@@ -464,6 +473,7 @@ func (g *game) hurtDog(damage int, source string) {
 	if g.dog.HP <= 0 {
 		g.dog.HP = 0
 		g.dog.Alive = false
+		g.dog.Chained, g.dog.ChainFloor = false, 0
 		g.stats.GhostDogFalls++
 		g.dogFocus = nil
 		g.addMessage("The Ghost Dog can only be freed now by a magic spell or by killing the Dread Lich")

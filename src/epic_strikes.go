@@ -47,7 +47,7 @@ func (g *game) epicDangerAt(p pos) bool {
 
 func (g *game) prepareEpicStrike(m *monster) {
 	aim := g.player.Pos
-	if g.dog.Freed && g.dog.Alive && distance(m.Pos, g.dog.Pos) < distance(m.Pos, aim) {
+	if g.dogPresent() && distance(m.Pos, g.dog.Pos) < distance(m.Pos, aim) {
 		aim = g.dog.Pos
 	}
 	if distance(m.Pos, aim) > 2 || !g.clearEpicLine(m.Pos, aim) {
@@ -92,7 +92,7 @@ func (g *game) prepareEpicStrike(m *monster) {
 		if distance(m.Pos, g.player.Pos) <= 2 {
 			add(g.player.Pos)
 		}
-		if g.dog.Freed && g.dog.Alive && distance(m.Pos, g.dog.Pos) <= 2 {
+		if g.dogPresent() && distance(m.Pos, g.dog.Pos) <= 2 {
 			add(g.dog.Pos)
 		}
 	case monsterDuskTyrant:
@@ -111,13 +111,13 @@ func (g *game) prepareEpicStrike(m *monster) {
 		}
 		for _, next := range g.openNeighbors(p, true) {
 			if !containsPosition(tiles, next) &&
-				(!g.dog.Freed || !g.dog.Alive || next != g.dog.Pos) {
+				(!g.dogPresent() || next != g.dog.Pos) {
 				return true
 			}
 		}
 		return false
 	}
-	if !canEscape(g.player.Pos) || (g.dog.Freed && g.dog.Alive && !canEscape(g.dog.Pos)) {
+	if !canEscape(g.player.Pos) || (g.dogPresent() && !canEscape(g.dog.Pos)) {
 		return
 	}
 	m.StrikeTiles = tiles
@@ -183,7 +183,7 @@ func (g *game) resolveEpicStrike(m *monster) bool {
 		}
 		g.godArmorReprisal(m, before)
 	}
-	if g.dog.Freed && g.dog.Alive && containsPosition(tiles, g.dog.Pos) {
+	if g.dogPresent() && containsPosition(tiles, g.dog.Pos) {
 		hit = true
 		g.hurtDog(g.randRange(m.MinDamage, m.MaxDamage), m.Name+"'s "+name)
 	}
@@ -201,7 +201,7 @@ func (g *game) cancelEpicWarning(m *monster) {
 }
 
 func (g *game) dodgeEpicWarning() bool {
-	if !g.dog.Freed || !g.dog.Alive || !g.epicDangerAt(g.dog.Pos) {
+	if !g.dog.active() || !g.epicDangerAt(g.dog.Pos) {
 		return false
 	}
 	var best *pos

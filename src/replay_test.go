@@ -319,6 +319,7 @@ func TestRunCountersCountActionsKillsAndPermanentDogFalls(t *testing.T) {
 	g.damageMonster(&rat, 100, "hits")
 	rat = newMonster(monsterRat)
 	rat.HP = 1
+	g.dog.Freed = true
 	g.dogAttack(&rat)
 	if g.stats.MonstersKilled != 2 || g.stats.DifficultyDefeated != 2*monsterDifficulty(rat) {
 		t.Fatal("kills should count once, including Ghost Dog's kills")
@@ -472,7 +473,7 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 	if err := command.Run(); err != nil {
 		t.Fatalf("run executable: %v\n%s", err, stderr.String())
 	}
-	for _, want := range []string{"=== Book of Ghost Dog ===", ghostDogStory[0], ghostDogSideStories[1].Text, "You equip Test Spear", "Victory!", "Beside the door, you see a clean bowl filled with fresh water.", "Fewest turns record: 25", "Ghost Dog safe escape record: achieved", "Most monsters killed record: 7", "Most difficulty defeated record: 250 points"} {
+	for _, want := range []string{"=== Book of Ghost Dog ===", ghostDogStory[0], ghostDogSideStories[1].Text, "You equip Test Spear", "Victory!", "Beside the door, you see a clean bowl filled with fresh rain water.", "Fewest turns record: 25", "Ghost Dog safe escape record: achieved", "Most monsters killed record: 7", "Most difficulty defeated record: 250 points"} {
 		if !strings.Contains(stdout.String(), want) {
 			t.Fatalf("game CLI did not show %q", want)
 		}

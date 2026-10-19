@@ -24,6 +24,9 @@ func (g *game) render(w io.Writer) {
 		status := "gone"
 		if g.dog.Alive {
 			status = fmt.Sprintf("%d/%d HP", g.dog.HP, g.dog.MaxHP)
+			if g.dog.Chained {
+				status += fmt.Sprintf("; chained on floor %d — move onto d to free him", g.dog.ChainFloor+1)
+			}
 		}
 		fmt.Fprintf(w, "Ghost dog: adopted (%s)\n", status)
 	} else {
@@ -57,8 +60,11 @@ func (g *game) render(w io.Writer) {
 				ch = glyphPlayer
 			case m != nil:
 				ch = m.glyph()
-			case g.dog.Freed && g.dog.Alive && g.dog.Pos == p:
+			case g.dogPresent() && g.dog.Pos == p:
 				ch = glyphDog
+				if g.dog.Chained {
+					ch = glyphChainedDog
+				}
 			case g.cryptDoorGlyph(p) != 0:
 				ch = g.cryptDoorGlyph(p)
 			case g.trapAt(p) != nil && g.trapAt(p).Discovered && !g.trapAt(p).Spent:
@@ -143,8 +149,10 @@ func (g *game) renderInventory(w io.Writer) {
 		fmt.Fprintf(w, "%d. %s x%d (map %c)\n  %s\n", len(g.player.Weapons)+len(g.player.Armors)+i+1, line.name, *line.quantity, line.glyph, line.description)
 	}
 	companion := "The ghost dog is still chained somewhere below."
-	if g.dog.Freed && g.dog.Alive {
+	if g.dog.active() {
 		companion = fmt.Sprintf("Ghost dog companion: fighting at %d/%d HP and will attack nearby monsters.", g.dog.HP, g.dog.MaxHP)
+	} else if g.dog.Chained {
+		companion = fmt.Sprintf("Ghost dog companion: bound by a silver chain on floor %d at %d/%d HP. Move onto his d tile to free him.", g.dog.ChainFloor+1, g.dog.HP, g.dog.MaxHP)
 	} else if g.dog.Freed {
 		companion = "Ghost dog companion: dispersed into silver mist; defeating the Dread Lich will restore it at full health."
 	}
@@ -218,8 +226,11 @@ func (g *game) renderInspect(w io.Writer) {
 			fmt.Fprintf(w, "- %s: %s (map %c)\n", relativeTo(g.player.Pos, it.Pos), inspectItemText(it), it.glyph())
 		}
 	}
-	if g.dog.Freed && g.dog.Alive && g.canSee(g.dog.Pos) {
+	if g.dogPresent() && g.canSee(g.dog.Pos) {
 		fmt.Fprintf(w, "Ghost dog: %s.\n", relativeTo(g.player.Pos, g.dog.Pos))
+		if g.dog.Chained {
+			fmt.Fprintln(w, "Ghost Dog is chained (d) and cannot act. Move onto his tile to break the silver chain.")
+		}
 	}
 	fmt.Fprintln(w, "Tip: use movement or . to wait, or press k beside suspicious walls to search.")
 }
@@ -257,7 +268,7 @@ func inspectItemText(it item) string {
 	case itemFireScroll:
 		return "fire scroll. Blasts the nearest enemy within 6 tiles."
 	case itemBlinkStone:
-		return "blink stone. Teleports you and Ghost Dog far from monsters, outside secret rooms."
+		return "blink stone. Teleports you and an unchained Ghost Dog far from monsters, outside secret rooms."
 	case itemWardingCharm:
 		return "warding charm. Reduces damage to you and your Ghost Dog for 3 enemy turns."
 	case itemSunOrb:
@@ -352,7 +363,7 @@ func (g *game) inventoryLines() []inventoryLine {
 	return []inventoryLine{
 		{"Healing Potion", &g.player.Potions, "Use p to restore 12-18 health instantly.", itemPotion, itemGlyphs[itemPotion]},
 		{"Fire Scroll", &g.player.FireScrolls, "Use f to blast the nearest monster within 6 tiles and scorch adjacent foes.", itemFireScroll, itemGlyphs[itemFireScroll]},
-		{"Blink Stone", &g.player.BlinkStones, "Use g to teleport you and Ghost Dog far from monsters, outside secret rooms.", itemBlinkStone, itemGlyphs[itemBlinkStone]},
+		{"Blink Stone", &g.player.BlinkStones, "Use g to teleport you and an unchained Ghost Dog far from monsters, outside secret rooms.", itemBlinkStone, itemGlyphs[itemBlinkStone]},
 		{"Warding Charm", &g.player.WardingCharms, "Use b to reduce incoming damage to you and your Ghost Dog for the next 3 enemy turns.", itemWardingCharm, itemGlyphs[itemWardingCharm]},
 		{"Sun Orb", &g.player.SunOrbs, "Use u to burn every undead monster on the current floor.", itemSunOrb, itemGlyphs[itemSunOrb]},
 		{"Frost Charm", &g.player.FrostCharms, "Use t to freeze and damage the nearest enemy for two turns.", itemFrostCharm, itemGlyphs[itemFrostCharm]},
@@ -365,6 +376,9 @@ func (g *game) inventoryLines() []inventoryLine {
 func (g *game) contextHint() string {
 	if hint := g.cryptHint(); hint != "" {
 		return hint
+	}
+	if g.dogPresent() && g.dog.Chained && distance(g.player.Pos, g.dog.Pos) <= 1 {
+		return "Ghost Dog is chained — move onto his d tile to free him."
 	}
 	lvl := g.current()
 	if lvl.HasEscapeStair && lvl.primarySecret() != nil && lvl.primarySecret().Revealed && g.player.Pos == lvl.EscapeStairs {

@@ -46,7 +46,7 @@ func (g *game) useCryptDoor(next pos) (bool, bool) {
 		parent.Tiles[c.ReturnDoor.Y][c.ReturnDoor.X] = '.'
 		g.player.Pos = c.ReturnDoor
 		g.dogFocus = nil
-		if g.dog.Freed && g.dog.Alive {
+		if g.dog.active() {
 			g.placeDogNearPlayer()
 		}
 		g.addMessage(fmt.Sprintf("You pass through the far secret door and return to floor %d. You survived %s.", c.ParentFloor+1, cryptName))
@@ -68,7 +68,7 @@ func (g *game) useCryptDoor(next pos) (bool, bool) {
 	g.player.Pos = c.Floor.Start
 	g.player.ShieldTurns = 0
 	g.dogFocus = nil
-	if g.dog.Freed && g.dog.Alive {
+	if g.dog.active() {
 		g.placeDogNearPlayer()
 	}
 	g.addMessage("You enter " + cryptName + ". The door seals behind you. Only the far secret exit leads back.")

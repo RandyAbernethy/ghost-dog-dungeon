@@ -8,6 +8,7 @@ Dread Lich.
 
 - [Map symbols](#map-symbols)
 - [Dungeon generation](#dungeon-generation)
+- [Dread Lich and silver chains](#dread-lich-and-silver-chains)
 - [Weapons and armor](#weapons-and-armor)
 - [Epic encounters](#epic-encounters)
 - [Optional objective rooms](#optional-objective-rooms)
@@ -36,7 +37,7 @@ Undiscovered rooms remain concealed as walls, and unseen crypt tiles remain blan
 | `#` | Wall (also conceals undiscovered passages) |
 | `.` | Open floor |
 | `@` | Player |
-| `D` | Living Ghost Dog |
+| `D` | Freed, living, unchained Ghost Dog |
 | `d` | Chained Ghost Dog |
 | `>` | Stairs down |
 | `<` | Stairs up or out |
@@ -161,8 +162,31 @@ freed, living Ghost Dog and grants one warding charm. Shrines heal you and a liv
 Approaching within one tile of an unused event or fountain shows its description and interaction key. The prompt repeats
 only after you move farther away and return, including when you arrive by stairs or a Blink Stone.
 
-Use **g** to spend a Blink Stone and teleport yourself and Ghost Dog away from monsters on the current floor.
+Use **g** to spend a Blink Stone and teleport yourself and an unchained Ghost Dog away from monsters on the
+current floor.
 The stone chooses the safest available spot outside secret rooms.
+
+
+## Dread Lich and Silver Chains
+
+The Dread Lich on floor ten has **78 HP** and a listed **10–14 damage range**.
+Alongside his existing grave-fire and curses, each active turn has a **10% chance** to chain a freed, living Ghost Dog
+within **five tiles**, with a clear line of sight. Casting the chain takes the Lich's attack for that turn.
+Freezing, stunning, or driving him into flight prevents the chain attempt until he can act again.
+
+Chained Ash changes from **D** to **d** and cannot move, attack, dodge, or follow you. **Walk onto his tile to break
+the silver chain**, spending one ordinary movement turn. He keeps his current health and can act again from that turn.
+Rescuing him takes priority over a reach attack past him, and does not repeat the rewards or history of his first
+rescue.
+
+He remains vulnerable to enemies and can receive passive healing or ward protection while on your floor.
+Blink Stones leave him in place and cannot land you on his tile; recall scrolls cannot release a living companion.
+If you leave by stairs, he stays at the same position on that floor until you return. Living Ash remains chained even
+if you kill the Lich. If he falls, his spirit disperses and ordinary revival mechanics apply.
+
+Free Ash before using the escape stairs to leave together. Escaping while he is chained counts as leaving alone,
+including the ending and safe-companion challenge. Saves preserve the chain, anchor floor, health and RNG exactly;
+older saves without chain fields still load unchanged.
 
 
 ## Weapons and Armor
@@ -307,8 +331,11 @@ Existing format-2 saves still load unchanged; start a new game to receive the cr
 
 Your inventory includes the **Book of Ghost Dog** from the start. Press **B** or type `book` in line-input mode to read
 collected chapters and side stories without spending a turn. The ten numbered chapters tell Ash's main story.
-Every collected side story contributes a memory to the escape ending. The dream and unfinished song also respond
-to whether Ash escapes with you; unread stories remain undisclosed.
+After the victory message and the bowl of fresh rain water, the escape ending prints just one randomly selected
+reminiscence from collected side stories or Ash's return after a fall. The dream and unfinished song reflect whether
+Ash escapes with you. Uncollected stories remain undisclosed; if no memory is eligible, only the bowl appears.
+The choice stays the same after save/load or reprinting the ending. Your Adventure, challenges, personal records,
+record celebrations, and the final dungeon seed follow as usual.
 
 Living Ash has occasional personality moments at his rescue, fountains, keepsake, and return from the mist.
 During quiet exploration he may react to the floor or your injuries, at most once per floor and at least fifteen

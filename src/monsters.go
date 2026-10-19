@@ -112,7 +112,7 @@ func newMonster(kind monsterKind) monster {
 	case monsterStormHerald:
 		return monster{Kind: kind, Name: "Storm Herald", Glyph: monsterGlyphs[kind], HP: 28, MaxHP: 28, MinDamage: 6, MaxDamage: 9}
 	case monsterBoss:
-		return monster{Kind: kind, Name: "Dread Lich", Glyph: monsterGlyphs[kind], HP: 48, MaxHP: 48, MinDamage: 6, MaxDamage: 10, Undead: true, Boss: true}
+		return monster{Kind: kind, Name: "Dread Lich", Glyph: monsterGlyphs[kind], HP: 60, MaxHP: 60, MinDamage: 7, MaxDamage: 11, Undead: true, Boss: true}
 	default:
 		panic("unknown monster kind")
 	}
@@ -208,7 +208,7 @@ func monsterPower(kind monsterKind) string {
 	case monsterStormHerald:
 		return "Sometimes calls a lightning burst that can hit you and Ghost Dog together."
 	case monsterBoss:
-		return "Launches grave-fire bolts, carries the tenth Ghost Dog story scroll, and guards the hidden way out."
+		return "Launches grave-fire bolts and guards the hidden way out. Each active turn has a 10% chance to bind a living, freed Ghost Dog within five visible tiles in silver chains instead of attacking. Move onto his d tile to free him. Carries the tenth story scroll."
 	default:
 		return "Unknown."
 	}

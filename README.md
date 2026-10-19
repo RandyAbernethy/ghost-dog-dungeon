@@ -1,6 +1,7 @@
 # Ghostdog Dungeon
 
-A Go terminal roguelike about exploring a changing dungeon and freeing a ghost dog companion.
+A dungeon crawler featuring a ghost dog companion. Enter the dungeon, free the ghost dog, reach the tenth floor, and
+escape thorough the hidden passage... but beware the Dread Lich and his protector the Under Lich!
 
 For hidden content, equipment catalogs, encounter tactics, and ending details, see the
 [gameplay guide (spoilers)](docs/gameplay-guide.md).
@@ -169,6 +170,9 @@ and failed actions do not. The event log shows the complete current turn, beginn
 
 Movement holds cost one attempted movement turn. The status and log name their cause; you can still take other actions.
 
+Ghost Dog appears as **D** when he can act, or **d** when silver chains hold him. Move onto **d** to free him.
+A chained companion stays in place, including when you use stairs or blink. He must be free to escape with you.
+
 
 ## Equipment
 
@@ -190,13 +194,15 @@ Ghost Dog. Check the equipment screen for each item's damage, reach, and protect
 
 Your inventory includes the **Book of Ghost Dog** from the start. Press **B** or type `book` in command-and-Enter mode
 to read collected chapters and side stories without spending a turn. Uncollected stories remain undisclosed.
-A finished run includes a **Your Adventure** chronicle based on what happened during that run.
+A successful escape has a brief epilogue. A finished run includes a **Your Adventure** chronicle based on what happened
+during that run, followed by challenges, personal records, and the dungeon seed.
 
 Press **j** or type `challenges` to see the current run and personal records:
 
 - **Fewest turns:** the fastest successful escape, including the final stair action. Successful actions and turns lost
   to entanglement count; reading, inspecting, saving, and failed actions do not.
-- **Escape without Ghost Dog falling:** free Ghost Dog and escape with him alive without him ever reaching zero health.
+- **Escape without Ghost Dog falling:** free Ghost Dog and escape with him alive and unchained, without him ever
+  reaching zero health.
 - **Most monsters killed:** the most kills in a run that ends in escape or death. Kills by Ghost Dog and consumables
   count; each monster counts once.
 - **Most difficulty defeated:** the greatest sum of slain monsters' difficulty points in a finished run. Tougher

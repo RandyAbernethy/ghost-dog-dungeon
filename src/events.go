@@ -131,17 +131,17 @@ func (g *game) interactEvent() bool {
 		g.describeGhostGifts(e)
 		return false
 	case eventShrine:
-		if g.player.HP == g.player.MaxHP && (!g.dog.Freed || !g.dog.Alive || g.dog.HP == g.dog.MaxHP) {
+		if g.player.HP == g.player.MaxHP && (!g.dogPresent() || g.dog.HP == g.dog.MaxHP) {
 			g.addMessage("The shrine waits until its blessing can heal you or Ghost Dog.")
 			return false
 		}
 		g.player.HP = min(g.player.MaxHP, g.player.HP+6)
-		if g.dog.Freed && g.dog.Alive {
+		if g.dogPresent() {
 			g.dog.HP = min(g.dog.MaxHP, g.dog.HP+10)
 		}
 		g.addMessage("The shrine's gentle light restores your strength and comforts your living companion.")
 	case eventKeepsake:
-		if !g.dog.Freed || !g.dog.Alive || distance(g.dog.Pos, e.Pos) > 2 {
+		if !g.dogPresent() || distance(g.dog.Pos, e.Pos) > 2 {
 			g.addMessage("A faded collar lies here. Ghost Dog may remember it when he is with you.")
 			return false
 		}
