@@ -23,6 +23,7 @@ func (g *game) loop(stdin io.Reader, stdout io.Writer) error {
 	defer func() {
 		fmt.Fprintf(stdout, "\nDungeon seed: %d\n", g.seed)
 	}()
+	renderOpeningArt(stdout)
 	g.renderChallengeRecords(stdout)
 	g.render(stdout)
 	for !g.won && !g.quit && g.player.HP > 0 {

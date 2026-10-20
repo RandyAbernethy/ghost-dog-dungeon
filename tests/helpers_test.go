@@ -114,7 +114,7 @@ func gameCommand(t *testing.T, args ...string) *exec.Cmd {
 func trackGameBuildInputs(t *testing.T) {
 	t.Helper()
 	repo := filepath.Dir(testPackageDir)
-	for _, name := range []string{"go.mod", "Makefile"} {
+	for _, name := range []string{"go.mod", "Makefile", "src/assets/puppy.txt"} {
 		if _, err := os.ReadFile(filepath.Join(repo, name)); err != nil {
 			t.Fatal(err)
 		}

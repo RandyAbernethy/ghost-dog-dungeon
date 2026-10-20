@@ -15,7 +15,9 @@ To play a downloaded copy, execute the binary for your platform in a shell:
 ./ghostdog
 ```
 
-Each new game displays its version, dungeon seed, personal records, and the map.
+Each new or loaded game displays its version, dungeon seed, an ASCII puppy portrait, personal records, and the map.
+The portrait appears once at startup without an extra keypress. Its reusable plain-text source is
+[puppy.txt](src/assets/puppy.txt), embedded in the executable so no separate asset files are needed to play.
 
 To build and run from source with Go 1.26.9 or newer, at the repository root run:
 

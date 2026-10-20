@@ -1,0 +1,2 @@
+# Keep the embedded terminal artwork identical across platform checkouts.
+src/assets/puppy.txt text eol=lf
