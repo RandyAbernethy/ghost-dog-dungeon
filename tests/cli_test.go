@@ -13,6 +13,10 @@ import (
 
 func TestExecutableBuildSaveAndLoadFromAnotherDirectory(t *testing.T) {
 	gameBinary(t)
+	art, err := os.ReadFile(filepath.Join(testPackageDir, "..", "src", "assets", "puppy.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
 	dir := t.TempDir()
 	run := func(t *testing.T, workdir, input string, args ...string) (string, error) {
 		t.Helper()
@@ -40,6 +44,9 @@ func TestExecutableBuildSaveAndLoadFromAnotherDirectory(t *testing.T) {
 		seedLine := fmt.Sprintf("Dungeon seed: %d\n", seed)
 		if !strings.HasPrefix(output, banner+seedLine) || strings.Count(output, banner) != 1 || !strings.HasSuffix(output, seedLine) || strings.Count(output, seedLine) != 2 {
 			t.Fatal("the game should show its version once, with the actual dungeon seed immediately below it and again on exit")
+		}
+		if !strings.HasPrefix(output, banner+seedLine+"\n"+string(art)) || strings.Count(output, string(art)) != 1 {
+			t.Fatal("the embedded puppy should appear once on new and loaded games, even outside the source directory")
 		}
 	}
 	t.Run("seeded_replay_and_load", func(t *testing.T) {

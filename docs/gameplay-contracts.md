@@ -7,6 +7,17 @@ and general play are in the [README](../README.md); detailed player-facing mecha
 [gameplay guide (spoilers)](gameplay-guide.md). Repository workflow and shared safeguards are in
 [AGENTS.md](../AGENTS.md). Read the relevant sections before changing these systems.
 
+## Opening screen
+
+- Show the ASCII puppy portrait once per game launch, after the version and dungeon seed and before personal records
+  and the initial map. Show it for both new and loaded games, not on subsequent map redraws or in `--help`/`--version`.
+- Embed the reusable [puppy.txt](../src/assets/puppy.txt) asset in the executable; startup must not read artwork from
+  the working directory. Use printable ASCII and line feeds so the art works in both raw-key and command-and-Enter mode.
+- Opening artwork must not consume input, spend a turn, draw RNG, or change saved game state.
+
+Preserve portrait and startup coverage in [opening_test.go](../src/opening_test.go), executable new-game/load checks in
+[cli_test.go](../tests/cli_test.go), and raw-key coverage in [terminal_linux_test.go](../src/terminal_linux_test.go).
+
 ## Save format
 
 - Favor clean, maintainable code over backward compatibility. Break save compatibility only when doing so makes

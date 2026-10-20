@@ -77,6 +77,9 @@ func TestStandaloneEscapeInRawTerminalReturnsWithoutAnotherKey(t *testing.T) {
 	if strings.Count(out.String(), "=== Ghost Dog Dungeon:") != 3 || !strings.Contains(out.String(), "=== Inventory & Equipment ===") {
 		t.Fatal("each standalone Esc should display the map immediately")
 	}
+	if strings.Count(out.String(), puppyArt) != 1 {
+		t.Fatal("raw-key mode must show the puppy once without consuming the first command")
+	}
 	if !strings.HasSuffix(out.String(), fmt.Sprintf("Dungeon seed: %d\n", g.seed)) {
 		t.Fatal("quitting with Ctrl-C should finish by reporting the dungeon seed")
 	}
