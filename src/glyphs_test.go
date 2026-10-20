@@ -66,8 +66,12 @@ func TestMapSymbolsAreUniqueAcrossFeaturesMonstersItemsAndTraps(t *testing.T) {
 func symbolMapRows(t *testing.T, output string) []string {
 	t.Helper()
 	var rows []string
+	mapStarted := false
 	for _, line := range strings.Split(stripANSI(output), "\n") {
-		if len(line) == mapWidth && (line[0] == '#' || line[0] == ' ') {
+		if strings.HasPrefix(line, "=== Ghost Dog Dungeon:") {
+			mapStarted = true
+		}
+		if mapStarted && len(line) == mapWidth && (line[0] == '#' || line[0] == ' ') {
 			rows = append(rows, line)
 			if len(rows) == mapHeight {
 				return rows
@@ -76,6 +80,19 @@ func symbolMapRows(t *testing.T, output string) []string {
 	}
 	t.Fatalf("missing map rows in output:\n%s", output)
 	return nil
+}
+
+func TestSymbolMapRowsIgnoreOpeningArt(t *testing.T) {
+	g := openArena()
+	var mapOutput, openingOutput bytes.Buffer
+	g.render(&mapOutput)
+	renderOpeningArt(&openingOutput)
+	// Width and wall-like characters alone do not identify a dungeon row.
+	fmt.Fprintln(&openingOutput, strings.Repeat("#", mapWidth))
+	openingOutput.WriteString(mapOutput.String())
+	if !reflect.DeepEqual(symbolMapRows(t, openingOutput.String()), symbolMapRows(t, mapOutput.String())) {
+		t.Fatal("map assertions must ignore artwork before the dungeon heading")
+	}
 }
 
 func TestEveryMonsterAndItemDisplaysItsCurrentSymbol(t *testing.T) {
