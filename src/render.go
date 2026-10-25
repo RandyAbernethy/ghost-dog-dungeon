@@ -11,15 +11,26 @@ func (g *game) render(w io.Writer) {
 	g.noteVisibleMonsters()
 	lvl := g.current()
 	if g.inCrypt {
-		fmt.Fprintln(w, "\n=== Ghost Dog Dungeon: "+cryptName+" ===")
+		fmt.Fprintln(w)
+		uiText(w, "=== Ghost Dog Dungeon: "+cryptName+" ===")
 	} else {
 		fmt.Fprintf(w, "\n=== Ghost Dog Dungeon: Level %d/%d ===\n", g.currentLevel+1, levelCount)
 	}
 	if lvl.Layout != "" {
-		fmt.Fprintf(w, "%s — %s\n", lvl.Theme, lvl.Layout)
+		uiText(w, fmt.Sprintf("%s — %s", lvl.Theme, lvl.Layout))
 	}
-	fmt.Fprintf(w, "HP %d/%d  Weapon %s (%d-%d)  Armor %d (block %d)  Potions %d  Fire %d  Blink %d  Ward %d  Sun %d  Frost %d  Starfire %d  Ash %d  Recall %d  Story %d/10\n", g.player.HP, g.player.MaxHP, coloredWeaponName(g.player.Weapon), g.player.Weapon.Min, g.player.Weapon.Max, g.player.armorDefense(), g.player.armorBlock(), g.player.Potions, g.player.FireScrolls, g.player.BlinkStones, g.player.WardingCharms, g.player.SunOrbs, g.player.FrostCharms, g.player.StarfireOrbs, g.player.PhoenixAshes, g.player.GhostRecallScrolls, len(g.player.StoryChapters))
-	fmt.Fprintf(w, "Reach %d  Spell ward %d  Strike bonus %+d  Turns %d  Kills %d  Difficulty defeated %d\n", g.player.Weapon.effectiveReach(), g.player.spellWard(), g.player.strikeBonus(), g.stats.Turns, g.stats.MonstersKilled, g.stats.DifficultyDefeated)
+	uiText(w, fmt.Sprintf("HP %d/%d | Armor %d (block %d) | Turns %d", g.player.HP, g.player.MaxHP, g.player.armorDefense(), g.player.armorBlock(), g.stats.Turns))
+	uiText(w, fmt.Sprintf("Weapon %s (%d-%d) | Reach %d", g.player.Weapon.Name, g.player.Weapon.Min, g.player.Weapon.Max, g.player.Weapon.effectiveReach()))
+	var bonuses []string
+	if ward := g.player.spellWard(); ward != 0 {
+		bonuses = append(bonuses, fmt.Sprintf("Spell ward %d", ward))
+	}
+	if strike := g.player.strikeBonus(); strike != 0 {
+		bonuses = append(bonuses, fmt.Sprintf("Strike bonus %+d", strike))
+	}
+	if len(bonuses) > 0 {
+		uiText(w, strings.Join(bonuses, " | "))
+	}
 	if g.dog.Freed {
 		status := "gone"
 		if g.dog.Alive {
@@ -28,7 +39,7 @@ func (g *game) render(w io.Writer) {
 				status += fmt.Sprintf("; chained on floor %d — move onto d to free him", g.dog.ChainFloor+1)
 			}
 		}
-		fmt.Fprintf(w, "Ghost dog: adopted (%s)\n", status)
+		uiText(w, fmt.Sprintf("Ghost dog: adopted (%s)", status))
 	} else {
 		fmt.Fprintln(w, "Ghost dog: not yet freed")
 	}
@@ -40,7 +51,7 @@ func (g *game) render(w io.Writer) {
 		if g.player.PoisonTurns > 0 {
 			effects += fmt.Sprintf("  poison %d", g.player.PoisonTurns)
 		}
-		fmt.Fprintln(w, effects)
+		uiText(w, effects)
 	}
 	for y := 0; y < mapHeight; y++ {
 		var line strings.Builder
@@ -94,7 +105,9 @@ func (g *game) render(w io.Writer) {
 				// Keep the terrain glyph.
 			}
 			if g.epicDangerAt(p) {
-				line.WriteString("\x1b[1;31m" + string(ch) + ansiReset)
+				line.WriteString("\x1b[1;31m")
+				line.WriteString(string(ch))
+				line.WriteString(ansiReset)
 			} else {
 				line.WriteRune(ch)
 			}
@@ -105,11 +118,8 @@ func (g *game) render(w io.Writer) {
 	g.renderEpicWarnings(w)
 	g.renderObjective(w)
 	g.renderCryptFeatures(w)
-	if g.crypt != nil {
-		fmt.Fprintf(w, "Crypt legend: %c secret entrance  %c secret exit  %c sealed entrance. Discovered traps show their own symbols.\n", glyphCryptEntrance, glyphCryptExit, glyphSealedCrypt)
-	}
 	if note := g.contextHint(); note != "" {
-		fmt.Fprintln(w, "Here: "+note)
+		uiText(w, "Here: "+note)
 	}
 	if g.stats.Turns == 0 {
 		fmt.Fprintln(w, "Dungeon events:")
@@ -117,17 +127,102 @@ func (g *game) render(w io.Writer) {
 		fmt.Fprintf(w, "Turn %d events (%d monsters killed):\n", g.stats.Turns, g.stats.MonstersKilled)
 	}
 	for _, msg := range g.messages {
-		fmt.Fprintln(w, "- "+msg)
+		// Snapshot paths must remain intact for copying, including spaces.
+		if strings.HasPrefix(msg, "Game saved to ") || strings.HasPrefix(msg, "Game loaded from ") {
+			fmt.Fprintln(w, "- "+msg)
+			continue
+		}
+		if strings.HasPrefix(msg, "You pack ") {
+			if pickup, comparison, ok := strings.Cut(msg, ". Compared to "); ok {
+				wrappedText(w, pickup+".", 80, "- ", "  ")
+				wrappedText(w, "Compared to "+comparison, 80, "  ", "  ")
+				continue
+			}
+		}
+		wrappedText(w, msg, 80, "- ", "  ")
 	}
 }
 
 func (g *game) renderLegend(w io.Writer) {
-	fmt.Fprintf(w, "Legend: %c wall  %c floor  %c you  %c ghost dog  %c chained ghost dog  %c down  %c up/out  %c/%c fountain/spent\n",
-		glyphWall, glyphFloor, glyphPlayer, glyphDog, glyphChainedDog, glyphStairsDown, glyphStairsUp, glyphFountain, glyphSpentFountain)
-	fmt.Fprintf(w, "Items: %c weapon  %c armor  %c potion  %c fire scroll  %c blink  %c ward  %c sun  %c frost  %c starfire  %c phoenix ash  %c recall  %c chapter  %c side story\n",
-		itemGlyphs[itemWeapon], itemGlyphs[itemArmor], itemGlyphs[itemPotion], itemGlyphs[itemFireScroll], itemGlyphs[itemBlinkStone], itemGlyphs[itemWardingCharm], itemGlyphs[itemSunOrb], itemGlyphs[itemFrostCharm], itemGlyphs[itemStarfireOrb], itemGlyphs[itemPhoenixAsh], itemGlyphs[itemGhostRecallScroll], itemGlyphs[itemStoryScroll], itemGlyphs[itemSideStoryScroll])
-	fmt.Fprintf(w, "Events: %c friendly ghost  %c lever  %c keepsake  %c shrine  %c lost spirit  %c sigil  red %c Epic strike\n",
-		glyphFriendlyGhost, glyphLever, glyphKeepsake, glyphShrine, glyphLostSpirit, glyphRitualSigil, glyphEpicWarning)
+	uiText(w, fmt.Sprintf("Legend: %c you | %c wall | %c floor", glyphPlayer, glyphWall, glyphFloor))
+	// List only entities that can actually be seen, in stable map order.
+	seen := map[string]bool{}
+	var entries []string
+	add := func(symbol rune, name string) {
+		entry := fmt.Sprintf("%c %s", symbol, name)
+		if !seen[entry] {
+			seen[entry] = true
+			entries = append(entries, entry)
+		}
+	}
+	lvl := g.current()
+	for y := 0; y < mapHeight; y++ {
+		for x := 0; x < mapWidth; x++ {
+			p := pos{x, y}
+			if !g.canSee(p) || lvl.Tiles[y][x] == '#' || distance(g.player.Pos, p) > 4 {
+				continue
+			}
+			if lvl.DogChain != nil && *lvl.DogChain == p && !g.dog.Freed {
+				add(glyphChainedDog, "chained Ghost Dog")
+			}
+			if m := g.monsterAt(lvl, p); m != nil {
+				add(m.glyph(), m.Name)
+			}
+			if it := g.itemAt(lvl, p); it != nil {
+				add(it.glyph(), itemMapLabel(*it))
+			}
+			if f := g.fountainAt(lvl, p); f != nil {
+				if f.Used {
+					add(glyphSpentFountain, "spent fountain")
+				} else {
+					add(glyphFountain, "fountain")
+				}
+			}
+			if e := lvl.eventAt(p); e != nil && !e.Used {
+				add(e.glyph(), e.displayName())
+			}
+			if symbol := g.cryptDoorGlyph(p); symbol != 0 {
+				add(symbol, "crypt door")
+			}
+		}
+	}
+	if g.dogPresent() && g.canSee(g.dog.Pos) && distance(g.player.Pos, g.dog.Pos) <= 4 {
+		if g.dog.Chained {
+			add(glyphChainedDog, "chained Ghost Dog")
+		} else {
+			add(glyphDog, "Ghost Dog")
+		}
+	}
+	if lvl.HasStair && g.canSee(lvl.Stairs) && distance(g.player.Pos, lvl.Stairs) <= 4 {
+		add(glyphStairsDown, "down")
+	}
+	if lvl.HasUpStair && g.canSee(lvl.UpStairs) && distance(g.player.Pos, lvl.UpStairs) <= 4 || lvl.HasEscapeStair && lvl.primarySecret() != nil && lvl.primarySecret().Revealed && distance(g.player.Pos, lvl.EscapeStairs) <= 4 {
+		add(glyphStairsUp, "up/out")
+	}
+	if len(entries) > 0 {
+		uiText(w, "Nearby: "+strings.Join(entries, " | "))
+	}
+}
+
+func itemMapLabel(it item) string {
+	switch it.Kind {
+	case itemWeapon:
+		return "weapon"
+	case itemArmor:
+		return "armor"
+	case itemFireScroll, itemGhostRecallScroll, itemStoryScroll, itemSideStoryScroll:
+		return "scroll"
+	case itemSunOrb, itemStarfireOrb:
+		return "orb"
+	case itemPotion, itemPhoenixAsh:
+		return "potion"
+	case itemWardingCharm, itemFrostCharm:
+		return "charm"
+	case itemBlinkStone:
+		return "stone"
+	default:
+		return "item"
+	}
 }
 
 func (g *game) renderInventory(w io.Writer) {
@@ -223,7 +318,7 @@ func (g *game) renderInspect(w io.Writer) {
 		fmt.Fprintln(w, "- No notable loot nearby.")
 	} else {
 		for _, it := range loot {
-			fmt.Fprintf(w, "- %s: %s (map %c)\n", relativeTo(g.player.Pos, it.Pos), inspectItemText(it), it.glyph())
+			fmt.Fprintf(w, "- %s: %s (map %c)\n", relativeTo(g.player.Pos, it.Pos), floorItemText(it), it.glyph())
 		}
 	}
 	if g.dogPresent() && g.canSee(g.dog.Pos) {
@@ -232,7 +327,7 @@ func (g *game) renderInspect(w io.Writer) {
 			fmt.Fprintln(w, "Ghost Dog is chained (d) and cannot act. Move onto his tile to break the silver chain.")
 		}
 	}
-	fmt.Fprintln(w, "Tip: use movement or . to wait, or press k beside suspicious walls to search.")
+	fmt.Fprintln(w, "Tip: use movement or . to wait; i opens your inventory.")
 }
 
 func inspectTileDescription(lvl *level, p pos) string {
@@ -257,12 +352,17 @@ func inspectTileDescription(lvl *level, p pos) string {
 	return "The floor is cold stone, scarred by old battles and dragging claws."
 }
 
+func floorItemText(it item) string {
+	return "unidentified " + itemMapLabel(it) + ". Pick it up to identify it."
+}
+
+// Full details are appropriate for owned items and explicit friendly-ghost offers.
 func inspectItemText(it item) string {
 	switch it.Kind {
 	case itemWeapon:
 		return fmt.Sprintf("weapon %s (%d-%d, reach %d). %s", coloredWeaponName(it.Weapon), it.Weapon.Min, it.Weapon.Max, it.Weapon.effectiveReach(), weaponDescription(it.Weapon))
 	case itemArmor:
-		return fmt.Sprintf("%s armor for the %s slot (+%d guard, %s). %s %s", coloredArmorName(it.Armor), slotLabel(it.Armor.Slot), it.Armor.Defense, rarityLabel(it.Armor.Rarity), armorTraits(it.Armor), armorDescription(it.Armor))
+		return fmt.Sprintf("%s armor for the %s slot (+%d guard, %s). %s", coloredArmorName(it.Armor), slotLabel(it.Armor.Slot), it.Armor.Defense, rarityLabel(it.Armor.Rarity), armorDescription(it.Armor))
 	case itemPotion:
 		return "healing potion. Restores 12-18 health."
 	case itemFireScroll:
@@ -389,11 +489,5 @@ func (g *game) contextHint() string {
 	if lvl.HasStair && g.player.Pos == lvl.Stairs {
 		return "stairs down — press > to descend."
 	}
-	if hidden := lvl.hiddenRoomNear(g.player.Pos); hidden != nil {
-		if hidden == lvl.primarySecret() && lvl.HasEscapeStair && g.bossAlive(lvl) {
-			return "a necromantic seal chills this wall — the Lich still holds it shut."
-		}
-		return "this wall feels strange — try search."
-	}
-	return "press i for equipment, c for the codex, m to inspect, or k to search suspicious walls."
+	return "i: inventory | m: inspect | h: help"
 }

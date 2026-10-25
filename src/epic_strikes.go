@@ -154,6 +154,7 @@ func (g *game) resolveEpicStrike(m *monster) bool {
 	}
 	tiles := m.StrikeTiles
 	m.StrikeTiles = nil
+	m.RetaliationTurns = 0
 	name := epicStrikeName(m.Kind)
 	g.addMessage(m.Name + " unleashes " + name + " on the marked tiles!")
 	hit := false
@@ -194,6 +195,7 @@ func (g *game) resolveEpicStrike(m *monster) bool {
 }
 
 func (g *game) cancelEpicWarning(m *monster) {
+	m.RetaliationTurns = 0
 	if len(m.StrikeTiles) > 0 {
 		m.StrikeTiles = nil
 		g.addMessage(m.Name + " abandons its prepared attack.")
@@ -214,6 +216,9 @@ func (g *game) dodgeEpicWarning() bool {
 	if best != nil {
 		g.dog.Pos = *best
 		g.addMessage("Ash springs clear of the marked tiles instead of attacking.")
+	} else if step, ok := g.epicEscapeStep(g.dog.Pos, g.epicDangerAt); ok {
+		g.dog.Pos = step
+		g.addMessage("Ash starts a two-step retreat from the wide warning instead of attacking.")
 	}
 	// If surrounded, stay put rather than spending the action on an attack.
 	return true
@@ -221,16 +226,21 @@ func (g *game) dodgeEpicWarning() bool {
 
 func (g *game) renderEpicWarnings(w io.Writer) {
 	for _, m := range g.current().Monsters {
+		if m.HP > 0 && epicMonster(m.Kind) && m.Awakened {
+			uiText(w, fmt.Sprintf("%s: rage %d/%d | normal range 2; half signature damage", m.Name, m.Rage, epicRageLimit))
+		}
 		if m.HP <= 0 || len(m.StrikeTiles) == 0 {
 			continue
 		}
-		fmt.Fprintf(w, "WARNING: %s — %s; red X tiles strike on its next active turn", m.Name, epicStrikeName(m.Kind))
+		if m.RetaliationTurns > 0 {
+			uiText(w, fmt.Sprintf("DANGER: RETALIATION in %d action(s). Move now or use protection/interrupt/blink.", m.RetaliationTurns))
+		}
+		uiText(w, fmt.Sprintf("WARNING: %s — %s; red X tiles strike on its next active turn.", m.Name, epicStrikeName(m.Kind)))
 		if containsPosition(m.StrikeTiles, g.player.Pos) {
-			fmt.Fprint(w, "; YOU are on a marked tile")
+			uiText(w, "YOU are on a marked tile. Move clear.")
 		}
 		if m.FrozenTurns > 0 || m.StunnedTurns > 0 {
-			fmt.Fprint(w, " (delayed while disabled)")
+			uiText(w, "Attack delayed while disabled.")
 		}
-		fmt.Fprintln(w, ". Move clear.")
 	}
 }

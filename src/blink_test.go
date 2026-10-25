@@ -151,7 +151,7 @@ func TestRunBlinkStone(t *testing.T) {
 	if err := run(args, strings.NewReader("g\nsave\nquit\n"), &stdout, &stderr); err != nil {
 		t.Fatalf("run blink command: %v\n%s", err, stderr.String())
 	}
-	if !strings.Contains(stdout.String(), "Space folds and carries you and Ghost Dog to the safest open spot on this floor.") {
+	if !strings.Contains(strings.Join(strings.Fields(stdout.String()), " "), "Space folds and carries you and Ghost Dog to the safest open spot on this floor.") {
 		t.Fatal("the game should report the companions teleporting together")
 	}
 	loaded, err := loadGame(lastSavePath(t, stdout.String()))

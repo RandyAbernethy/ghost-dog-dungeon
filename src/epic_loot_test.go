@@ -251,7 +251,7 @@ func TestEpicDropPickupAndSaveThroughRealExecutable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("run: %v\n%s", err, output)
 	}
-	for _, want := range []string{"Ghost Dog Dungeon version 1.0.3", "Epic Ashen Wyrm drops an elite treasure:", "=== Inventory & Equipment ===", "Game loaded from "} {
+	for _, want := range []string{"Ghost Dog Dungeon version 1.0.4", "Epic Ashen Wyrm drops an elite treasure:", "=== Inventory & Equipment ===", "Game loaded from "} {
 		if !strings.Contains(string(output), want) {
 			t.Fatalf("the executable did not display %q", want)
 		}

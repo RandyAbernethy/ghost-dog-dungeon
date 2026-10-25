@@ -49,7 +49,7 @@ func (g *game) useWardingCharm() bool {
 	}
 	g.player.WardingCharms--
 	if g.inCrypt {
-		g.addMessage("The crypt swallows your Warding Charm. It is consumed, but no ward forms.")
+		g.addMessage("The power of the crypt consumes your Warding Charm's magic without effect; no ward forms.")
 		return true
 	}
 	g.player.ShieldTurns = 3
@@ -68,7 +68,7 @@ func (g *game) useBlinkStone() bool {
 	}
 	if g.inCrypt {
 		g.player.BlinkStones--
-		g.addMessage("The crypt swallows your Blink Stone. It is consumed, but space refuses to fold.")
+		g.addMessage("The power of the crypt consumes your Blink Stone's magic without effect; space refuses to fold.")
 		return true
 	}
 	landing, ok := g.safestBlinkLanding()

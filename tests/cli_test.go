@@ -38,7 +38,7 @@ func TestExecutableBuildSaveAndLoadFromAnotherDirectory(t *testing.T) {
 		}
 		return saved
 	}
-	const banner = "Ghost Dog Dungeon version 1.0.3\n"
+	const banner = "Ghost Dog Dungeon version 1.0.4\n"
 	assertRunIdentity := func(t *testing.T, output string, seed int64) {
 		t.Helper()
 		seedLine := fmt.Sprintf("Dungeon seed: %d\n", seed)
@@ -49,6 +49,35 @@ func TestExecutableBuildSaveAndLoadFromAnotherDirectory(t *testing.T) {
 			t.Fatal("the embedded puppy should appear once on new and loaded games, even outside the source directory")
 		}
 	}
+	t.Run("chapel_introduction", func(t *testing.T) {
+		output, err := run(t, t.TempDir(), "quit\n", "--seed", "42")
+		if err != nil {
+			t.Fatalf("new-game introduction: %v\n%s", err, output)
+		}
+		events := strings.SplitN(output, "Dungeon events:\n", 2)
+		if len(events) != 2 {
+			t.Fatal("missing opening log")
+		}
+		opening := strings.SplitN(events[1], "Move:", 2)[0]
+		for _, line := range strings.Split(strings.TrimSpace(opening), "\n") {
+			if len(line) > 80 {
+				t.Fatalf("opening line exceeds 80 columns: %s", line)
+			}
+		}
+		plain := strings.Join(strings.Fields(strings.ReplaceAll(opening, "- ", "")), " ")
+		for _, line := range []string{
+			"After coming upon an old chapel, you find an entrance to a dark cellar in the chapel yard. Your adventurous spirit drives you to explore.",
+			"The wind howls through the bell tower, like a far away hound longing for home.",
+			"You climb down into the cellar below the old chapel and the door slams shut behind you. Some great evil is afoot and clearly you must face it to escape the catacombs.",
+		} {
+			if !strings.Contains(plain, line) {
+				t.Fatalf("missing chapel introduction: %s", line)
+			}
+		}
+		if strings.Contains(output, "You step into the dungeon.") || strings.Contains(output, "Find the ghost dog, delve through") {
+			t.Fatal("the old opening must be replaced")
+		}
+	})
 	t.Run("seeded_replay_and_load", func(t *testing.T) {
 		var first map[string]json.RawMessage
 		for i := 0; i < 2; i++ {
@@ -122,10 +151,10 @@ func TestExecutableBuildSaveAndLoadFromAnotherDirectory(t *testing.T) {
 			t.Fatalf("create current save: %v\n%s", err, output)
 		}
 		saved := readSave(t, executableSavePath(t, output))
-		if string(saved["format_version"]) != "3" {
-			t.Fatal("new games must write save format 3")
+		if string(saved["format_version"]) != "4" {
+			t.Fatal("new games must write save format 4")
 		}
-		for _, version := range []int{0, 1, 2, 4} {
+		for _, version := range []int{0, 1, 2, 3, 5} {
 			saved["format_version"] = json.RawMessage(fmt.Sprint(version))
 			data, err := json.Marshal(saved)
 			if err != nil {
@@ -136,7 +165,7 @@ func TestExecutableBuildSaveAndLoadFromAnotherDirectory(t *testing.T) {
 				t.Fatal(err)
 			}
 			output, err = run(t, workdir, "", "--load-file", path)
-			if err == nil || !strings.Contains(output, fmt.Sprintf("unsupported save format %d", version)) || !strings.Contains(output, "requires format 3, so start a new game") || strings.Contains(output, "=== Ghost Dog Dungeon:") {
+			if err == nil || !strings.Contains(output, fmt.Sprintf("unsupported save format %d", version)) || !strings.Contains(output, "requires format 4, so start a new game") || strings.Contains(output, "=== Ghost Dog Dungeon:") {
 				t.Fatalf("format %d must fail clearly before gameplay: %v\n%s", version, err, output)
 			}
 			unchanged, err := os.ReadFile(path)

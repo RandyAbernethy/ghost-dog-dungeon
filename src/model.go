@@ -133,22 +133,24 @@ const (
 )
 
 type monster struct {
-	Kind         monsterKind `json:"kind"`
-	Name         string      `json:"name"`
-	Pos          pos         `json:"pos"`
-	HP           int         `json:"hp"`
-	MaxHP        int         `json:"max_hp"`
-	MinDamage    int         `json:"min_damage"`
-	MaxDamage    int         `json:"max_damage"`
-	Undead       bool        `json:"undead"`
-	Boss         bool        `json:"boss"`
-	FrozenTurns  int         `json:"frozen_turns,omitempty"`
-	StunnedTurns int         `json:"stunned_turns,omitempty"`
-	FleeTurns    int         `json:"flee_turns,omitempty"`
-	StoryChapter int         `json:"story_chapter,omitempty"`
-	ActionTurns  int         `json:"action_turns,omitempty"`
-	Awakened     bool        `json:"awakened,omitempty"`
-	StrikeTiles  []pos       `json:"strike_tiles,omitempty"`
+	Kind             monsterKind `json:"kind"`
+	Name             string      `json:"name"`
+	Pos              pos         `json:"pos"`
+	HP               int         `json:"hp"`
+	MaxHP            int         `json:"max_hp"`
+	MinDamage        int         `json:"min_damage"`
+	MaxDamage        int         `json:"max_damage"`
+	Undead           bool        `json:"undead"`
+	Boss             bool        `json:"boss"`
+	FrozenTurns      int         `json:"frozen_turns,omitempty"`
+	StunnedTurns     int         `json:"stunned_turns,omitempty"`
+	FleeTurns        int         `json:"flee_turns,omitempty"`
+	StoryChapter     int         `json:"story_chapter,omitempty"`
+	ActionTurns      int         `json:"action_turns,omitempty"`
+	Awakened         bool        `json:"awakened,omitempty"`
+	StrikeTiles      []pos       `json:"strike_tiles,omitempty"`
+	Rage             int         `json:"rage"`
+	RetaliationTurns int         `json:"retaliation_turns"`
 }
 
 type player struct {

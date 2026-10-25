@@ -208,7 +208,7 @@ func monsterPower(kind monsterKind) string {
 	case monsterStormHerald:
 		return "Sometimes calls a lightning burst that can hit you and Ghost Dog together."
 	case monsterBoss:
-		return "Launches grave-fire bolts and guards the hidden way out. Each active turn has a 10% chance to bind a living, freed Ghost Dog within five visible tiles in silver chains instead of attacking. Move onto his d tile to free him. Carries the tenth story scroll."
+		return "Launches grave-fire bolts and guards the hidden way out. Each active turn has a 10% chance to bind a living, freed Ghost Dog within five visible tiles in silver chains instead of attacking. Move onto his d tile to free him."
 	default:
 		return "Unknown."
 	}

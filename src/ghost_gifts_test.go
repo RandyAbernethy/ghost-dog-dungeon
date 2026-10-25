@@ -143,7 +143,7 @@ func TestReadingGhostChoicesAndInvalidChoicesDoNotChangeTheOffer(t *testing.T) {
 				t.Fatalf("the offer must show numbered item descriptions: %v", g.messages)
 			}
 		}
-		if !strings.Contains(strings.Join(g.messages, " "), ":choose 3") {
+		if !strings.Contains(strings.Join(g.messages, " "), "1, 2, or 3") {
 			t.Fatal("the instructions must explain the third choice")
 		}
 	}

@@ -72,7 +72,7 @@ func (g *game) useCryptDoor(next pos) (bool, bool) {
 		g.placeDogNearPlayer()
 	}
 	g.addMessage("You enter " + cryptName + ". The door seals behind you. Only the far secret exit leads back.")
-	g.addMessage("Darkness limits sight to three tiles. There are no fountains. Blink Stones and Warding Charms are consumed without effect here; any existing ward has faded.")
+	g.addMessage("Darkness limits sight to three tiles; existing wards fade.")
 	return true, true
 }
 
@@ -87,7 +87,7 @@ func (g *game) searchCrypt() bool {
 		}
 		c.EntranceRevealed = true
 		g.current().Tiles[c.Entrance.Y][c.Entrance.X] = '.'
-		g.addMessage("You uncover a secret door to " + cryptName + ". Step through { to enter; the entrance seals behind you. You must cross the maze to return. Undead of floor-eight strength and the Under Lich guard the route. Sight is limited to three tiles; there are no fountains, and Blink Stones and Warding Charms are wasted here.")
+		g.addMessage("You uncover a secret door to " + cryptName + ". Step through { to enter; the entrance seals behind you. You must cross the maze to return. Undead of floor-eight strength and the Under Lich guard the route.")
 		return true
 	}
 	found := false
@@ -117,9 +117,6 @@ func (g *game) cryptHint() string {
 		return ""
 	}
 	if g.inCrypt {
-		if !c.ExitRevealed && distance(g.player.Pos, c.Exit) <= 1 {
-			return "cold air slips through this wall — press k to search for the exit."
-		}
 		if c.ExitRevealed && distance(g.player.Pos, c.Exit) <= 1 {
 			return "the far secret door } leads back to the dungeon. Step through to leave the crypt."
 		}
@@ -128,13 +125,12 @@ func (g *game) cryptHint() string {
 				return "a " + string(t.Kind) + " trap is nearby — press y beside it to disarm; stepping on it still triggers it."
 			}
 		}
-		return "search with k for traps; press y beside a discovered trap to disarm it. The entrance behind you is sealed."
+		return "The entrance behind you is sealed."
 	}
 	if g.currentLevel == c.ParentFloor && !c.Floor.Visited && distance(g.player.Pos, c.Entrance) <= 1 {
 		if c.EntranceRevealed {
-			return "the crypt door { is a one-way entrance. Step through only when ready: no fountains, no blink or ward charms, and three-tile sight."
+			return "the crypt door { is a one-way entrance. The entrance seals behind you; only the far secret exit leads back."
 		}
-		return "a burial seal marks this wall — press k to search."
 	}
 	return ""
 }
@@ -174,10 +170,9 @@ func (g *game) renderCryptFeatures(w io.Writer) {
 	if !g.inCrypt {
 		return
 	}
-	fmt.Fprintln(w, "Crypt rules: sight 3 tiles; no fountains; Blink Stones and Warding Charms are consumed without effect. The entrance is sealed.")
 	for _, t := range g.crypt.Traps {
 		if t.Discovered && !t.Spent && g.canSee(t.Pos) {
-			fmt.Fprintf(w, "Trap: %s (%c), %s. Press y beside it to disarm.\n", t.Kind, t.glyph(), relativeTo(g.player.Pos, t.Pos))
+			uiText(w, fmt.Sprintf("Trap: %s (%c), %s. Press y beside it to disarm.", t.Kind, t.glyph(), relativeTo(g.player.Pos, t.Pos)))
 		}
 	}
 }

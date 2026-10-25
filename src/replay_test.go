@@ -414,7 +414,7 @@ func TestLegArmorPickupEquipmentAndSaving(t *testing.T) {
 		t.Fatal("equipped, carried, and floor armor should retain their properties")
 	}
 	var stdout, stderr bytes.Buffer
-	commands := fmt.Sprintf("i\nd\nequip %d\ni\nsave\nquit\n", len(g.player.Weapons)+len(g.player.Armors)+1)
+	commands := fmt.Sprintf("i\nmap\nd\nequip %d\ni\nsave\nquit\n", len(g.player.Weapons)+len(g.player.Armors)+1)
 	args := []string{"--load-file", path, "--save-file-path", dir, "--records-file", filepath.Join(dir, "records.json")}
 	if err := run(args, strings.NewReader(commands), &stdout, &stderr); err != nil {
 		t.Fatalf("run armor commands: %v\n%s", err, stderr.String())
@@ -625,7 +625,8 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 	if err := command.Run(); err != nil {
 		t.Fatalf("run executable event: %v\n%s", err, stderr.String())
 	}
-	if !strings.Contains(stdout.String(), "friendly ghost offers a choice") || !strings.Contains(stdout.String(), "Press y (interact)") || !strings.Contains(stdout.String(), "offers one gift") || !strings.Contains(stdout.String(), "3. Ghost Dog recall scroll") || !strings.Contains(stdout.String(), "one Ghost Dog recall scroll") || !strings.Contains(stdout.String(), "nothing nearby") {
+	eventOutput := strings.Join(strings.Fields(stripANSI(stdout.String())), " ")
+	if !strings.Contains(eventOutput, "ghost of a friendly villager offers a choice") || !strings.Contains(eventOutput, "Press y (interact)") || !strings.Contains(eventOutput, "offers one gift") || !strings.Contains(eventOutput, "3. Ghost Dog recall scroll") || !strings.Contains(eventOutput, "one Ghost Dog recall scroll") || !strings.Contains(eventOutput, "nothing nearby") {
 		t.Fatal("the executable did not complete the one-use event flow")
 	}
 	eventLoaded, err := loadGame(lastSavePath(t, stdout.String()))

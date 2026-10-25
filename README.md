@@ -16,7 +16,9 @@ To play a downloaded copy, execute the binary for your platform in a shell:
 ```
 
 Each new or loaded game displays its version, dungeon seed, an ASCII puppy portrait, personal records, and the map.
-The portrait appears once at startup without an extra keypress. Its reusable plain-text source is
+On an interactive terminal, the welcome screen ends with **Press enter to begin the descent! >**.
+Press Enter to clear it and display gameplay; this costs no turn. Redirected command scripts skip the pause.
+The portrait appears once at startup. Its reusable plain-text source is
 [puppy.txt](src/assets/puppy.txt), embedded in the executable so no separate asset files are needed to play.
 
 To build and run from source with Go 1.26.9 or newer, at the repository root run:
@@ -139,10 +141,28 @@ Windows or macOS SDK. `make build` builds the current machine's version as `bin/
 
 ## Playing
 
-On supported Unix terminals, keys act immediately. In command-and-Enter mode, enter a command and press Enter. The map
-legend, nearby prompts, inventory, and inspection screen explain what you have discovered. Each monster species, item
-type, and map feature has a distinct symbol. **F** means a healing fountain; **f** means a spent fountain. Inventory and
-inspection show item symbols, and **c** shows discovered enemy symbols.
+The chapel introduction and gameplay turn log wrap between words at 80 visible columns, including the bullet and
+continuation indentation. Color codes do not count toward the width. Snapshot-path announcements stay on one line
+so paths can be copied exactly.
+
+On supported Unix terminals, keys act immediately. In command-and-Enter mode, enter a command and press Enter.
+The hidden crypt leaves its fountain and magic restrictions for players to discover. Suppressed magic reports
+that the crypt consumed its power without effect.
+
+Start with movement, **i** for the inventory menu, **y** to interact, **m** to inspect, and help (**?** on Unix,
+**h** in command-and-Enter mode). Help shows the complete control and feature reference for your input mode.
+Nearby keepsake prompts identify the faded collar and interaction key without revealing rewards.
+The map shows survival information and a legend of nearby visible entities. Spell ward and strike bonus appear only
+when nonzero; inventory retains their complete statistics, including zeros. Consumable counts and detailed statistics live
+in inventory and records. Each monster species, physical item category, and map feature has a distinct symbol:
+`?` scroll (including side stories), `=` orb, `%` charm, `!` potion, `*` stone, `)` weapon, `[` armor.
+Warding and Frost Charms share **%**. Phoenix Ash is a stronger healing consumable (22–30 HP) and shares the potion
+appearance **!** with healing potions (12–18 HP). All floor legends, inspection text and drop announcements show only
+physical categories; pickup reveals exact names, properties and story contents. Inventory and gift offers show
+identified items. **F** means a
+healing fountain; **f** means a spent fountain. **c** opens the discovered-enemy codex.
+Status, menus, hints and warnings wrap to the Unix terminal width, capped at 80 columns. Windows and redirected output
+use a compact 60-column fallback; set `COLUMNS` to override it. The map itself requires 38 columns.
 
 | Action                             | Immediate key                     | Command-and-Enter input                |
 | ---------------------------------- | --------------------------------- | -------------------------------------- |
@@ -171,18 +191,45 @@ failed actions do not. The event log shows the complete current turn, beginning 
 Attempting to move when constrained costs one turn. Most non-movement/attack actions can be completed (e.g. drink a
 potion or engage warding) while movement is constrained.
 
-Ghost Dog appears as **D** when he can act, or **d** when silver chains hold him. Move onto **d** to free him.
+Ghost Dog appears as **D** when he can act, or **d** when silver chains hold him.
+The nearby legend includes **d chained Ghost Dog** before his rescue when he is visible within four tiles. Move onto **d** to free him.
 A chained companion stays in place, including when you use stairs or blink. He must be free to escape with you.
 
 
+Nearby fountain prompts show only the fountain and the drink key, without explaining its effects or refill rules.
+
 ## Equipment
 
-Equipment is kept in your pack. Press **i** for inventory or **E** for the equipment list. Equip a numbered item with
-`:equip NUMBER` followed by Enter. Changing equipment spends one turn. Use `:drop NUMBER` to put an unequipped item on
-the floor. You can pick dropped items up again by leaving their tile and walking back onto it.
+Equipment is kept in your pack. Press **i** (or **E** on Unix) to open the inventory menu. In immediate-key mode,
+use up/down to highlight an item, then **e** to equip or **d** to drop it directly. Enter opens details;
+entering an item number followed by Enter also opens details. In command-and-Enter mode,
+enter its number. Read the equipment comparison, then press Enter or **e** to equip; for a consumable, Enter or **u**
+uses it. **d** drops a selected unequipped item or one consumable. **i** returns to the list; Esc or `map` closes it.
+Pickup messages show the equipment name and armor slot, followed by stat differences from your equipped item
+on a separate indented line.
+Full attributes and special powers are available in inventory.
+Each armor piece in the inventory list shows guard, spell ward, and strike damage, including zero bonuses.
+Each carried consumable shows its use key beside its count and map symbol (for example, `[use p]` for a Healing Potion).
+Reading, selecting, cancelling, and failed actions are free. A successful equip, use, or drop spends one turn.
+Unowned consumables are omitted. The `details` command (`:details` in immediate-key mode) shows the complete pack
+report, companion rules, book progress, and all consumable descriptions.
+Advanced `:equip NUMBER` and `:drop NUMBER` commands remain available. You can pick dropped items up again by leaving
+their tile and walking back onto it.
 
-When an interaction offers numbered choices, use `:choose 1`, `:choose 2`, or `:choose 3` followed by Enter. Press
-**Esc** to cancel an unfinished `:` command or return to the map without spending a turn.
+When a ghost of a friendly villager offers gifts, press **1**, **2**, or **3** (followed by Enter in command-and-Enter mode).
+The advanced `choose NUMBER` command also works. Press **Esc** to cancel an unfinished `:` command or return to
+the map without spending a turn.
+
+After a successful move or arrival within three tiles along an open approach to a hidden door, there is a **20% chance**
+of one subtle hint about a draft, disturbed mortar, or burial seal in the turn log. Hints do not tell you to search.
+Reading, inspecting and redrawing do not generate hints or retry the chance. The search command is **k**.
+Clues to linked chambers appear only after opening their parent chamber. The Lich's death opens the escape sanctum.
+
+Epics alternate normal attacks with warned signatures. Normal attacks reach two tiles and use half the signature's
+damage range before ordinary defenses. Every four damaging hits, including Ash and consumables, build full rage.
+When there is room to escape, full rage prepares a wide retaliation with **two actions** of warning: start moving
+immediately and move again, interrupt it, use protection, or blink. Waiting to dodge until the last action may be fatal.
+Marked tiles never follow you. Ash begins escaping wide warnings early. Epics remain optional and bypassable.
 
 Armor guards against incoming damage. Reach weapons can strike from two tiles away: press the direction toward
 an enemy in a straight line. If the adjacent tile is empty, you attack without moving; you can also strike over
@@ -217,7 +264,7 @@ require victory, and the Ghost Dog safe escape record also requires that he neve
 
 ## Saves
 
-Only save format 3 is supported. Earlier saves require a new game; they are not converted. Personal records are
+Only save format 4 is supported. Earlier saves require a new game; they are not converted. Personal records are
 retained. Loading restores the saved dungeon and RNG exactly.
 
 Each save creates a new `ghostdog-dungeon-YYYYMMDD-HHMMSS.json` snapshot, adding a numeric suffix if that name already

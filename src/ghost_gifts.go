@@ -34,22 +34,22 @@ func (g *game) prepareGhostGifts(lvl *level) {
 }
 
 func (g *game) describeGhostGifts(e *floorEvent) {
-	g.addMessage("The friendly ghost offers one gift. Choose from:")
+	g.addMessage("The ghost of a friendly villager offers one gift. Choose from:")
 	for i, gift := range e.Gifts {
 		g.addMessage(fmt.Sprintf("%d. %s", i+1, inspectItemText(gift)))
 	}
-	g.addMessage("Type :choose 1, :choose 2, or :choose 3 and Enter (choose 1, choose 2, or choose 3 in line-input mode).")
+	g.addMessage("Choose a gift with 1, 2, or 3 (press Enter in command-and-Enter mode). Reading or cancelling costs no turn.")
 }
 
 func (g *game) chooseGhostGift(choice byte) bool {
 	e := g.nearbyEvent()
 	if e == nil || e.Kind != eventGhost || choice < 1 || choice > 3 || int(choice) > len(e.Gifts) {
-		g.addMessage("A nearby friendly ghost must offer that gift. Choose 1, 2, or 3.")
+		g.addMessage("A nearby ghost of a friendly villager must offer that gift. Choose 1, 2, or 3.")
 		return false
 	}
 	gift := e.Gifts[choice-1]
 	g.collectItem(gift)
-	g.addMessage(fmt.Sprintf("The friendly ghost gives you one %s, then fades.", gift.Name))
+	g.addMessage(fmt.Sprintf("The ghost of a friendly villager gives you one %s, then fades.", gift.Name))
 	e.Used = true
 	return true
 }

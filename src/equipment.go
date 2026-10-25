@@ -142,11 +142,11 @@ func armorDescription(a armor) string {
 }
 
 func compareWeapon(candidate, current weapon) string {
-	return fmt.Sprintf("Compare to %s: %+d min, %+d max damage, %+d reach, %+d undead bonus.", current.Name, candidate.Min-current.Min, candidate.Max-current.Max, candidate.effectiveReach()-current.effectiveReach(), weaponUndeadBonus(candidate)-weaponUndeadBonus(current))
+	return fmt.Sprintf("Compared to %s: %+d min, %+d max damage, %+d reach, %+d undead bonus.", current.Name, candidate.Min-current.Min, candidate.Max-current.Max, candidate.effectiveReach()-current.effectiveReach(), weaponUndeadBonus(candidate)-weaponUndeadBonus(current))
 }
 
 func compareArmor(candidate, current armor) string {
-	return fmt.Sprintf("Compare to %s: %+d guard, %+d spell ward, %+d strike damage in the %s slot.", current.Name, candidate.Defense-current.Defense, candidate.SpellWard-current.SpellWard, candidate.StrikeBonus-current.StrikeBonus, slotLabel(candidate.Slot))
+	return fmt.Sprintf("Compared to %s: %+d guard, %+d spell ward, %+d strike damage.", current.Name, candidate.Defense-current.Defense, candidate.SpellWard-current.SpellWard, candidate.StrikeBonus-current.StrikeBonus)
 }
 
 func rarityLabel(r rarity) string {

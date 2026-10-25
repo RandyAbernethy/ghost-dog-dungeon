@@ -139,7 +139,7 @@ func TestCompareTooltipAndCarryWeaponAndArmor(t *testing.T) {
 	g.current().Items = []item{{Pos: g.player.Pos, Kind: itemWeapon, Weapon: weapon{Name: "Moonblade", Min: 7, Max: 11}}, {Pos: g.player.Pos, Kind: itemArmor, Armor: armor{Name: "Knight Mail", Slot: slotBody, Defense: 3, Rarity: rarityEpic}}}
 	g.collectItems()
 	joined := stripANSI(strings.Join(g.messages, "\n"))
-	if !strings.Contains(joined, "Compare to Rusty Knife") || !strings.Contains(joined, "Compare to Worn Coat") {
+	if !strings.Contains(joined, "Compared to Rusty Knife") || !strings.Contains(joined, "Compared to Worn Coat") {
 		t.Fatalf("missing compare tooltips in %q", joined)
 	}
 	if !strings.Contains(joined, "Epic Knight Mail") {
@@ -168,7 +168,7 @@ func TestMagicalWeaponDealsExtraDamageToUndead(t *testing.T) {
 
 func TestInventoryScreenShowsEquipmentDescriptionsAndColors(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	err := run([]string{"--seed", "3"}, strings.NewReader("i\nquit\n"), &stdout, &stderr)
+	err := run([]string{"--seed", "3"}, strings.NewReader("i\n2\nmap\nquit\n"), &stdout, &stderr)
 	if err != nil {
 		t.Fatalf("run() error = %v", err)
 	}
@@ -177,10 +177,13 @@ func TestInventoryScreenShowsEquipmentDescriptionsAndColors(t *testing.T) {
 		t.Fatalf("expected ANSI color codes in inventory output: %q", out)
 	}
 	plain := stripANSI(out)
-	for _, want := range []string{"=== Inventory & Equipment ===", "Head: Common Padded Hood (+1 guard, common)", "Body: Common Worn Coat (+1 guard, common)", "Fire Scroll x1", "Frost Charm x0"} {
+	for _, want := range []string{"=== Inventory & Equipment ===", "Common Padded Hood (head)", "Common Worn Coat (body)", "Fire Scroll x1", "Thin padding for your skull", "Compared to Padded Hood"} {
 		if !strings.Contains(plain, want) {
 			t.Fatalf("inventory output missing %q in %q", want, plain)
 		}
+	}
+	if strings.Contains(plain, "Frost Charm x0") {
+		t.Fatal("the action menu should omit unavailable consumables")
 	}
 }
 
@@ -220,7 +223,7 @@ func TestInspectScreenShowsThreatsLootAndStairs(t *testing.T) {
 	var out bytes.Buffer
 	g.renderInspect(&out)
 	plain := stripANSI(out.String())
-	for _, want := range []string{"=== Inspect ===", "Nearby threats:", "Nearby loot:", "weapon Short Sword", "armor for the body slot", "Stairs down:"} {
+	for _, want := range []string{"=== Inspect ===", "Nearby threats:", "Nearby loot:", "unidentified weapon", "unidentified armor", "Stairs down:"} {
 		if !strings.Contains(plain, want) {
 			t.Fatalf("inspect output missing %q in %q", want, plain)
 		}

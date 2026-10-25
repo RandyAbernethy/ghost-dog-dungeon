@@ -144,8 +144,8 @@ func TestLinkedRoomDiscoveryRewardsAndFountainRenewal(t *testing.T) {
 	for i := range lvl.Fountains {
 		lvl.Fountains[i].Used = true
 	}
-	if !strings.Contains(g.contextHint(), "try search") {
-		t.Fatal("the inner door should have the usual suspicious-wall hint")
+	if clue := g.passageClue(g.player.Pos); strings.Contains(clue, "search") || !strings.Contains(clue, "mortar") {
+		t.Fatal("the inner door can offer a subtle clue without search instructions")
 	}
 	g.processCommand("search")
 	if !inner.Revealed || lvl.Tiles[inner.Door.Y][inner.Door.X] != '.' {

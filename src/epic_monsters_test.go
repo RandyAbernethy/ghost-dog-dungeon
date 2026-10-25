@@ -49,7 +49,7 @@ func TestEpicsMoveAndAttackSlowlyAndCanBeOutrun(t *testing.T) {
 		}
 		g = varietyArena(1)
 		m = newMonster(kind)
-		m.Pos = pos{6, 5}
+		m.Pos = pos{7, 5}
 		g.current().Monsters = []*monster{&m}
 		for i := 0; i < 4; i++ {
 			g.processCommand("a")

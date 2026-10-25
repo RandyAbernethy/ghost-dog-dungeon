@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"path/filepath"
@@ -70,6 +71,56 @@ func TestInformationalFlagsDoNotShowOpeningArt(t *testing.T) {
 		}
 		if strings.Contains(stdout.String()+stderr.String(), puppyArt) {
 			t.Fatalf("%s must not show the opening portrait", flag)
+		}
+	}
+}
+
+func TestNewGameOpeningUsesChapelIntroduction(t *testing.T) {
+	g := newGame(42)
+	text := strings.Join(g.messages, " ")
+	want := "After coming upon an old chapel, you find an entrance to a dark cellar in the chapel yard. Your adventurous spirit drives you to explore. The wind howls through the bell tower, like a far away hound longing for home. You climb down into the cellar below the old chapel and the door slams shut behind you. Some great evil is afoot and clearly you must face it to escape the catacombs."
+	if text != want || g.stats.Turns != 0 {
+		t.Fatal("new games must show the requested chapel introduction before the first turn")
+	}
+	g.saveDir = t.TempDir()
+	if err := g.save(); err != nil {
+		t.Fatal(err)
+	}
+	loaded, err := loadGame(g.saveFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Join(loaded.messages, " ") != want || loaded.rng.State != g.rng.State {
+		t.Fatal("saving and loading must preserve the introduction and RNG")
+	}
+}
+
+func TestWelcomeEnterDoesNotConsumeGameplayInput(t *testing.T) {
+	for _, raw := range []bool{false, true} {
+		t.Run(fmt.Sprintf("raw_%t", raw), func(t *testing.T) {
+			scanner := bufio.NewScanner(strings.NewReader("not yet\n\nquit\n"))
+			var input *rawInput
+			if raw {
+				input = &rawInput{Reader: bufio.NewReader(strings.NewReader("not yet\rquit\r"))}
+			}
+			begin, err := waitForDescent(scanner, input)
+			if err != nil || !begin {
+				t.Fatalf("welcome Enter: %t %v", begin, err)
+			}
+			if raw {
+				cmd, eof, err := readRawMenuCommand(input, &bytes.Buffer{})
+				if err != nil || eof || cmd != "q" {
+					t.Fatalf("first gameplay key consumed: %q %v", cmd, err)
+				}
+			} else if !scanner.Scan() || scanner.Text() != "quit" {
+				t.Fatal("welcome consumed the first gameplay command")
+			}
+		})
+	}
+	for _, keys := range []string{"", "\x03", "\x04"} {
+		begin, err := waitForDescent(nil, &rawInput{Reader: bufio.NewReader(strings.NewReader(keys))})
+		if err != nil || begin {
+			t.Fatalf("EOF or quit must leave welcome without gameplay: %t %v", begin, err)
 		}
 	}
 }

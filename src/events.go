@@ -17,6 +17,14 @@ type floorEvent struct {
 	Gifts    []item    `json:"gifts,omitempty"`
 }
 
+// Keep saved event identifiers independent of their player-facing names.
+func (e *floorEvent) displayName() string {
+	if e.Kind == eventGhost {
+		return "ghost of a friendly villager"
+	}
+	return string(e.Kind)
+}
+
 func (e *floorEvent) glyph() rune {
 	switch e.Kind {
 	case eventGhost:
@@ -164,6 +172,7 @@ func (g *game) interactEvent() bool {
 
 func (g *game) describeNearbyObjects(previousLevel int, previousPos pos) {
 	lvl := g.current()
+	g.maybePassageHint()
 	arriving := func(p pos) bool {
 		return lvl.Tiles[p.Y][p.X] != '#' && distance(g.player.Pos, p) <= 1 &&
 			(previousLevel != g.currentLevel || distance(previousPos, p) > 1)
@@ -175,18 +184,18 @@ func (g *game) describeNearbyObjects(previousLevel int, previousPos pos) {
 		}
 		switch e.Kind {
 		case eventGhost:
-			g.addMessage("A friendly ghost offers a choice of three gifts. Press y (interact) to hear its offer.")
+			g.addMessage("A ghost of a friendly villager offers a choice of three gifts. Press y (interact) to hear its offer.")
 		case eventShrine:
 			g.addMessage("A healing shrine glows nearby. Its one-use blessing heals you and a living Ghost Dog; press y (interact) to receive it.")
 		case eventKeepsake:
-			g.addMessage("Ash's keepsake, a faded collar, lies nearby. Bring a living Ghost Dog close to find a warding charm and restore his health; press y (interact).")
+			g.addMessage("Ash's keepsake, a faded collar, lies nearby; press y (interact).")
 		case eventLever:
 			g.addMessage("A shortcut lever stands nearby. Press y (interact) to open a passage through a stone wall.")
 		}
 	}
 	for _, f := range lvl.Fountains {
 		if !f.Used && arriving(f.Pos) {
-			g.addMessage("A healing fountain flows nearby. Press v to drink, healing you and a living Ghost Dog. It refills when you leave this floor.")
+			g.addMessage("A healing fountain flows nearby. Press v to drink.")
 		}
 	}
 	if o := lvl.Objective; o != nil && !o.Completed && !o.Failed && arriving(o.Pos) {

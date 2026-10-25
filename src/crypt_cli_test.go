@@ -82,8 +82,9 @@ func TestGeneratedCryptThroughExecutableAndSaveLoad(t *testing.T) {
 	if !reflect.DeepEqual(g.player, loaded.player) || g.dog != loaded.dog || g.stats != loaded.stats || g.rng.State != loaded.rng.State || !reflect.DeepEqual(g.levels, loaded.levels) || !reflect.DeepEqual(g.crypt, loaded.crypt) || loaded.inCrypt {
 		t.Fatal("compiled save/load traversal must match uninterrupted play through the entire generated crypt")
 	}
+	prose := strings.Join(strings.Fields(stripANSI(string(output))), " ")
 	for _, want := range []string{cryptName, "entrance seals behind you", "no ward forms", "space refuses to fold", "Under Lich falls.", "return to floor"} {
-		if !strings.Contains(string(output), want) {
+		if !strings.Contains(prose, want) {
 			t.Fatalf("compiled crypt did not show %q", want)
 		}
 	}

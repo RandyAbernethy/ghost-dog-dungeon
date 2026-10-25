@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-const saveFormatVersion = 3
+const saveFormatVersion = 4
 
 type saveState struct {
 	FormatVersion int            `json:"format_version"`
@@ -138,6 +138,9 @@ func loadGame(path string) (*game, error) {
 			return nil, fmt.Errorf("decode floor %d: %w", i+1, err)
 		}
 		lvl.Tiles = tiles
+		if err := validateEpicSaveState(lvl); err != nil {
+			return nil, fmt.Errorf("floor %d: %w", i+1, err)
+		}
 	}
 	if state.Dog.Chained {
 		d := state.Dog
@@ -162,6 +165,9 @@ func loadGame(path string) (*game, error) {
 			return nil, fmt.Errorf("decode crypt: %w", err)
 		}
 		c.Floor.Tiles = tiles
+		if err := validateEpicSaveState(c.Floor); err != nil {
+			return nil, fmt.Errorf("crypt: %w", err)
+		}
 		for _, p := range []pos{c.Entrance, c.ReturnDoor, c.Exit, c.Floor.Start} {
 			if p.X < 0 || p.X >= mapWidth || p.Y < 0 || p.Y >= mapHeight {
 				return nil, errors.New("save file has an invalid crypt door position")
@@ -186,6 +192,20 @@ func loadGame(path string) (*game, error) {
 		won: state.Won, stats: state.Stats, adventure: state.Adventure,
 		crypt: state.Crypt, inCrypt: state.InCrypt,
 	}, nil
+}
+
+func validateEpicSaveState(lvl *level) error {
+	for _, m := range lvl.Monsters {
+		if m == nil {
+			return errors.New("save file has a missing monster")
+		}
+		if m.Rage < 0 || m.Rage > epicRageLimit || m.RetaliationTurns < 0 || m.RetaliationTurns > 2 ||
+			(!epicMonster(m.Kind) && (m.Rage != 0 || m.RetaliationTurns != 0)) ||
+			(m.RetaliationTurns > 0 && (len(m.StrikeTiles) == 0 || !m.Awakened || m.HP <= 0)) {
+			return errors.New("save file has invalid Epic combat state")
+		}
+	}
+	return nil
 }
 
 func encodeTiles(tiles [][]rune) string {

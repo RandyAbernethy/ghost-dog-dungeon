@@ -89,7 +89,13 @@ func TestCryptMagicConsumesItemsWithoutBlinkOrWard(t *testing.T) {
 	g.player.BlinkStones, g.player.WardingCharms = 2, 2
 	rng, playerPos, dogPos := g.rng.State, g.player.Pos, g.dog.Pos
 	g.processCommand("g")
+	if !strings.Contains(strings.Join(g.messages, " "), "The power of the crypt consumes your Blink Stone's magic without effect") {
+		t.Fatal("suppressed blink must explain the crypt consumed its magic")
+	}
 	g.processCommand("b")
+	if !strings.Contains(strings.Join(g.messages, " "), "The power of the crypt consumes your Warding Charm's magic without effect") {
+		t.Fatal("suppressed ward must explain the crypt consumed its magic")
+	}
 	if g.player.BlinkStones != 1 || g.player.WardingCharms != 1 || g.player.Pos != playerPos || g.dog.Pos != dogPos || g.player.ShieldTurns != 0 || g.stats.Turns != 2 || g.rng.State != rng {
 		t.Fatal("suppressed magic must spend its item and a turn without teleporting, shielding or drawing RNG")
 	}
@@ -419,4 +425,27 @@ func reachable8(tiles [][]rune, start, target pos) bool {
 		}
 	}
 	return false
+}
+
+func TestCryptRestrictionsAreDiscoveredThroughPlay(t *testing.T) {
+	g := cryptArena()
+	g.player.Pos = pos{5, 5}
+	g.processCommand("k")
+	var out bytes.Buffer
+	g.render(&out)
+	if strings.Contains(out.String(), "no fountains") || strings.Contains(out.String(), "Warding Charm") || strings.Contains(out.String(), "Blink Stone") {
+		t.Fatal("entrance discovery and hints must not reveal crypt restrictions")
+	}
+	g.processCommand("d")
+	out.Reset()
+	g.render(&out)
+	text := strings.Join(strings.Fields(out.String()), " ")
+	if !strings.Contains(text, "Darkness limits sight to three tiles; existing wards fade.") {
+		t.Fatal("entry must announce sight and fading wards")
+	}
+	for _, unwanted := range []string{"Crypt rules:", "no fountains", "There are no fountains", "consumed without effect"} {
+		if strings.Contains(text, unwanted) {
+			t.Errorf("entry reveals unwanted rules: %q", unwanted)
+		}
+	}
 }

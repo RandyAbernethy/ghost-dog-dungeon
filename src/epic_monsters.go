@@ -62,7 +62,7 @@ func epicMonsterDescription(kind monsterKind) string {
 	default:
 		return ""
 	}
-	return "Epic: wakes within four tiles, acts once every three turns, and can be outrun. Very dangerous without God armor or an Artifact. " + trick + " Prepares " + epicStrikeName(kind) + " during its last rest turn: leave the red X tiles before its next active turn. Ash dodges instead of attacking. Defeating it leaves one elite treasure."
+	return "Epic: wakes within four tiles. Alternates normal attacks (range two, half signature damage) and warned signatures, with two rest turns between actions. " + trick + " Prepares " + epicStrikeName(kind) + ": leave red X tiles before its next active turn. Every four damaging hits build a two-action retaliation; move twice, interrupt, protect or blink. Ash retreats from warnings. Defeating it leaves one elite treasure."
 }
 
 func epicTreasurePool() []item {
@@ -80,14 +80,7 @@ func (g *game) dropEpicTreasure(m *monster) {
 	treasure := pool[g.rng.Intn(len(pool))]
 	treasure.Pos = m.Pos
 	g.current().Items = append(g.current().Items, treasure)
-	name := treasure.Name
-	switch treasure.Kind {
-	case itemWeapon:
-		name = coloredWeaponName(treasure.Weapon)
-	case itemArmor:
-		name = coloredArmorName(treasure.Armor)
-	}
-	g.addMessage(m.Name + " drops an elite treasure: " + name + ".")
+	g.addMessage(m.Name + " drops an elite treasure: " + itemMapLabel(treasure) + ". Pick it up to identify it.")
 }
 
 func (g *game) awakenEpic(m *monster) {
@@ -95,7 +88,7 @@ func (g *game) awakenEpic(m *monster) {
 		return
 	}
 	m.Awakened = true
-	g.addMessage(m.Name + " awakens! It acts once every three turns but hits with terrible force. Retreat or face it with God armor or an Artifact.")
+	g.addMessage(m.Name + " awakens! Normal attacks reach two tiles and alternate with warned signatures. Four damaging hits provoke a two-action retaliation. Retreat now or prepare for a dangerous fight.")
 }
 
 func (g *game) epicRest(m *monster) bool {
@@ -108,8 +101,15 @@ func (g *game) epicRest(m *monster) bool {
 		}
 		g.awakenEpic(m)
 	}
+	if m.RetaliationTurns > 0 {
+		m.RetaliationTurns--
+		return m.RetaliationTurns > 0
+	}
+	if m.Rage == epicRageLimit && len(m.StrikeTiles) == 0 && g.prepareEpicRetaliation(m) {
+		return true
+	}
 	m.ActionTurns++
-	if m.ActionTurns%3 == 0 && len(m.StrikeTiles) == 0 {
+	if m.ActionTurns%6 == 3 && len(m.StrikeTiles) == 0 {
 		g.prepareEpicStrike(m)
 	}
 	return (m.ActionTurns-1)%3 != 0

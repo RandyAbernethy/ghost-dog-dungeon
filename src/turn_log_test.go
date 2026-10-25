@@ -45,8 +45,9 @@ func assertWholeTurnRendered(t *testing.T, g *game, output string) {
 	if !ok {
 		t.Fatalf("missing current turn heading %q", header)
 	}
+	remaining = strings.Join(strings.Fields(stripANSI(remaining)), " ")
 	for _, message := range g.messages {
-		_, rest, found := strings.Cut(remaining, "- "+message+"\n")
+		_, rest, found := strings.Cut(remaining, strings.Join(strings.Fields(stripANSI("- "+message)), " "))
 		if !found {
 			t.Fatalf("missing or reordered event %q", message)
 		}
@@ -217,5 +218,68 @@ func TestCompleteTurnLogThroughRealExecutableAndSavedGame(t *testing.T) {
 		if strings.Contains(screen, "Turn 81 events (") {
 			assertWholeTurnRendered(t, loaded, screen)
 		}
+	}
+}
+
+func TestEquipmentPickupLogWrapsAt80VisibleColumns(t *testing.T) {
+	g := openArena()
+	g.current().Items = []item{{Pos: pos{6, 5}, Kind: itemArmor, Armor: armor{Name: "Scout Cap", Slot: slotHead, Defense: 2, Rarity: rarityUncommon}}}
+	g.processCommand("d")
+	messages := append([]string(nil), g.messages...)
+	player, stats, rng := g.player, g.stats, g.rng.State
+	var colored bytes.Buffer
+	g.render(&colored)
+	assertWholeTurnRendered(t, g, colored.String())
+	_, log, ok := strings.Cut(stripANSI(colored.String()), "Turn 1 events (0 monsters killed):\n")
+	if !ok {
+		t.Fatal("missing pickup turn log")
+	}
+	if !strings.Contains(log, "You pack Uncommon Scout Cap / head.\n  Compared to Padded Hood:") {
+		t.Fatalf("comparison must start on a new line: %s", log)
+	}
+	continuations := 0
+	for _, line := range strings.Split(strings.TrimSuffix(log, "\n"), "\n") {
+		if len(line) > 80 {
+			t.Fatalf("log exceeds 80 visible columns: %s", line)
+		}
+		if strings.HasPrefix(line, "  ") {
+			continuations++
+		} else if !strings.HasPrefix(line, "- ") {
+			t.Fatalf("invalid log indentation: %s", line)
+		}
+	}
+	if continuations < 1 || !strings.Contains(colored.String(), "\x1b[") {
+		t.Fatal("exercise colored equipment prose spanning several lines")
+	}
+	if !reflect.DeepEqual(messages, g.messages) || !reflect.DeepEqual(player, g.player) || stats != g.stats || rng != g.rng.State {
+		t.Fatal("word wrapping must not change gameplay or stored messages")
+	}
+	for i := range g.messages {
+		g.messages[i] = stripANSI(g.messages[i])
+	}
+	var plain bytes.Buffer
+	g.render(&plain)
+	if stripANSI(colored.String()) != plain.String() {
+		t.Fatal("color codes must not change line breaks")
+	}
+}
+
+func TestArmorPickupMessageIsConcise(t *testing.T) {
+	g := newGame(5)
+	g.player.HeadArmor = armor{Name: "Padded Hood", Slot: slotHead, Defense: 1}
+	g.messages = nil
+	g.collectItem(makeArmorItem(armor{Name: "Riveted Sallet", Slot: slotHead, Defense: 1, SpellWard: 1, Rarity: rarityUncommon}))
+	want := "You pack Uncommon Riveted Sallet / head. Compared to Padded Hood: +0 guard, +1 spell ward, +0 strike damage."
+	if len(g.messages) != 1 || stripANSI(g.messages[0]) != want {
+		t.Fatalf("want concise pickup %q, got %v", want, g.messages)
+	}
+	var out bytes.Buffer
+	g.render(&out)
+	wantRendered := "- " + strings.Replace(want, ". Compared to ", ".\n  Compared to ", 1) + "\n"
+	if !strings.Contains(stripANSI(out.String()), wantRendered) {
+		t.Fatalf("pickup comparison must start on its own indented line: %s", stripANSI(out.String()))
+	}
+	if stripANSI(g.messages[0]) != want {
+		t.Fatal("rendering must preserve the stored pickup message")
 	}
 }

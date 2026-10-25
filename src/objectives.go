@@ -205,9 +205,9 @@ func (g *game) renderObjective(w io.Writer) {
 	} else if o.Failed {
 		status = "failed"
 	}
-	fmt.Fprintf(w, "Objective: %s (%s), %d/3.\n", o.Kind, status, o.Progress)
+	uiText(w, fmt.Sprintf("Objective: %s (%s), %d/3.", o.Kind, status, o.Progress))
 	if !o.Completed && !o.Failed {
-		fmt.Fprintln(w, o.instructions())
+		uiText(w, o.instructions())
 		if o.Kind == objectiveSpirit && o.Started {
 			fmt.Fprintf(w, "Spirit resolve: %d/3.\n", o.Integrity)
 		}

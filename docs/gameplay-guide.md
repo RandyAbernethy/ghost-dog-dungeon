@@ -23,8 +23,13 @@ Exact generation rules, persistence requirements, and regression-test references
 
 ## Map Symbols
 
-Symbols are case-sensitive. Each monster species, item type, and feature has its own symbol; equipment variants share
-only their weapon or armor category. **F** and **f** are reserved for fresh and spent fountains. Epics use **1–8**.
+Symbols are case-sensitive. Each monster species, physical item category, and feature has its own symbol. All scrolls
+(including side stories) share **?**, orbs **=**, charms **%**, and potions **!**. Phoenix Ash is a stronger healing
+consumable and uses the potion appearance. Equipment variants share their weapon or armor category.
+Floor legends, inspection and monster-drop messages reveal only physical form, concealing names, powers, statistics
+and story contents until pickup. Inventory and explicit gift offers identify them. Dropped items use generic floor
+descriptions again.
+**F** and **f** are reserved for fresh and spent fountains. Epics use **1–8**.
 The map legend lists objects; inventory and inspection show item symbols, and the codex lists discovered enemies.
 Symbols are derived from each monster or item kind and are not stored separately in saves.
 Undiscovered rooms remain concealed as walls, and unseen crypt tiles remain blank.
@@ -43,7 +48,7 @@ Undiscovered rooms remain concealed as walls, and unseen crypt tiles remain blan
 | `<` | Stairs up or out |
 | `F` | Healing fountain |
 | `f` | Spent fountain |
-| `G` | Friendly ghost |
+| `G` | Ghost of a friendly villager |
 | `+` | Shortcut lever |
 | `&` | Ash's keepsake |
 | `^` | Healing shrine |
@@ -61,17 +66,11 @@ Undiscovered rooms remain concealed as walls, and unseen crypt tiles remain blan
 | --- | --- |
 | `)` | Weapon |
 | `[` | Armor |
-| `!` | Healing potion |
-| `?` | Fire scroll |
-| `*` | Blink stone |
-| `]` | Warding charm |
-| `$` | Sun orb |
-| `%` | Frost charm |
-| `=` | Starfire orb |
-| `(` | Phoenix ash |
-| `;` | Ghost Dog recall scroll |
-| `:` | Story chapter scroll |
-| `,` | Side-story scroll |
+| `!` | Potion (healing potion or Phoenix Ash; identified on pickup) |
+| `?` | Scroll (Fire, Ghost Dog recall, story chapter, or side story; identified on pickup) |
+| `*` | Stone (identified on pickup) |
+| `%` | Charm (Warding or Frost; identified on pickup) |
+| `=` | Orb (Sun or Starfire; identified on pickup) |
 
 
 ### Monsters
@@ -142,7 +141,11 @@ Used fountains refill when you leave their floor, so you can return for more hea
 stairwell guardians, 2-4 monsters which spawn on a floor when you descend below it. Drinking from a fountain restores
 4-8 health to you and 8-12 health to Ghost Dog. Stairwell guardians use smaller budgets appropriate to their floor.
 
-Searching suspicious walls allows the player to discover secret passages. Each game has 5-8 secret chambers, including
+After moving or arriving within three tiles along an open approach to a hidden passage, there is a **20% chance** of
+one subtle directional hint about a draft, disturbed mortar, Ash sniffing, or a burial seal in that turn's log.
+Hints never prompt you to search; inspection and map redraws do not generate or retry them. Walls block clues, and
+clues to a linked chamber become eligible after its parent opens. Searching with **k** remains available without a hint.
+Each game has 5-8 secret chambers, including
 the escape sanctum and possible linked chambers. Every secret chamber contains a fountain and its own side-story
 scroll. After discovering a chamber, search its walls for hidden doors to further chambers.
 
@@ -152,10 +155,10 @@ Hollow Wardens can appear, though none is guaranteed in a run.
 
 Optional rooms include guarded armories, healing shrines, abandoned kennels, and treasure vaults. Look for friendly
 ghosts (**G**), shortcut levers (**+**), Ash's keepsakes (**&**), and shrines (**^**). Stand on or next to one and press
-**y** (or type `: interact`) to interact. A friendly ghost offers three different, randomly chosen gifts: armor, a
+**y** (or type `: interact`) to interact. A ghost of a friendly villager offers three different, randomly chosen gifts: armor, a
 weapon, a potion, a Blink Stone, a Fire Scroll, a Warding Charm, a Sun Orb, a Frost Charm, a Starfire Orb, Phoenix Ash,
 or a Ghost Dog Recall Scroll. Equipment matches the floor's usual loot range. Accept one gift with `:choose 1`, `:choose
-2`, or `:choose 3` followed by Enter (omit the colon in line-input mode). Each ghost keeps its choices when you return
+2`, or `:choose 3` followed by Enter, or simply press **1**, **2**, or **3** (Enter in line-input mode). Each ghost keeps its choices when you return
 or load a save. Reading the offer costs no turn; accepting a gift or activating another event spends one turn. Event
 rewards can be used once, and stay used after revisiting or loading. A keepsake restores up to **8 HP** to a nearby
 freed, living Ghost Dog and grants one warding charm. Shrines heal you and a living Ghost Dog once.
@@ -189,6 +192,12 @@ including the ending and safe-companion challenge. Saves preserve the chain, anc
 
 
 ## Weapons and Armor
+
+Open **i** to select an item and read its description and comparison. Use arrows and Enter on Unix, or enter the item
+number in command-and-Enter mode. Confirm with Enter or **e** to equip, **u** to use a consumable, or **d** to drop.
+Press **i** to return to the list or Esc/`map` to close. Browsing and cancelling are free; a successful action spends
+one turn. Advanced equip/drop commands remain available. The `details` command (`:details` on Unix) shows the full
+pack report, including companion rules and descriptions of items you do not currently carry.
 
 Weapon and Armor types:
 
@@ -246,19 +255,30 @@ come from an encounter on that floor and do not summon replacements. Discovery, 
 and loading do not create new encounters.
 
 Epics spawn away from entrances and stairs, with a route around them. They wake within four tiles, warn you when they
-wake, and act once every three turns, letting you retreat. God armor or an Artifact helps, but careful use of reach,
+wake, and normally act once every three turns, letting you retreat. They alternate normal attacks and signatures.
+Normal attacks reach two tiles and use half the signature damage range before defenses. Moving off signature tiles
+does not protect you from normal attacks while you stay in range. Adjacent normal attacks retain their melee powers;
+distance-two pressure does not. God armor or an Artifact helps, but careful use of reach,
 consumables, and positioning still matters. Epics never return as stairwell guardians, and killing one is not needed
 to defeat the Dread Lich or escape. The Oracle Crown prevents the Frost Monarch's binding and Dusk Tyrant's hex;
 spell wards reduce the Storm Leviathan's lightning damage to you.
 
 Each Epic also has a signature attack: **Hammerfall**, **Grave Cross**, **Cinder Lane**, **Soul Scythe**,
 **Ice Bloom**, **Thunder Marks**, **Eclipse**, or **Shard Fan**, respectively. Within two tiles, it can prepare
-the attack on its last rest turn. **Red X** tiles show exactly where it will strike on its next active turn,
+the attack on its last rest turn before a signature action. **Red X** tiles show where it will strike on its next active turn,
 replacing its usual attack or movement. You have one action to move clear; the tiles never follow you.
 Your `@` and Ash's `D` turn red when threatened, and the warning names the attack below the map and in **m** inspection.
 Ash spends his action dodging rather than attacking, and avoids walking or blinking onto marked tiles.
 Freezing or stunning the Epic delays its warning; fleeing or death cancels it. Walls block warnings, and the
 Epic does not prepare a pattern if every neighboring escape tile is blocked. Reading screens and saving are free.
+
+Every damaging hit on a surviving Epic builds **rage**, including Ash, consumables, and passive gear damage. Fully
+blocked hits do not count. At **4/4**, it can prepare a wide retaliation around you and a nearby Ash, giving **two
+actions** to escape. Move immediately and move again; waiting until the final action to begin moving may be fatal.
+The warning shows the countdown and fixed tiles. You can also interrupt, use protection, or blink. A legal two-step
+escape must exist before preparation; movement holds, occupied squares and reach attacks count as restrictions.
+Retaliation pauses the ordinary attack rhythm, and freezing or stunning delays its countdown. Fear cancels it.
+Ash starts escaping wide patterns early. Rage, warning tiles, and countdown survive saving and loading exactly.
 
 Defeating any Epic guarantees one elite treasure on its final tile: rare equipment or a powerful consumable. Kills by
 Ghost Dog, magic items, and gear powers earn the same reward. Walk onto the tile to collect it; equipment still needs
@@ -360,7 +380,7 @@ These examples include the campaign goal and content that can appear in a run.
 ```text
 $ ./bin/ghostdog --seed 42
 
-Ghost Dog Dungeon version 1.0.3
+Ghost Dog Dungeon version 1.0.4
 Dungeon seed: 42
 
 === Personal Records ===
@@ -371,8 +391,8 @@ Most difficulty defeated record: no finished run recorded yet.
 
 === Ghost Dog Dungeon: Level 1/10 ===
 ruined chapel — pillared halls
-HP 46/46  Weapon Rusty Knife (3-7)  Armor 2 (block 1)  Potions 3  Fire 1  Blink 0  Ward 0  Sun 0  Frost 0  Starfire 0  Ash 0  Recall 0  Story 0/10
-Reach 1  Spell ward 0  Strike bonus +0  Turns 0  Kills 0  Difficulty defeated 0
+HP 46/46 | Armor 2 (block 1) | Turns 0
+Weapon Rusty Knife (3-7) | Reach 1
 Ghost dog: not yet freed
 ######################################
 ######################################
@@ -384,23 +404,28 @@ Ghost dog: not yet freed
 ######################################
 ######################################
 ##############..[.....>###############
-##############t..F@.......############
-#############:t.!.....)#]#.###########
+##############t...@.......############
+#############?t.!.....)#%#.###########
 ##################.#####...###########
 ########################...###########
 ######################################
 ######################################
 ######################################
 ######################################
-Legend: # wall  . floor  @ you  D ghost dog  d chained ghost dog  > down  < up/out  F/f fountain/spent
-Items: ) weapon  [ armor  ! potion  ? fire scroll  * blink  ] ward  $ sun  % frost  = starfire  ( phoenix ash  ; recall  : chapter  , side story
-Events: G friendly ghost  + lever  & keepsake  ^ shrine  S lost spirit  O sigil  red X Epic strike
-Crypt legend: { secret entrance  } secret exit  | sealed entrance. Discovered traps show their own symbols.
-Here: press i for equipment, c for the codex, m to inspect, or k to search suspicious walls.
+Legend: @ you | # wall | . floor
+Nearby: [ armor | t Tunnel Bat | ! potion | ) weapon
+| > down
+Here: i: inventory | m: inspect | h: help
 Dungeon events:
-- You step into the dungeon. The door slams shut behind you.
-- Find the ghost dog, delve through ten ever-larger floors, and uncover the hidden way out guarded by the Dread Lich.
-  Commands: wasd/arrows, q e z x, ., </>, p f b g u t o n r, v fountain, y interact, choose 1/2/3, i inventory, equipment, equip NUMBER, drop NUMBER, book, challenges, c codex, m inspect, k search, map, save, load, quit
+- After coming upon an old chapel, you find an entrance to a dark cellar in the
+  chapel yard. Your adventurous spirit drives you to explore.
+- The wind howls through the bell tower, like a far away hound longing for
+  home.
+- You climb down into the cellar below the old chapel and the door slams shut
+  behind you. Some great evil is afoot and clearly you must face it to escape
+  the catacombs.
+Move: wasd/qezx | i: Pack | y: Interact | m: Inspect
+h: Help | map: Return | quit: Quit (command + Enter)
 
 Command>
 ```

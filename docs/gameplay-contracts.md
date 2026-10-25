@@ -13,7 +13,16 @@ and general play are in the [README](../README.md); detailed player-facing mecha
   and the initial map. Show it for both new and loaded games, not on subsequent map redraws or in `--help`/`--version`.
 - Embed the reusable [puppy.txt](../src/assets/puppy.txt) asset in the executable; startup must not read artwork from
   the working directory. Use printable ASCII and line feeds so the art works in both raw-key and command-and-Enter mode.
-- Opening artwork must not consume input, spend a turn, draw RNG, or change saved game state.
+- On interactive terminals, show version, seed, artwork and personal records before the prompt
+  "Press enter to begin the descent! >". Wait for Enter, then clear the welcome screen and render gameplay.
+  Share the existing input reader, preserving subsequent input. Ctrl-C/Ctrl-D or EOF exits without gameplay.
+  Redirected scripts skip the pause and screen clearing. Opening and confirmation spend no turn, draw no RNG,
+  and do not change saved game state.
+- New games start with the chapel-yard cellar introduction: the wind through the bell tower evokes a lonely hound,
+  and the cellar door slams shut before the player explores the catacombs. Keep this in the initial action log, free
+  of turns and extra RNG. Render each paragraph at word boundaries within 80 columns, including the bullet prefix;
+  indent continuation lines by two spaces. Keep stored paragraphs intact. Loading retains the saved log instead of
+  inserting a new introduction.
 
 Preserve portrait and startup coverage in [opening_test.go](../src/opening_test.go), executable new-game/load checks in
 [cli_test.go](../tests/cli_test.go), and raw-key coverage in [terminal_linux_test.go](../src/terminal_linux_test.go).
@@ -23,7 +32,7 @@ Preserve portrait and startup coverage in [opening_test.go](../src/opening_test.
 - Favor clean, maintainable code over backward compatibility. Break save compatibility only when doing so makes
   the codebase clearer or easier to work on; avoid unnecessary breaks and compatibility debt.
 - Keep explicit save-format versioning and bump the version for incompatible schema changes. The game supports
-  only the current format, currently format 3. Reject older or unversioned saves and unknown future versions with
+  only the current format, currently format 4. Reject older or unversioned saves and unknown future versions with
   a useful error asking the player to start a new game. Do not migrate, repair, or overwrite rejected snapshots.
 - Do not retain obsolete fields, compatibility fallbacks, or legacy-format loading code in the game. If support for
   older saves becomes necessary, build a separate savefile updater that converts them to the current format before
@@ -36,17 +45,58 @@ Preserve portrait and startup coverage in [opening_test.go](../src/opening_test.
 Preserve snapshot, rejection and command coverage in [save_test.go](../src/save_test.go), startup rejection in
 [cli_test.go](../tests/cli_test.go), and deterministic continuation in [campaign_test.go](../tests/campaign_test.go).
 
+## Inventory and compact presentation
+
+- Each carried consumable in the inventory list displays its direct use command beside its count and map symbol.
+
+- Inventory and equipment open the same transient menu. Arrows and Enter select in raw mode; numbered selection works
+  in both modes. From the list, `e` equips and `d` drops the highlighted item without opening details.
+  Enter still opens details, which show descriptions, equipment comparisons and powers before Use, Equip or Drop.
+- Equipment pickup messages show the item name, armor slot where applicable, and stat differences from equipped gear.
+  Start the comparison sentence on its own line with a two-space indent, wrapping at 80 visible columns.
+  Preserve the stored message and apply this layout during rendering.
+  Omit repeated absolute attributes, power descriptions and inventory-key reminders; full details remain in inventory.
+- Each armor entry in the inventory list shows its guard, spell ward and strike damage, including zero values,
+  without requiring selection of its details.
+- Use the same stable equipment/consumable numbering as advanced commands, even when zero-stock consumables are hidden.
+  Confirmed actions go through `processCommand`; selecting, reading, cancelling and invalid selections remain free.
+  Confirmed actions close the menu; menus are never serialized or restored by loading.
+- Keep the map's survival summary short: player and companion health, weapon, protection and current effects. Show only
+  nonzero equipment spell ward and strike bonuses in the map header; inventory retains zero-valued statistics. Show only
+  visible entities within four tiles in the contextual legend. Inventory and records retain the full counts and statistics; help retains
+  a complete feature/item reference and the discovered codex provides enemy symbols. Prompts describe the actual input mode.
+- Include the original, unrescued Ghost Dog chain location as `d chained Ghost Dog` in the nearby legend when visible
+  within four tiles. Stop listing that original location after rescue; keep the existing companion legend behavior.
+- Wrap status, menu, objective, hint and warning prose to the terminal width (up to 80 columns). Windows
+  and redirected streams fall back to 60; `COLUMNS` overrides it, with a minimum of the 38-column map. Never truncate
+  the complete turn log. Gameplay log prose wraps between words at 80 visible columns with a two-character bullet
+  or continuation indent; ignore ANSI colors when counting columns. Preserve full snapshot-path announcements on
+  one line for copying. Store complete original messages and wrap only during rendering, preserving order and RNG.
+  Size queries belong in the OS terminal files and consume no gameplay randomness.
+
+Preserve command-loop, compiled save/load, cancellation, width and raw-menu coverage in
+[inventory_menu_test.go](../src/inventory_menu_test.go) and Linux PTY coverage in
+[terminal_linux_test.go](../src/terminal_linux_test.go).
+
 ## Map symbols
 
-- Give each monster species, item type, trap kind, and other feature its own printable ASCII symbol. Weapon and armor
-  variants retain their equipment-type symbol; repeated instances of the same type retain the same symbol.
+- Give each monster species, physical item category, trap kind, and other feature its own printable ASCII symbol.
+  Fire, Ghost Dog recall, chapter and side-story scrolls share `?`; Sun and Starfire orbs share `=`; Warding and Frost
+  Charms share `%`; healing potions and Phoenix Ash share `!`. Weapons use `)`, armor `[`, and stones `*`.
+  No different physical categories may share a symbol.
+- Floor legends and inspection show only physical categories (scroll, orb, charm, potion, weapon, armor, stone), never
+  exact names, rarity, statistics, effects, chapter numbers, story text or titles. Monster-drop announcements also
+  conceal these identities. Pickup identifies the exact item; carried inventory and explicit friendly-ghost offers
+  retain full details. Dropped items again use category-only floor descriptions; no identification memory or new save
+  fields are needed. Loading and inspection reveal nothing
+  extra and cannot change gameplay state or RNG. Help lists each physical symbol once.
 - Reserve `F` and `f` for fresh and spent fountains, `D`/`d` for Ghost Dog, and `X` for Epic attack warnings.
   The eight Epics use `1`–`8`; Frost Monarch uses `5`. Shrines retain `^`; each discovered trap has its own symbol.
 - Maintain the shared catalog in [glyphs.go](../src/glyphs.go). Constructors, map, codex, inventory, inspection,
   and legends must agree. Derive symbols by entity kind instead of serializing duplicate glyph fields.
   Displaying current symbols must not spend turns, draw RNG, or alter the dungeon or rewards.
 
-The complete player reference is in [Map symbols](gameplay-guide.md#map-symbols). Preserve the global uniqueness,
+The complete player reference is in [Map symbols](gameplay-guide.md#map-symbols). Preserve category uniqueness,
 rendering, trap visibility, and compiled-executable save/load coverage in [glyphs_test.go](../src/glyphs_test.go).
 
 ## Generation and secret rooms
@@ -59,11 +109,22 @@ rendering, trap visibility, and compiled-executable save/load coverage in [glyph
 - Secret chambers must never enclose another chamber. Link disjoint rooms through a hidden door reachable only
   through the preceding chamber, with separate discovery after its parent is opened.
 - Every secret chamber has its own fountain and side-story scroll. The Book of Ghost Dog shows only collected stories.
+- Derive candidate passage clues from existing door geometry. A clue requires an open approach within three tiles;
+  intervening walls and unopened parent chambers block it. Successful movement or area arrival with eligible clues
+  has one 20% chance (roll below 20 out of 100) to add one subtle directional hint to the current turn log. Hints must
+  not instruct the player to search. Do not reveal hints automatically in map context text or inspection, including
+  beside the crypt entrance or exit. Help retains the search control; search behavior itself is unchanged.
+- Use a copy of the saved RNG salted with the saved turn for narrative hint rolls, preserving combat RNG and seeded
+  campaign outcomes. Pick at most one candidate after a successful chance roll. Reading, redraws, failed actions, waiting,
+  saving and loading cannot generate or retry hints. The saved current-turn log retains any hint already offered; no
+  new save fields are needed. Killing the Lich opens the mandatory escape sanctum automatically.
 
 Preserve the seed sweeps and assertions in [generation_test.go](../src/generation_test.go),
 [secrets_test.go](../src/secrets_test.go), [balance_test.go](../src/balance_test.go), and
 [replay_test.go](../src/replay_test.go). They cover connectivity, feature overlap, hidden-room access, room-count
 distribution, geometric variety, rewards, and seed reproduction.
+Clue accessibility, parent ordering, wall occlusion and persistence are covered in
+[passage_clues_test.go](../src/passage_clues_test.go).
 
 ## Ordinary balance and placement
 
@@ -122,15 +183,32 @@ Preserve the chance-boundary sweep, rescue, inactivity, travel, targeting, recor
   encounters, including dead ones, prevent duplicates. Epic relic drops already come from an encounter on their floor
   and must not spawn replacement Epics. Discovery, revisiting, dropping carried gear, and loading do not roll encounters.
 - The eight Epic possibilities are Iron Colossus, Grave Titan, Ashen Wyrm, Hollow Reaper, Frost Monarch, Storm Leviathan,
-  Dusk Tyrant, and Obsidian Golem. All wake within four tiles and act once every three turns. New ice binding and hexes
+  Dusk Tyrant, and Obsidian Golem. All wake within four tiles and normally act once every three turns. Alternate normal
+  actions (cadence 1, 7, 13...) and signature actions (4, 10, 16...), warning signatures on 3, 9, 15... . Normal attacks
+  reach two tiles through clear terrain and use half the saved signature damage bounds, rounded down with a minimum of
+  one, before ordinary defenses. Adjacent attacks retain melee powers; distance-two pressure has no melee power.
+  Iron Colossus/Obsidian Golem ranged pressure is physical; other ranged pressure respects player spell wards.
+  Out-of-range normal actions pursue rather than hitting. Existing ice binding and hexes
   use the existing one-move/next-strike effects and Oracle Crown immunity. Lightning affects only the player and a freed,
   living Ghost Dog within two tiles, only after a damaging melee strike; player spell wards apply. See
   [epic_monsters.go](../src/epic_monsters.go).
-- During the last rest turn, an Epic within two tiles may prepare its named signature. Store the exact warning tiles
+- During the last rest turn before a signature action, an Epic within two tiles may prepare its named signature. Store the exact warning tiles
   without drawing RNG; on its next active turn, strike those tiles instead of moving or making a normal attack.
   Never retarget after the warning. Walls block its line, and every threatened actor must initially have an open
   neighboring escape tile. Signature damage uses the monster's saved damage range; magical signatures respect spell
   wards. Existing melee powers remain tied to melee hits. Ice Bloom and Eclipse apply existing binding/hex immunity.
+- Every separate damaging hit on a surviving Epic adds one rage, capped at four, through the common damage handler.
+  Player, companion, consumables and passive damage all count; fully blocked hits and corpses do not. At full rage,
+  the next eligible enemy turn with no pending warning may prepare a retaliation, replacing that turn's normal cadence.
+  Retaliation marks a fixed 3-by-3 area around each companion within four tiles and clear line of sight, excludes walls
+  and the Epic's own tile, and gives two complete player actions before resolving the ordinary signature damage/effects.
+  Preparation resets rage; later hits can build the next meter. Rage does not decay or reroll on travel or loading.
+- Require a legal two-move escape from the combined warning tiles for each threatened actor before preparing retaliation.
+  Account for occupied tiles, player movement holds and reach attacks that would replace movement. A chained Ash cannot
+  escape and prevents a retaliation covering him. If no fair pattern is available, retain rage and follow normal cadence.
+  Freezing/stunning pauses the retaliation countdown; fear cancels it; death clears warnings, rage and countdown.
+  Ash starts a two-step retreat immediately when necessary. Retaliation replaces other attacks while pending and
+  resumes the saved normal cadence afterward. Save format 4 persists rage, countdown and exact tiles without renewal.
 - Map and inspect show the pending attack, including when the player or Ash occupies a warning tile. Reading,
   rendering, failed actions and saves cannot advance it. Freezing/stunning delays it; fleeing or death clears it.
   Ash spends his action dodging if threatened, avoids marked movement destinations, and never dodges while inactive.
@@ -146,13 +224,24 @@ Preserve placement, rarity, equipment-power, kill-source, and persistence covera
 [epic_loot_test.go](../src/epic_loot_test.go).
 Signature cadence, dodge space, cancellation, companion movement, and persistence are covered in
 [epic_strikes_test.go](../src/epic_strikes_test.go) and [adventure_cli_test.go](../src/adventure_cli_test.go).
+Normal pressure, rage sources, lethal mistakes, two-action escapes, defenses and compiled continuation are covered in
+[epic_pressure_test.go](../src/epic_pressure_test.go).
+The deterministic arena policies in [epic_trials_test.go](../src/epic_trials_test.go) compare reckless, prepared ordinary
+equipment, and relic-equipped combat over 16 seeds per Epic. They log wins, deaths, turns, damage and consumable use;
+these are fixed-policy checks, not human win-rate estimates. Keep at least one ordinary-equipment prepared victory
+and a lethal result from reckless play. Generation, ordinary budgets and equipment pools remain independently covered.
 
 ## Events and movement effects
 
+- The gift-giving event is displayed as "ghost of a friendly villager" in prompts, help and map legends.
+
+- Fountain arrival prompts say only "A healing fountain flows nearby. Press v to drink."
 - Fountains refill on leaving their floor. Event gifts and shrine blessings are one-use and stay used after revisiting
   or loading.
 - Ash's keepsakes restore 8 HP, capped at maximum health, to a freed, living Ghost Dog within two tiles of the keepsake
   and grant one warding charm. Activation spends one turn; saving or revisiting cannot renew either reward.
+  The arrival prompt identifies only the faded collar and interaction key, without revealing rewards:
+  "Ash's keepsake, a faded collar, lies nearby; press y (interact)."
 - Blink Stones exclude all secret chambers, including discovered and additional rooms, and move active companions together.
 - Track whether a movement hold comes from webs, ice, silver chains, or rift magic; the log and status display must
   name the actual effect. Preserve the one-movement-turn cost and Oracle Crown immunity, including save/load and equipment.
@@ -201,7 +290,9 @@ Keep narrative, save/load, free-action, one-time reward and executable coverage 
 - Every new dungeon receives one extra crypt, saved separately from the ten main levels. Generate it once with the
   saved RNG after ordinary generation. Select two distinct concealed wall doors on one main floor 4–7, away from
   secret-room footprints and existing features.
-- Searching beside the entrance reveals it and warns about all travel/magic/sight restrictions before commitment.
+- Searching beside the entrance reveals it and warns that it seals behind the player. Fountain and magic
+  restrictions are left for players to discover; no recurring crypt-rules banner is shown. Entry announces only
+  three-tile sight and fading wards.
   Walking through spends one turn, permanently seals that entrance, clears active wards, and moves only a freed,
   living companion. Leaving the parent floor refills its fountains and abandons any started spirit vigil. The far
   exit is discovered by searching beside it, then stepping through returns to the other parent-floor door. Ordinary
@@ -218,7 +309,7 @@ Keep narrative, save/load, free-action, one-time reward and executable coverage 
   Unseen ordinary monsters can approach, but cannot cast or attack through walls. Reads remain free of gameplay
   mutations apart from existing codex bookkeeping.
 - A Warding Charm or Blink Stone with available stock is consumed and spends one action turn with no magic effect
-  or extra RNG. Active wards protect neither companion inside the crypt. Passive equipment traits still work.
+  or extra RNG. Each attempt explains that the power of the crypt consumes the item’s magic without effect. Active wards protect neither companion inside the crypt. Passive equipment traits still work.
 - Generate 1–4 distinct traps from the eight-kind pool, with fixed saved damage, away from actors, loot, the entry
   and exit approaches, and the guardian. An adjacent search makes one independent 50% roll per undiscovered,
   unspent trap. Known or spent traps do not reroll. A discovered trap can be disarmed with one interaction turn;

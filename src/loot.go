@@ -158,16 +158,13 @@ func (g *game) collectItem(it item) {
 	case itemWeapon:
 		cmp := compareWeapon(it.Weapon, g.player.Weapon)
 		g.player.carryWeapon(it.Weapon)
-		g.addMessage(fmt.Sprintf("You pack %s (%d-%d, reach %d). %s Press i to choose equipment.", coloredWeaponName(it.Weapon), it.Weapon.Min, it.Weapon.Max, it.Weapon.effectiveReach(), cmp))
-		if it.Weapon.Power != "" {
-			g.addMessage(gearPowerDescription(it.Weapon.Power))
-		}
+		g.addMessage(fmt.Sprintf("You pack %s. %s", coloredWeaponName(it.Weapon), cmp))
 	case itemArmor:
 		equipped := g.player.armorForSlot(it.Armor.Slot)
 		cmp := compareArmor(it.Armor, equipped)
 		candidateName := coloredArmorName(it.Armor)
 		g.player.carryArmor(it.Armor)
-		g.addMessage(fmt.Sprintf("You pack %s for your %s slot. %s %s Press i to choose equipment.", candidateName, slotLabel(it.Armor.Slot), cmp, armorTraits(it.Armor)))
+		g.addMessage(fmt.Sprintf("You pack %s / %s. %s", candidateName, slotLabel(it.Armor.Slot), cmp))
 	case itemPotion:
 		g.player.Potions++
 		g.addMessage("You stash a healing potion. Restores 12-18 health when used with p.")

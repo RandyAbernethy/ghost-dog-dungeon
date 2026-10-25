@@ -2,6 +2,7 @@ package main
 
 // Reserve feature symbols before assigning monster, item, or trap symbols.
 // Every symbol is one printable ASCII cell, independent of terminal colors.
+// Item subtypes share symbols within their physical categories.
 const (
 	glyphWall          = '#'
 	glyphFloor         = '.'
@@ -45,14 +46,14 @@ var itemGlyphs = [...]rune{
 	itemPotion:            '!',
 	itemFireScroll:        '?',
 	itemBlinkStone:        '*',
-	itemWardingCharm:      ']',
-	itemSunOrb:            '$',
+	itemWardingCharm:      '%',
+	itemSunOrb:            '=',
 	itemFrostCharm:        '%',
 	itemStarfireOrb:       '=',
-	itemPhoenixAsh:        '(',
-	itemGhostRecallScroll: ';',
-	itemStoryScroll:       ':',
-	itemSideStoryScroll:   ',',
+	itemPhoenixAsh:        '!',
+	itemGhostRecallScroll: '?',
+	itemStoryScroll:       '?',
+	itemSideStoryScroll:   '?',
 }
 
 var trapGlyphs = map[trapKind]rune{

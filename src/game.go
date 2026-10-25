@@ -67,10 +67,7 @@ func newGameWithSaveDir(seed int64, saveDir string) *game {
 	}
 
 	g.levels[0].Visited = true
-	g.messages = []string{
-		"You step into the dungeon. The door slams shut behind you.",
-		"Find the ghost dog, delve through ten ever-larger floors, and uncover the hidden way out guarded by the Dread Lich.",
-	}
+	g.messages = append([]string(nil), chapelIntroduction[:]...)
 	return g
 }
 

@@ -56,7 +56,10 @@ Start with `src/main.go` for startup, `src/commands.go` for actions, `src/render
 - Use the game's saved RNG for all gameplay randomness. Avoid wall-clock or global randomness after seeding. Do not
   choose outcomes by ranging over a map.
 - Keep rendering and inspection free of gameplay mutations, except existing codex visibility bookkeeping.
-- Keep map symbols unique across monster species, item types, trap kinds, and other features. Reserve `F`/`f` for
+- Keep map symbols unique across monster species, physical item categories, trap kinds, and other features. All scrolls
+  (including side stories) share `?`, orbs share `=`, charms share `%`, and healing potions/Phoenix Ash share `!`.
+  Floor legends, inspection and drop announcements show only physical categories, concealing names, properties and
+  story contents until pickup. Inventory, pickup messages and explicit gift offers identify them. Reserve `F`/`f` for
   fountains and derive symbols by entity kind from `src/glyphs.go`; do not serialize duplicate glyph fields.
 - Successful gameplay actions spend one turn. Reading event choices, reading the book, escaping a command screen,
   saving, and failed actions do not.

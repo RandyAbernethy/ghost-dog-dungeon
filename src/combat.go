@@ -72,6 +72,10 @@ func (g *game) damageMonsterPiercing(m *monster, damage int, verb string, pierci
 	m.HP -= damage
 	g.turnDamage[m] += dealt
 	if m.HP > 0 {
+		if epicMonster(m.Kind) && dealt > 0 {
+			m.Rage = min(epicRageLimit, m.Rage+1)
+			g.addMessage(fmt.Sprintf("%s rage %d/%d. At full rage it prepares a two-action retaliation.", m.Name, m.Rage, epicRageLimit))
+		}
 		reaction, stuns := monsterDamageReaction(m.Name, verb, dealt, m.MaxHP)
 		if stuns {
 			m.StunnedTurns = max(m.StunnedTurns, 1)
@@ -81,6 +85,7 @@ func (g *game) damageMonsterPiercing(m *monster, damage int, verb string, pierci
 	}
 	m.HP = 0
 	m.StrikeTiles = nil
+	m.Rage, m.RetaliationTurns = 0, 0
 	g.stats.MonstersKilled++
 	g.stats.DifficultyDefeated += monsterDifficulty(*m)
 	g.addMessage(fmt.Sprintf("%s falls.", m.Name))
@@ -93,7 +98,7 @@ func (g *game) damageMonsterPiercing(m *monster, damage int, verb string, pierci
 		g.unlockEscapeRoute()
 		if m.StoryChapter > 0 {
 			lvl.Items = append(lvl.Items, item{Pos: m.Pos, Kind: itemStoryScroll, Name: fmt.Sprintf("Ghost Dog story scroll %d", m.StoryChapter), StoryChapter: m.StoryChapter})
-			g.addMessage("The Dread Lich drops the tenth Ghost Dog story scroll.")
+			g.addMessage("The Dread Lich drops a scroll (?). Pick it up to identify it.")
 		}
 	}
 	if epicMonster(m.Kind) {
@@ -102,7 +107,7 @@ func (g *game) damageMonsterPiercing(m *monster, damage int, verb string, pierci
 	}
 	if g.dog.Freed && !g.dog.Alive && g.rng.Intn(100) < 10 {
 		lvl.Items = append(lvl.Items, item{Pos: m.Pos, Kind: itemGhostRecallScroll, Name: "Ghost Dog recall scroll"})
-		g.addMessage("A fallen foe leaves behind a Ghost Dog recall scroll.")
+		g.addMessage("A fallen foe leaves behind a scroll (?). Pick it up to identify it.")
 	}
 }
 
@@ -218,6 +223,10 @@ func (g *game) monsterTurn(m *monster) {
 		return
 	}
 	if g.resolveEpicStrike(m) {
+		return
+	}
+	if epicMonster(m.Kind) {
+		g.epicNormalTurn(m)
 		return
 	}
 	if m.Kind == monsterIronrootBrute {
@@ -371,6 +380,10 @@ func (g *game) moveActorToward(from *pos, target pos, isDog bool) {
 }
 
 func (g *game) attackPlayer(m *monster) {
+	g.attackPlayerDamage(m, g.randRange(m.MinDamage, m.MaxDamage))
+}
+
+func (g *game) attackPlayerDamage(m *monster, damage int) {
 	if g.dog.active() {
 		engaged := g.adjacentMonster(g.dog.Pos)
 		if engaged == nil {
@@ -381,7 +394,6 @@ func (g *game) attackPlayer(m *monster) {
 	} else {
 		g.dogFocus = nil
 	}
-	damage := g.randRange(m.MinDamage, m.MaxDamage)
 	if m.Boss {
 		damage--
 	} else if m.Kind != monsterOrc && m.Kind != monsterMirrorShade {
@@ -453,6 +465,10 @@ func (g *game) hurtPlayer(damage int, source string) {
 
 func (g *game) attackDog(m *monster) {
 	damage := g.randRange(max(1, m.MinDamage-1), max(1, m.MaxDamage-1))
+	g.attackDogDamage(m, damage)
+}
+
+func (g *game) attackDogDamage(m *monster, damage int) {
 	beforeHP := g.dog.HP
 	g.hurtDog(damage, m.Name+" claws")
 	g.epicMeleePower(m, beforeHP-g.dog.HP)

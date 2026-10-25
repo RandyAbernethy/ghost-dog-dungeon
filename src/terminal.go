@@ -12,7 +12,12 @@ import (
 func (g *game) loop(stdin io.Reader, stdout io.Writer) error {
 	scanner := bufio.NewScanner(stdin)
 	var rawIn *rawInput
+	interactive := false
+	var pack *inventoryMenu
 	if f, ok := stdin.(*os.File); ok {
+		if info, err := f.Stat(); err == nil {
+			interactive = info.Mode()&os.ModeCharDevice != 0
+		}
 		if restore, ok := enableRawMode(f); ok {
 			rawIn = &rawInput{Reader: bufio.NewReader(f), file: f}
 			defer restore()
@@ -25,12 +30,30 @@ func (g *game) loop(stdin io.Reader, stdout io.Writer) error {
 	}()
 	renderOpeningArt(stdout)
 	g.renderChallengeRecords(stdout)
+	if interactive {
+		fmt.Fprint(stdout, "\nPress enter to begin the descent! > ")
+		begin, err := waitForDescent(scanner, rawIn)
+		if err != nil {
+			return err
+		}
+		if !begin {
+			return nil
+		}
+		fmt.Fprint(stdout, "\x1b[2J\x1b[H")
+	}
 	g.render(stdout)
 	for !g.won && !g.quit && g.player.HP > 0 {
 		var cmd string
 		if rawIn != nil {
-			fmt.Fprintln(stdout, "  Keys act immediately: wasd/arrows, qezx, ., </>, p f b g u t o n r, v fountain, y interact, i inventory, E equipment, B book, j challenges, c codex, m inspect, k search, Esc map, S save, L load, Ctrl-C quit; type :equip NUMBER, :drop NUMBER, or :choose 1/2/3 + Enter")
-			value, eof, err := readRawCommand(rawIn, stdout)
+			if pack == nil {
+				uiText(stdout, "Move: arrows/wasd (qezx diagonal) | i: Pack | y: Interact")
+				uiText(stdout, "m: Inspect | ?: Help | Esc: Map | Ctrl-C: Quit")
+			}
+			readCommand := readRawCommand
+			if pack != nil {
+				readCommand = readRawMenuCommand
+			}
+			value, eof, err := readCommand(rawIn, stdout)
 			if err != nil {
 				return err
 			}
@@ -40,7 +63,10 @@ func (g *game) loop(stdin io.Reader, stdout io.Writer) error {
 			}
 			cmd = normalizeCommand(strings.TrimSpace(strings.ToLower(value)))
 		} else {
-			fmt.Fprintln(stdout, "  Commands: wasd/arrows, q e z x, ., </>, p f b g u t o n r, v fountain, y interact, choose 1/2/3, i inventory, equipment, equip NUMBER, drop NUMBER, book, challenges, c codex, m inspect, k search, map, save, load, quit")
+			if pack == nil {
+				uiText(stdout, "Move: wasd/qezx | i: Pack | y: Interact | m: Inspect")
+				uiText(stdout, "h: Help | map: Return | quit: Quit (command + Enter)")
+			}
 			fmt.Fprint(stdout, "\nCommand> ")
 			if !scanner.Scan() {
 				fmt.Fprintln(stdout, "\nThe dungeon waits in silence as you slip away.")
@@ -48,14 +74,38 @@ func (g *game) loop(stdin io.Reader, stdout io.Writer) error {
 			}
 			cmd = normalizeCommand(strings.TrimSpace(strings.ToLower(scanner.Text())))
 		}
+		if pack != nil {
+			handled, close := g.packCommand(pack, cmd)
+			if close {
+				pack = nil
+			}
+			if handled {
+				if pack != nil {
+					g.renderPack(stdout, pack, rawIn != nil)
+				} else if g.player.HP > 0 {
+					g.render(stdout)
+				}
+				continue
+			}
+		}
+		if len(cmd) == 1 && cmd[0] >= '1' && cmd[0] <= '3' {
+			cmd = "choose " + cmd
+		}
 		if cmd == "" {
 			cmd = "."
 		}
 		switch cmd {
+		case "h", "help", "?":
+			g.renderHelp(stdout, rawIn != nil)
+			continue
 		case "map":
 			g.render(stdout)
 			continue
 		case "i", "inventory":
+			pack = &inventoryMenu{}
+			g.renderPack(stdout, pack, rawIn != nil)
+			continue
+		case "inventory details", "details":
 			g.renderInventory(stdout)
 			continue
 		case "c", "codex":
@@ -68,7 +118,8 @@ func (g *game) loop(stdin io.Reader, stdout io.Writer) error {
 			g.renderBook(stdout)
 			continue
 		case "equipment", "equip":
-			g.renderEquipment(stdout)
+			pack = &inventoryMenu{}
+			g.renderPack(stdout, pack, rawIn != nil)
 			continue
 		case "j", "challenges", "records":
 			g.renderChallenges(stdout)
@@ -199,6 +250,8 @@ func rawKeyCommand(key byte) (string, string, bool) {
 		return "load", "L", true
 	case '?':
 		return "h", "?", true
+	case '1', '2', '3':
+		return "choose " + string(key), string(key), true
 	default:
 		return "", "", false
 	}
@@ -261,4 +314,31 @@ func readEscapeCommand(in *rawInput) (string, string, error) {
 	default:
 		return "", "", nil
 	}
+}
+
+// The welcome prompt shares the gameplay reader so buffered commands are retained.
+func waitForDescent(scanner *bufio.Scanner, rawIn *rawInput) (bool, error) {
+	if rawIn != nil {
+		for {
+			key, err := rawIn.ReadByte()
+			if err == io.EOF {
+				return false, nil
+			}
+			if err != nil {
+				return false, err
+			}
+			switch key {
+			case '\r', '\n':
+				return true, nil
+			case 3, 4:
+				return false, nil
+			}
+		}
+	}
+	for scanner.Scan() {
+		if strings.TrimSpace(scanner.Text()) == "" {
+			return true, nil
+		}
+	}
+	return false, scanner.Err()
 }

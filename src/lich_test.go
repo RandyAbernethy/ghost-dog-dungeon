@@ -101,7 +101,7 @@ func TestLichChainSpendsItsAttackAndPersists(t *testing.T) {
 	rng, dog := g.rng.State, g.dog
 	var out bytes.Buffer
 	g.render(&out)
-	if symbolMapRows(t, out.String())[dog.Pos.Y][dog.Pos.X] != 'd' || !strings.Contains(out.String(), "Move onto his d tile") {
+	if symbolMapRows(t, out.String())[dog.Pos.Y][dog.Pos.X] != 'd' || !strings.Contains(strings.Join(strings.Fields(out.String()), " "), "Move onto his d tile") {
 		t.Fatal("the map and chain message must show d and explain how to free Ash")
 	}
 	loaded := saveAndReloadAdventure(t, g)

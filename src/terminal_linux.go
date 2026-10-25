@@ -8,6 +8,15 @@ import (
 	"unsafe"
 )
 
+func consoleColumns() int {
+	var size struct{ Rows, Columns, X, Y uint16 }
+	_, _, errno := syscall.Syscall6(syscall.SYS_IOCTL, os.Stdout.Fd(), syscall.TIOCGWINSZ, uintptr(unsafe.Pointer(&size)), 0, 0, 0)
+	if errno != 0 || size.Columns == 0 {
+		return 60
+	}
+	return int(size.Columns)
+}
+
 func enableRawMode(f *os.File) (func(), bool) {
 	fd := int(f.Fd())
 	state, err := getTermios(fd)
