@@ -12,8 +12,7 @@ func (g *game) processCommand(cmd string) {
 	if g.processFreeCommand(cmd) {
 		return
 	}
-	// Stage the action's messages so failed actions can keep the current turn visible.
-	previousMessages := g.messages
+	// Show this command's response, including failures that do not spend a turn.
 	g.messages = nil
 	g.turnDamage = make(map[*monster]int)
 	if g.player.BoundTurns > 0 && isMoveCommand(cmd) {
@@ -90,8 +89,6 @@ func (g *game) processCommand(cmd string) {
 			g.advanceEnemies()
 		}
 		g.finishAdventureTurn()
-	} else {
-		g.messages = append(previousMessages, g.messages...)
 	}
 }
 
@@ -99,18 +96,18 @@ func (g *game) processFreeCommand(cmd string) bool {
 	switch cmd {
 	case "save":
 		if err := g.save(); err != nil {
-			g.addMessage("Save failed: " + err.Error())
+			g.messages = []string{"Save failed: " + err.Error()}
 		} else {
 			g.addMessage("Game saved to " + g.saveFile)
 		}
 	case "load":
 		if g.saveFile == "" {
-			g.addMessage("No save file is selected; restart with --load-file path to load a run.")
+			g.messages = []string{"No save file is selected; restart with --load-file path to load a run."}
 			return true
 		}
 		loaded, err := loadGame(g.saveFile)
 		if err != nil {
-			g.addMessage("Load failed: " + err.Error())
+			g.messages = []string{"Load failed: " + err.Error()}
 		} else {
 			recordsFile := g.recordsFile
 			saveDir := g.saveDir

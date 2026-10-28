@@ -263,6 +263,25 @@ func weaponUndeadBonus(w weapon) int {
 	return 0
 }
 
+// Keep owned-weapon bonuses visible without repeating their full descriptions.
+func weaponBonusText(w weapon) string {
+	var bonuses []string
+	if bonus := weaponUndeadBonus(w); bonus != 0 {
+		bonuses = append(bonuses, fmt.Sprintf("+%d vs undead", bonus))
+	}
+	switch w.Power {
+	case powerLifeDrain:
+		bonuses = append(bonuses, "Life drain 20% (max 8 HP/hit)")
+	case powerFrostStrike:
+		bonuses = append(bonuses, "Freeze 25%")
+	case powerShatter:
+		bonuses = append(bonuses, "Ignores armor")
+	case powerChainLightning:
+		bonuses = append(bonuses, "Chain lightning 12 damage")
+	}
+	return strings.Join(bonuses, ", ")
+}
+
 func (p *player) spellWard() int {
 	return p.HeadArmor.SpellWard + p.BodyArmor.SpellWard + p.LegArmor.SpellWard
 }

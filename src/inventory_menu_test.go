@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -81,6 +82,7 @@ func TestPackActionsThroughExecutable(t *testing.T) {
 		t.Skip("compiled menu replay")
 	}
 	g := packArena(t)
+	g.player.Weapons[1].Magic = true
 	if err := g.save(); err != nil {
 		t.Fatal(err)
 	}
@@ -93,6 +95,14 @@ func TestPackActionsThroughExecutable(t *testing.T) {
 	prose := strings.Join(strings.Fields(stripANSI(string(output))), " ")
 	if !strings.Contains(prose, "You drop Rusty Knife on the floor.") || strings.Contains(prose, "Dropping takes a turn.") {
 		t.Fatal("the executable must confirm the drop without a turn-cost reminder")
+	}
+	for _, want := range []string{
+		"2. Trial spear (8-12, reach 2, +2 vs undead)",
+		"Weapon Trial spear (8-12) | Reach 2 | +2 vs undead",
+	} {
+		if !strings.Contains(prose, want) {
+			t.Fatalf("the executable must show weapon bonuses before and after equipping: missing %q", want)
+		}
 	}
 	loaded, err := loadGame(lastSavePath(t, string(output)))
 	if err != nil {
@@ -116,6 +126,7 @@ func TestCompactMapAtSupportedWidths(t *testing.T) {
 			g.prepareEpicRetaliation(m)
 			g.messages = nil // Width checks cover map chrome; the complete log is retained separately.
 			g.player.Weapon.Name = "A rather long named weapon of twilight"
+			g.player.Weapon.Magic, g.player.Weapon.Power = true, powerChainLightning
 			g.player.HeadArmor.SpellWard, g.player.HeadArmor.StrikeBonus = 4, 3
 			var out bytes.Buffer
 			g.render(&out)
@@ -128,6 +139,74 @@ func TestCompactMapAtSupportedWidths(t *testing.T) {
 				t.Fatal("map must not list absent consumables")
 			}
 		})
+	}
+}
+
+func TestWeaponBonusesOnMapAndInventoryList(t *testing.T) {
+	weapons := []struct {
+		weapon weapon
+		bonus  string
+	}{
+		{weapon{Name: "Trial blade", Min: 4, Max: 6}, ""},
+		{weapon{Name: "Blessed blade", Min: 4, Max: 6, Magic: true}, "+2 vs undead"},
+		{artifactWeapons[0], "+2 vs undead, Life drain 20% (max 8 HP/hit)"},
+		{artifactWeapons[1], "+2 vs undead, Freeze 25%"},
+		{artifactWeapons[2], "+2 vs undead, Ignores armor"},
+		{artifactWeapons[3], "+2 vs undead, Chain lightning 12 damage"},
+	}
+	for _, equipped := range weapons {
+		for _, width := range []string{"40", "60", "80"} {
+			t.Run(equipped.weapon.Name+"/"+width, func(t *testing.T) {
+				t.Setenv("COLUMNS", width)
+				g := openArena()
+				g.player.Weapon = equipped.weapon
+				g.player.Weapons = nil
+				for _, carried := range weapons {
+					g.player.Weapons = append(g.player.Weapons, carried.weapon)
+				}
+				player, dog, stats, rng := g.player, g.dog, g.stats, g.rng.State
+				player.Weapons = append([]weapon(nil), g.player.Weapons...)
+				var out bytes.Buffer
+				g.render(&out)
+				prose := strings.Join(strings.Fields(stripANSI(out.String())), " ")
+				want := fmt.Sprintf("%s (%d-%d) | Reach %d", equipped.weapon.Name, equipped.weapon.Min, equipped.weapon.Max, equipped.weapon.effectiveReach())
+				if equipped.bonus != "" {
+					want += " | " + equipped.bonus
+				}
+				_, header, found := strings.Cut(prose, "Weapon ")
+				header, _, ended := strings.Cut(header, " Ghost dog:")
+				if !found || !ended || header != want {
+					t.Fatalf("weapon header = %q, want only its active bonuses: %q", header, want)
+				}
+				for _, raw := range []bool{false, true} {
+					var pack bytes.Buffer
+					g.renderPack(&pack, &inventoryMenu{}, raw)
+					text := strings.Join(strings.Fields(stripANSI(pack.String())), " ")
+					for i, carried := range weapons {
+						bonus := ""
+						if carried.bonus != "" {
+							bonus = ", " + carried.bonus
+						}
+						row := fmt.Sprintf("%d. %s (%d-%d, reach %d%s)", i+1, stripANSI(coloredWeaponName(carried.weapon)), carried.weapon.Min, carried.weapon.Max, carried.weapon.effectiveReach(), bonus)
+						if carried.weapon == equipped.weapon {
+							row += " [equipped]"
+						}
+						if !strings.Contains(text, row) {
+							t.Errorf("raw=%v: inventory must show each weapon's own bonuses without details: missing %q", raw, row)
+						}
+					}
+					out.Write(pack.Bytes())
+				}
+				for _, line := range strings.Split(stripANSI(out.String()), "\n") {
+					if len([]rune(line)) > uiWidth() {
+						t.Fatalf("weapon bonuses exceed width %s: %s", width, line)
+					}
+				}
+				if !reflect.DeepEqual(player, g.player) || dog != g.dog || stats != g.stats || rng != g.rng.State {
+					t.Fatal("displaying weapon bonuses must not change equipment, health, turns or RNG")
+				}
+			})
+		}
 	}
 }
 

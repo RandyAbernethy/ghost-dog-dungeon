@@ -59,6 +59,10 @@ Preserve snapshot, rejection and command coverage in [save_test.go](../src/save_
 - Equip and drop messages confirm the action without repeating its turn cost; weapon and armor statistics remain.
 - Each armor entry in the inventory list shows its guard, spell ward and strike damage, including zero values,
   without requiring selection of its details.
+- Show the equipped weapon's nonzero bonuses beside its main-screen stats and every carried weapon's own bonuses
+  in the inventory list, without requiring details. Derive undead damage from `weaponUndeadBonus`; summarize active
+  Artifact powers (life drain, freezing, armor piercing and chain lightning). Omit absent bonuses and zero placeholders.
+  Keep base damage, reach and armor strike bonuses separate, and wrap the added text to the terminal width.
 - Use the same stable equipment/consumable numbering as advanced commands, even when zero-stock consumables are hidden.
   Confirmed actions go through `processCommand`; selecting, reading, cancelling and invalid selections remain free.
   Confirmed actions close the menu; menus are never serialized or restored by loading.
@@ -74,6 +78,11 @@ Preserve snapshot, rejection and command coverage in [save_test.go](../src/save_
   or continuation indent; ignore ANSI colors when counting columns. Preserve full snapshot-path announcements on
   one line for copying. Store complete original messages and wrap only during rendering, preserving order and RNG.
   Size queries belong in the OS terminal files and consume no gameplay randomness.
+- Keep each successful turn's full activity in action order. Failed commands show only their own feedback,
+  replacing earlier activity without advancing turns, actors, HP, effects or RNG. Free interaction responses,
+  such as gift choices, also show their own messages. Reading screens and successful saves retain the latest
+  activity; save/load preserves that activity exactly, with the usual save/load announcement. Save/load errors
+  replace earlier activity with their failure message.
 
 Preserve command-loop, compiled save/load, cancellation, width and raw-menu coverage in
 [inventory_menu_test.go](../src/inventory_menu_test.go) and Linux PTY coverage in

@@ -63,8 +63,10 @@ Start with `src/main.go` for startup, `src/commands.go` for actions, `src/render
   fountains and derive symbols by entity kind from `src/glyphs.go`; do not serialize duplicate glyph fields.
 - Successful gameplay actions spend one turn. Reading event choices, reading the book, escaping a command screen,
   saving, and failed actions do not.
-- Keep the complete current turn's log in action order, beginning with the player's action. Replace it only when
-  another action spends a turn; never truncate busy turns.
+- Keep each successful gameplay turn's complete log in action order, beginning with the player's action; never
+  truncate busy turns. A command that spends no turn and produces feedback replaces the displayed activity with
+  its own response, rather than replaying prior actions. Reading screens and successful saves retain the latest
+  activity; loading restores the saved activity. Failed commands never advance gameplay or RNG.
 - Save/load must preserve the full dungeon, RNG, rewards, and challenge progress exactly, without repairing,
   rerolling, or renewing one-time rewards. Use one list of secret-room roots.
 - Use `g.current()` for the active area. The crypt is saved separately from the ten main floors; while inside it,

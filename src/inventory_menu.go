@@ -25,7 +25,11 @@ type packEntry struct {
 func (g *game) packEntries() []packEntry {
 	var entries []packEntry
 	for i, w := range g.player.Weapons {
-		entries = append(entries, packEntry{i + 1, fmt.Sprintf("%s (%d-%d, reach %d)", coloredWeaponName(w), w.Min, w.Max, w.effectiveReach()), weaponDescription(w), compareWeapon(w, g.player.Weapon), "equip", w == g.player.Weapon})
+		bonuses := weaponBonusText(w)
+		if bonuses != "" {
+			bonuses = ", " + bonuses
+		}
+		entries = append(entries, packEntry{i + 1, fmt.Sprintf("%s (%d-%d, reach %d%s)", coloredWeaponName(w), w.Min, w.Max, w.effectiveReach(), bonuses), weaponDescription(w), compareWeapon(w, g.player.Weapon), "equip", w == g.player.Weapon})
 	}
 	for i, a := range g.player.Armors {
 		entries = append(entries, packEntry{len(g.player.Weapons) + i + 1, fmt.Sprintf("%s (%s): %d guard, %d spell ward, %+d strike damage", coloredArmorName(a), slotLabel(a.Slot), a.Defense, a.SpellWard, a.StrikeBonus), armorDescription(a), compareArmor(a, g.player.armorForSlot(a.Slot)), "equip", a == g.player.armorForSlot(a.Slot)})

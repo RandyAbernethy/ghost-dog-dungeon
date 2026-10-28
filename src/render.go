@@ -20,7 +20,11 @@ func (g *game) render(w io.Writer) {
 		uiText(w, fmt.Sprintf("%s — %s", lvl.Theme, lvl.Layout))
 	}
 	uiText(w, fmt.Sprintf("HP %d/%d | Armor %d (block %d) | Turns %d", g.player.HP, g.player.MaxHP, g.player.armorDefense(), g.player.armorBlock(), g.stats.Turns))
-	uiText(w, fmt.Sprintf("Weapon %s (%d-%d) | Reach %d", g.player.Weapon.Name, g.player.Weapon.Min, g.player.Weapon.Max, g.player.Weapon.effectiveReach()))
+	weaponLine := fmt.Sprintf("Weapon %s (%d-%d) | Reach %d", g.player.Weapon.Name, g.player.Weapon.Min, g.player.Weapon.Max, g.player.Weapon.effectiveReach())
+	if bonuses := weaponBonusText(g.player.Weapon); bonuses != "" {
+		weaponLine += " | " + bonuses
+	}
+	uiText(w, weaponLine)
 	var bonuses []string
 	if ward := g.player.spellWard(); ward != 0 {
 		bonuses = append(bonuses, fmt.Sprintf("Spell ward %d", ward))

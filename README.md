@@ -193,6 +193,8 @@ use a compact 60-column fallback; set `COLUMNS` to override it. The map itself r
 
 Successful gameplay actions spend one turn. Reading screens, viewing choices, saving, cancelling a command screen, and
 failed actions do not. The event log shows the complete current turn, beginning with your action.
+A failed command replaces the activity display with its own feedback, such as "You have no fire scrolls.", so
+earlier attacks are not replayed. Reading screens retains the latest activity, and saves preserve it.
 
 Attempting to move when constrained costs one turn. Most non-movement/attack actions can be completed (e.g. drink a
 potion or engage warding) while movement is constrained.
@@ -214,6 +216,8 @@ uses it. **d** drops a selected unequipped item or one consumable. **i** returns
 Pickup messages show the equipment name and armor slot, followed by stat differences from your equipped item
 on a separate indented line.
 Full attributes and special powers are available in inventory.
+The main screen shows the equipped weapon's nonzero bonuses, and each weapon in the inventory list shows its own.
+These include `+2 vs undead` for magical weapons and compact Artifact power summaries; weapons without bonuses show none.
 Each armor piece in the inventory list shows guard, spell ward, and strike damage, including zero bonuses.
 Each carried consumable shows its use key beside its count and map symbol (for example, `[use p]` for a Healing Potion).
 Reading, selecting, cancelling, and failed actions are free. A successful equip, use, or drop spends one turn.

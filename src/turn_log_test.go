@@ -105,31 +105,76 @@ func TestEachSuccessfulActionReplacesThePreviousTurnLog(t *testing.T) {
 	}
 }
 
-func TestFreeAndFailedActionsKeepCurrentTurnAvailable(t *testing.T) {
+func TestFailedActionsReplaceActivityWithoutSpendingTurns(t *testing.T) {
 	g := openArena()
 	g.processCommand(".")
 	current := append([]string(nil), g.messages...)
-	g.player.Potions = 0
+	g.player.Potions, g.player.FireScrolls = 0, 0
 	g.current().Tiles[5][4] = '#'
 	g.current().Events = []floorEvent{testFriendlyGhost(pos{6, 5})}
-	beforePlayer, beforeStats, beforeRNG := g.player, g.stats, g.rng.State
-	for _, cmd := range []string{"a", "p", "equip 999", "drop 1", "unknown", "y", "h"} {
-		g.processCommand(cmd)
-		if !reflect.DeepEqual(current, g.messages[:len(current)]) || !reflect.DeepEqual(g.player, beforePlayer) || g.stats != beforeStats || g.rng.State != beforeRNG {
-			t.Fatalf("free command %q must keep the current log and leave game time unchanged", cmd)
+	beforePlayer, beforeDog, beforeStats, beforeRNG := g.player, g.dog, g.stats, g.rng.State
+	for _, tc := range []struct{ command, message string }{
+		{"a", "Stone blocks your path."},
+		{"f", "You have no fire scrolls."},
+		{"p", "You have no healing potions."},
+		{"equip 999", "Choose an equipment number shown in your inventory."},
+		{"drop 1", "You cannot drop an equipped item. Equip something else first."},
+		{"unknown", "Unknown command. Press h for help."},
+		{"f", "You have no fire scrolls."},
+	} {
+		g.processCommand(tc.command)
+		if !reflect.DeepEqual(g.messages, []string{tc.message}) || !reflect.DeepEqual(g.player, beforePlayer) || g.dog != beforeDog || g.stats != beforeStats || g.rng.State != beforeRNG {
+			t.Fatalf("failed command %q must show only its feedback and leave gameplay unchanged: %q", tc.command, g.messages)
 		}
+		var screen bytes.Buffer
+		g.render(&screen)
+		if strings.Contains(screen.String(), current[0]) {
+			t.Fatal("a failed command must not replay the previous action")
+		}
+	}
+	g.processCommand("y")
+	if len(g.messages) == 0 || !strings.HasPrefix(g.messages[0], "The ghost of a friendly villager offers one gift.") || !reflect.DeepEqual(g.player, beforePlayer) || g.stats != beforeStats || g.rng.State != beforeRNG {
+		t.Fatal("reading gift choices must show only the offer without advancing gameplay")
 	}
 	beforeLog := append([]string(nil), g.messages...)
 	var out bytes.Buffer
-	if err := g.loop(strings.NewReader("i\nc\nm\nbook\nequipment\nchallenges\n\x1b\n"), &out); err != nil {
+	if err := g.loop(strings.NewReader("h\ni\nc\nm\nbook\nequipment\nchallenges\n\x1b\n"), &out); err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(beforeLog, g.messages) || !reflect.DeepEqual(g.player, beforePlayer) || g.stats != beforeStats || g.rng.State != beforeRNG {
-		t.Fatal("reading screens and Esc should preserve the same complete turn")
+	if !reflect.DeepEqual(beforeLog, g.messages) || !reflect.DeepEqual(g.player, beforePlayer) || g.dog != beforeDog || g.stats != beforeStats || g.rng.State != beforeRNG {
+		t.Fatal("reading screens and Esc should preserve the latest activity")
 	}
 	g.processCommand(".")
 	if len(g.messages) != 1 || g.messages[0] != current[0] || g.stats.Turns != beforeStats.Turns+1 {
-		t.Fatal("the next real turn should also clear free-command feedback")
+		t.Fatal("the next real turn must replace the free-command feedback")
+	}
+}
+
+func TestSaveLoadFailuresReplaceActivityWithoutSpendingTurns(t *testing.T) {
+	for _, tc := range []struct{ name, command, prefix string }{
+		{"save", "save", "Save failed:"},
+		{"load", "load", "Load failed:"},
+		{"load without snapshot", "load", "No save file is selected;"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			g := openArena()
+			g.processCommand(".")
+			missing := filepath.Join(t.TempDir(), "missing")
+			switch tc.name {
+			case "save":
+				g.saveDir = missing
+			case "load":
+				g.saveFile = missing
+			}
+			player, dog, stats, rng := g.player, g.dog, g.stats, g.rng.State
+			g.processCommand(tc.command)
+			if len(g.messages) != 1 || !strings.HasPrefix(g.messages[0], tc.prefix) {
+				t.Fatalf("failed %s must show only its own response: %q", tc.name, g.messages)
+			}
+			if !reflect.DeepEqual(g.player, player) || g.dog != dog || g.stats != stats || g.rng.State != rng {
+				t.Fatal("a failed save/load command must not advance gameplay")
+			}
+		})
 	}
 }
 
@@ -218,6 +263,45 @@ func TestCompleteTurnLogThroughRealExecutableAndSavedGame(t *testing.T) {
 		if strings.Contains(screen, "Turn 81 events (") {
 			assertWholeTurnRendered(t, loaded, screen)
 		}
+	}
+}
+
+func TestFailedCommandAfterCombatThroughExecutableAndSaveLoad(t *testing.T) {
+	if testing.Short() {
+		t.Skip("compiled failed-command replay")
+	}
+	g := crowdedLogArena()
+	g.saveDir = t.TempDir()
+	g.processCommand("d")
+	g.player.FireScrolls = 0
+	if err := g.save(); err != nil {
+		t.Fatal(err)
+	}
+	cmd := gameCommand(t, "--load-file", g.saveFile, "--save-file-path", g.saveDir)
+	cmd.Stdin = strings.NewReader("f\nsave\nload\nf\nsave\nquit\n")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("failed-command replay: %v\n%s", err, output)
+	}
+	screens := strings.Split(string(output), "=== Ghost Dog Dungeon:")
+	if len(screens) < 3 {
+		t.Fatal("the executable must display combat, then the failed command")
+	}
+	assertWholeTurnRendered(t, g, screens[1])
+	for _, screen := range screens[2:] {
+		if !strings.Contains(screen, "You have no fire scrolls.") || strings.Contains(screen, "You strike ") || strings.Contains(screen, "Ghost dog tears into ") || strings.Contains(screen, "fires a barbed arrow") {
+			t.Fatal("failure screens must show the failed command without replaying combat")
+		}
+	}
+	loaded, err := loadGame(lastSavePath(t, string(output)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(loaded.messages, []string{"You have no fire scrolls."}) {
+		t.Fatalf("save/load must preserve the latest failure response: %q", loaded.messages)
+	}
+	if !reflect.DeepEqual(loaded.player, g.player) || loaded.dog != g.dog || !reflect.DeepEqual(loaded.levels, g.levels) || loaded.stats != g.stats || loaded.rng.State != g.rng.State {
+		t.Fatal("failed commands and save/load must not advance combat, health, turns or RNG")
 	}
 }
 
