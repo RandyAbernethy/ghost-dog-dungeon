@@ -31,8 +31,8 @@ func TestCryptEntranceAndFarExitAreOneWayAndPersist(t *testing.T) {
 	}
 	rng := g.rng.State
 	g.processCommand("k")
-	if !g.crypt.EntranceRevealed || g.inCrypt || g.stats.Turns != 1 || g.rng.State != rng || !strings.Contains(strings.Join(g.messages, "\n"), "entrance seals behind you") {
-		t.Fatal("search must reveal and explain the one-way entrance")
+	if !g.crypt.EntranceRevealed || g.inCrypt || g.stats.Turns != 1 || g.rng.State != rng || !strings.Contains(strings.Join(g.messages, "\n"), `You uncover a secret door, step through { to enter. A message is scratched into the stone here, "Beware the maze of the Under Lich".`) {
+		t.Fatal("search must reveal the entrance with its scratched warning")
 	}
 	g = saveCryptAndReload(t, g)
 	g.player.ShieldTurns = 3
@@ -443,9 +443,30 @@ func TestCryptRestrictionsAreDiscoveredThroughPlay(t *testing.T) {
 	if !strings.Contains(text, "Darkness limits sight to three tiles; existing wards fade.") {
 		t.Fatal("entry must announce sight and fading wards")
 	}
-	for _, unwanted := range []string{"Crypt rules:", "no fountains", "There are no fountains", "consumed without effect"} {
+	if !strings.Contains(text, "You enter "+cryptName+". The stone door seals behind you.") {
+		t.Fatal("entry must describe the sealing door")
+	}
+	for _, unwanted := range []string{"Crypt rules:", "no fountains", "There are no fountains", "consumed without effect", "Only the far secret exit", "The entrance behind you is sealed.", "Here:"} {
 		if strings.Contains(text, unwanted) {
 			t.Errorf("entry reveals unwanted rules: %q", unwanted)
 		}
+	}
+}
+
+func TestCryptHintsStayLocal(t *testing.T) {
+	g := cryptArena()
+	g.inCrypt = true
+	g.player.Pos = g.crypt.Floor.Start
+	if hint := g.contextHint(); hint != "" {
+		t.Fatalf("the sealed entrance must not produce a recurring hint: %q", hint)
+	}
+	g.crypt.Traps = []cryptTrap{{Kind: trapPit, Pos: pos{3, 5}, Discovered: true}}
+	if hint := g.contextHint(); !strings.Contains(hint, "collapsing pit") || !strings.Contains(hint, "press y") {
+		t.Fatalf("nearby discovered traps must retain their interaction hint: %q", hint)
+	}
+	g.crypt.ExitRevealed = true
+	g.player.Pos = pos{35, 5}
+	if hint := g.contextHint(); !strings.Contains(hint, "secret door }") {
+		t.Fatalf("the nearby exit must retain its hint: %q", hint)
 	}
 }

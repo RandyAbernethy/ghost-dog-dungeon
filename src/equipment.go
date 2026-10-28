@@ -22,7 +22,7 @@ func weaponDescription(w weapon) string {
 	case "Iron Spear":
 		return "A sturdy reach weapon that hits a little harder every swing."
 	case "Chapel Mace":
-		return "Blessed iron that caves in skulls better than your starting knife."
+		return "A heavy mace of blessed iron."
 	case "Hooked Glaive":
 		return "A polearm with a wicked bite, good for steady deep-floor damage."
 	case "Battle Axe":
@@ -40,7 +40,7 @@ func weaponDescription(w weapon) string {
 	case "Dragontooth Pike":
 		return "A savage relic with enough force to carry you into the middle depths."
 	case "Starforged Hammer":
-		return "A dense hammer whose star-forged head breaks through mid-dungeon foes."
+		return "A dense hammer with a head of star-forged metal."
 	case "Emberbrand":
 		return "A fire-rune blade whose magic burns brighter against undead foes."
 	case "Tempest Spear":
@@ -107,7 +107,7 @@ func armorDescription(a armor) string {
 	case "Nightstride Boots":
 		return "Quiet, heavy boots built for long marches through murderous halls."
 	case "Sunplate Cuirass":
-		return "Radiant plate that makes the last floor feel much less final."
+		return "Radiant plate that gleams even in the dungeon's darkness."
 	case "Dreadmark Mantle":
 		return "A reinforced mantle that keeps deep-floor blows from landing cleanly."
 	case "Gloamrunner Boots":
@@ -121,7 +121,7 @@ func armorDescription(a armor) string {
 	case "Graveward Helm":
 		return "A sealed helm that holds firm against both blades and curses."
 	case "Ruinplate Vest":
-		return "A late-floor cuirass built from plates salvaged from a fallen citadel."
+		return "A cuirass built from plates salvaged from a fallen citadel."
 	case "Mourner's Helm":
 		return "A deep-floor helm that guards your head through the worst encounters."
 	case "Starforged Cuirass":
@@ -314,7 +314,7 @@ func (g *game) equipCommand(cmd string) bool {
 			return false
 		}
 		g.player.Weapon = w
-		g.addMessage(fmt.Sprintf("You equip %s: %d-%d damage, reach %d. Swapping equipment takes a turn.", coloredWeaponName(w), w.Min, w.Max, w.effectiveReach()))
+		g.addMessage(fmt.Sprintf("You equip %s: %d-%d damage, reach %d.", coloredWeaponName(w), w.Min, w.Max, w.effectiveReach()))
 		if w.Power != "" {
 			g.addMessage(gearPowerDescription(w.Power))
 		}
@@ -331,7 +331,7 @@ func (g *game) equipCommand(cmd string) bool {
 				g.player.BoundTurns, g.player.Binding = 0, ""
 			}
 		}
-		g.addMessage(fmt.Sprintf("You equip %s. %s Swapping equipment takes a turn.", a.Name, armorTraits(a)))
+		g.addMessage(fmt.Sprintf("You equip %s. %s", a.Name, armorTraits(a)))
 	}
 	return true
 }
@@ -380,7 +380,7 @@ func (g *game) dropCommand(cmd string) bool {
 	}
 	dropped.Pos = g.player.Pos
 	g.current().Items = append(g.current().Items, dropped)
-	g.addMessage(fmt.Sprintf("You drop %s on the floor. Dropping takes a turn.", dropped.Name))
+	g.addMessage(fmt.Sprintf("You drop %s on the floor.", dropped.Name))
 	return true
 }
 

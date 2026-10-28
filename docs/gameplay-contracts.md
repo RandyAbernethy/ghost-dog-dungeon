@@ -56,6 +56,7 @@ Preserve snapshot, rejection and command coverage in [save_test.go](../src/save_
   Start the comparison sentence on its own line with a two-space indent, wrapping at 80 visible columns.
   Preserve the stored message and apply this layout during rendering.
   Omit repeated absolute attributes, power descriptions and inventory-key reminders; full details remain in inventory.
+- Equip and drop messages confirm the action without repeating its turn cost; weapon and armor statistics remain.
 - Each armor entry in the inventory list shows its guard, spell ward and strike damage, including zero values,
   without requiring selection of its details.
 - Use the same stable equipment/consumable numbering as advanced commands, even when zero-stock consumables are hidden.
@@ -87,7 +88,8 @@ Preserve command-loop, compiled save/load, cancellation, width and raw-menu cove
 - Floor legends and inspection show only physical categories (scroll, orb, charm, potion, weapon, armor, stone), never
   exact names, rarity, statistics, effects, chapter numbers, story text or titles. Monster-drop announcements also
   conceal these identities. Pickup identifies the exact item; carried inventory and explicit friendly-ghost offers
-  retain full details. Dropped items again use category-only floor descriptions; no identification memory or new save
+  retain full details. Consumable pickup messages identify the item and its use key without explaining effects,
+  duration, targeting or healing amounts. Dropped items again use category-only floor descriptions; no identification memory or new save
   fields are needed. Loading and inspection reveal nothing
   extra and cannot change gameplay state or RNG. Help lists each physical symbol once.
 - Reserve `F` and `f` for fresh and spent fountains, `D`/`d` for Ghost Dog, and `X` for Epic attack warnings.
@@ -128,6 +130,13 @@ Clue accessibility, parent ordering, wall occlusion and persistence are covered 
 
 ## Ordinary balance and placement
 
+- Barrow Archers require a straight clear line of `.` terrain tiles to the player before damaging the player or
+  Ghost Dog, including adjacent companion attacks. Check the active area through `g.current()`, before attack RNG.
+  When blocked, they may move normally but cannot attack in that same turn. Preserve their five-tile arrow range,
+  40% firing chance, physical damage and defenses; this restriction does not change Gloom Archer behavior.
+  Cover clear and blocked cardinal, diagonal and oblique lines, companion targeting and saved continuation in
+  [archer_test.go](../src/archer_test.go).
+
 - Ordinary monster counts vary within calibrated floor difficulty budgets. Keep ordinary budgets and encounter
   totals strictly increasing with depth, and cap ranged attackers, disabling powers, and duplicate species.
 - Preserve the calibrated health, damage, and difficulty bounds in [difficulty.go](../src/difficulty.go) and the
@@ -156,7 +165,8 @@ test assertions as the balance baseline rather than an unspecified previous vers
   Only present companions can be targeted or receive passive healing. Ash stays anchored when the player leaves;
   matching coordinates on another floor, blink and recall cannot release or move him.
 - Living Ash remains chained when the Lich dies, until the player reaches him. Dispersion clears the physical chain
-  and counts a fall once; existing explicit revival rules still apply. Leaving Ash chained behind is an escape alone
+  and counts a fall once; existing explicit revival rules still apply. The death message describes Ash's outline
+  breaking into silver mist without explaining revival methods. Leaving Ash chained behind is an escape alone
   in victory text, ending memories, the chronicle, and safe-companion record eligibility.
 - Saves persist chains and their anchor exactly. Do not repair, reroll, revive or rebalance anything on load.
   Reject invalid chained-dog anchors with useful errors.
@@ -213,6 +223,10 @@ Preserve the chance-boundary sweep, rescue, inactivity, travel, targeting, recor
   rendering, failed actions and saves cannot advance it. Freezing/stunning delays it; fleeing or death clears it.
   Ash spends his action dodging if threatened, avoids marked movement destinations, and never dodges while inactive.
   Blink excludes warning tiles for both companions. Pending warnings survive save/load exactly.
+- Epic awakening and rage log messages describe the creature's attention and anger without explaining its combat
+  routine or repeating the rage count. Attack preparation names the strike and says "Move clear." Retaliation also
+  warns that the strike will land in two actions. These log messages do not explain map symbols; the rage gauge,
+  warning markers and countdown remain visible.
 - Gear powers require equipped pieces and must not revive Ghost Dog. God protection is powerful but not invulnerability.
 - Defeated Epics guarantee one additional elite treasure at their final position, independently of linked rooms:
   God armor, an Artifact weapon, a Starfire Orb, a Sun Orb, Phoenix Ash, or Ghost Dog Recall. Avoid duplicate equipment.
@@ -233,7 +247,12 @@ and a lethal result from reckless play. Generation, ordinary budgets and equipme
 
 ## Events and movement effects
 
-- The gift-giving event is displayed as "ghost of a friendly villager" in prompts, help and map legends.
+- Help, map legends and gift offers identify the "ghost of a friendly villager". Arrival says only
+  "A villager's ghost waits nearby; press y to speak with it." without revealing gift choices.
+- Lever arrival says "A lever stands nearby; press y to pull it." without explaining the shortcut.
+- Shrine arrival gives only the glow and interaction key. Healing restores 6 player HP and 10 HP to a present
+  Ghost Dog, capped at maximum health. Describe healing only for recipients whose HP increases. If neither can
+  benefit, say "The shrine glows softly, but you feel no change." and leave the shrine unused without spending a turn.
 
 - Fountain arrival prompts say only "A healing fountain flows nearby. Press v to drink."
 - Fountains refill on leaving their floor. Event gifts and shrine blessings are one-use and stay used after revisiting
@@ -241,8 +260,10 @@ and a lethal result from reckless play. Generation, ordinary budgets and equipme
 - Ash's keepsakes restore 8 HP, capped at maximum health, to a freed, living Ghost Dog within two tiles of the keepsake
   and grant one warding charm. Activation spends one turn; saving or revisiting cannot renew either reward.
   The arrival prompt identifies only the faded collar and interaction key, without revealing rewards:
-  "Ash's keepsake, a faded collar, lies nearby; press y (interact)."
+  "A faded collar lies nearby; press y to examine it." Ash's reaction reveals whose collar it is.
 - Blink Stones exclude all secret chambers, including discovered and additional rooms, and move active companions together.
+  Ward and blink success messages describe the magic without duration or safest-placement explanations. Name Ash
+  only when he is present for the ward or accompanies the blink; use solo wording otherwise.
 - Track whether a movement hold comes from webs, ice, silver chains, or rift magic; the log and status display must
   name the actual effect. Preserve the one-movement-turn cost and Oracle Crown immunity, including save/load and equipment.
 
@@ -265,7 +286,10 @@ gift offers live in [ghost_gifts.go](../src/ghost_gifts.go).
   one interaction turn; broken sigils, partial progress and terminal states persist.
 - Completing an objective awards its saved consumable directly once through ordinary collection. No interaction,
   revisit, rendering or loading can reroll or duplicate it. Reading rules and interacting with spent markers are free.
-  Arrival prompts follow existing proximity boundaries. Record successful completion in the adventure state.
+  Arrival prompts follow existing proximity boundaries and give only the interaction control, without
+  explaining timers, resolve, abandonment or rewards. Record successful completion in the adventure state.
+- Vigil log entries describe the promise, companionship, danger and abandonment without explaining turn or resolve
+  counters. Spirit and sigil completions have distinct story messages, followed by ordinary reward pickup identification.
 - Ash's personality moments require him freed and alive, are one-time by ID, and change only narrative state and the
   current turn's log. Ambient moments require no living enemy within six tiles of either companion, at most one moment
   on that floor, and a fifteen-turn cooldown. Contextual rescue, fountain, keepsake and revival moments remain tied to
@@ -290,9 +314,11 @@ Keep narrative, save/load, free-action, one-time reward and executable coverage 
 - Every new dungeon receives one extra crypt, saved separately from the ten main levels. Generate it once with the
   saved RNG after ordinary generation. Select two distinct concealed wall doors on one main floor 4–7, away from
   secret-room footprints and existing features.
-- Searching beside the entrance reveals it and warns that it seals behind the player. Fountain and magic
-  restrictions are left for players to discover; no recurring crypt-rules banner is shown. Entry announces only
-  three-tile sight and fading wards.
+- Searching beside the entrance reveals it with a scratched warning, “Beware the maze of the Under Lich”,
+  and the control to enter. Nearby hints retain that story warning without explaining travel restrictions.
+  Travel, fountain and magic restrictions are left for players to discover; no recurring crypt-rules banner is
+  shown. Entry describes the stone door sealing, then three-tile sight and fading wards. Do not repeat the sealed
+  entrance as a map hint; retain nearby exit and trap hints.
   Walking through spends one turn, permanently seals that entrance, clears active wards, and moves only a freed,
   living companion. Leaving the parent floor refills its fountains and abandons any started spirit vigil. The far
   exit is discovered by searching beside it, then stepping through returns to the other parent-floor door. Ordinary
@@ -315,6 +341,8 @@ Keep narrative, save/load, free-action, one-time reward and executable coverage 
   unspent trap. Known or spent traps do not reroll. A discovered trap can be disarmed with one interaction turn;
   discovery alone does not make stepping on it safe. Only player movement triggers traps, once each, before the
   enemy turn. Repulsion never places the player on an occupied tile or triggers another trap recursively.
+- Pit trigger and escape messages describe struggling for a handhold and hauling out; gas describes choking and
+  burning lungs. Do not explain turn costs or poison duration in these action messages.
 - Pit holds cost one attempted move and survive equipment changes; Oracle Crown does not negate a physical pit.
   Magical ice/hex effects retain their ordinary immunity rules. Gas causes three two-damage ticks including the
   trigger action, after enemies; it persists through the exit and saving, and only successful actions advance it.

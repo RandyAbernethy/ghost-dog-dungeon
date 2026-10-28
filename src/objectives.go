@@ -48,9 +48,9 @@ func (o *objectiveRoom) marker(p pos) rune {
 
 func (o *objectiveRoom) instructions() string {
 	if o.Kind == objectiveSpirit {
-		return "A lost spirit waits here. Press y beside S to begin a three-turn vigil. Keep yourself or living Ash within three tiles; adjacent enemies erode its three points of resolve. Leaving the floor abandons it."
+		return "A lost spirit waits here. Press y beside S to keep it company."
 	}
-	return "Three ritual sigils glow here. Stand on each O and press y to break it, spending one turn per sigil. Break all three to earn a reward."
+	return "Three ritual sigils glow here. Stand on O and press y to break a sigil."
 }
 
 // Add at most one optional objective, using existing open terrain and a reward
@@ -121,11 +121,11 @@ func (g *game) interactObjective() bool {
 	}
 	if o.Kind == objectiveSpirit && distance(g.player.Pos, o.Pos) <= 1 {
 		if o.Started {
-			g.addMessage(fmt.Sprintf("The vigil is underway: %d/3 turns, resolve %d/3. Stay close and protect the spirit.", o.Progress, o.Integrity))
+			g.addMessage("The vigil continues. Stay close and protect the spirit.")
 			return false
 		}
 		o.Started, o.StartedTurn = true, g.stats.Turns+1
-		g.addMessage("You promise to protect the lost spirit. The three-turn vigil begins after this turn.")
+		g.addMessage("You promise to stay with the lost spirit and protect it.")
 		return true
 	}
 	if o.Kind == objectiveSigils {
@@ -161,13 +161,13 @@ func (g *game) advanceObjective() {
 			(g.dog.active() && distance(g.dog.Pos, o.Pos) <= 3)
 		if g.inCrypt || depth != g.currentLevel || !near {
 			o.Failed = true
-			g.addMessage("The abandoned spirit fades. Its vigil has ended without a reward.")
+			g.addMessage("The abandoned spirit fades into the darkness.")
 			continue
 		}
 		for _, m := range lvl.Monsters {
 			if m.HP > 0 && distance(m.Pos, o.Pos) <= 1 {
 				o.Integrity--
-				g.addMessage(fmt.Sprintf("Nearby enemies trouble the spirit. Resolve: %d/3.", o.Integrity))
+				g.addMessage("The spirit's light falters as enemies draw near.")
 				break
 			}
 		}
@@ -177,7 +177,7 @@ func (g *game) advanceObjective() {
 			continue
 		}
 		o.Progress++
-		g.addMessage(fmt.Sprintf("You keep the spirit company (%d/3 turns).", o.Progress))
+		g.addMessage("You keep the spirit company.")
 		if o.Progress == 3 {
 			g.completeObjective(o)
 		}
@@ -190,7 +190,11 @@ func (g *game) completeObjective(o *objectiveRoom) {
 	}
 	o.Completed = true
 	g.adventure.ObjectivesDone = append(g.adventure.ObjectivesDone, string(o.Kind))
-	g.addMessage("Objective complete: " + string(o.Kind) + ". You receive " + o.Reward.Name + ".")
+	if o.Kind == objectiveSpirit {
+		g.addMessage("The vigil ends. The spirit is at peace.")
+	} else {
+		g.addMessage("The last sigil goes dark. The ritual is broken.")
+	}
 	g.collectItem(o.Reward)
 }
 

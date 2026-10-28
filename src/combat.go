@@ -74,7 +74,7 @@ func (g *game) damageMonsterPiercing(m *monster, damage int, verb string, pierci
 	if m.HP > 0 {
 		if epicMonster(m.Kind) && dealt > 0 {
 			m.Rage = min(epicRageLimit, m.Rage+1)
-			g.addMessage(fmt.Sprintf("%s rage %d/%d. At full rage it prepares a two-action retaliation.", m.Name, m.Rage, epicRageLimit))
+			g.addMessage(m.Name + " grows more enraged.")
 		}
 		reaction, stuns := monsterDamageReaction(m.Name, verb, dealt, m.MaxHP)
 		if stuns {
@@ -235,6 +235,11 @@ func (g *game) monsterTurn(m *monster) {
 			g.addMessage("The Ironroot Brute pauses to pull its roots from the stone.")
 			return
 		}
+	}
+	// A Barrow Archer must see the player before attacking either companion.
+	if m.Kind == monsterBarrowArcher && !g.clearFloorLine(m.Pos, g.player.Pos) {
+		g.moveMonster(m)
+		return
 	}
 	if g.tryLichChain(m) {
 		return
@@ -492,7 +497,7 @@ func (g *game) hurtDog(damage int, source string) {
 		g.dog.Chained, g.dog.ChainFloor = false, 0
 		g.stats.GhostDogFalls++
 		g.dogFocus = nil
-		g.addMessage("The Ghost Dog can only be freed now by a magic spell or by killing the Dread Lich")
+		g.addMessage("Ash's outline breaks apart into silver mist.")
 	}
 }
 

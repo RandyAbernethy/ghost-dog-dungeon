@@ -30,7 +30,7 @@ func (kind bindingKind) label() string {
 func (kind bindingKind) blockedMessage() string {
 	switch kind {
 	case bindingPit:
-		return "You climb out of the collapsed pit, spending a movement turn."
+		return "You haul yourself out of the collapsed pit."
 	case bindingWebs:
 		return "Sticky webs hold you in place for a turn."
 	case bindingIce:

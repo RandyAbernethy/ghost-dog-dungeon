@@ -7,7 +7,7 @@ const (
 
 func (g *game) tryLichChain(m *monster) bool {
 	if m.Kind != monsterBoss || m.HP <= 0 || g.inCrypt || !g.dog.active() ||
-		distance(m.Pos, g.dog.Pos) > lichChainRange || !g.clearEpicLine(m.Pos, g.dog.Pos) {
+		distance(m.Pos, g.dog.Pos) > lichChainRange || !g.clearFloorLine(m.Pos, g.dog.Pos) {
 		return false
 	}
 	if g.rng.Intn(100) >= lichChainChance {

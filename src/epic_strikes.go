@@ -50,13 +50,13 @@ func (g *game) prepareEpicStrike(m *monster) {
 	if g.dogPresent() && distance(m.Pos, g.dog.Pos) < distance(m.Pos, aim) {
 		aim = g.dog.Pos
 	}
-	if distance(m.Pos, aim) > 2 || !g.clearEpicLine(m.Pos, aim) {
+	if distance(m.Pos, aim) > 2 || !g.clearFloorLine(m.Pos, aim) {
 		return
 	}
 	var tiles []pos
 	add := func(p pos) {
 		if g.inBounds(p) && p != m.Pos && g.current().Tiles[p.Y][p.X] != '#' &&
-			g.clearEpicLine(m.Pos, p) && !containsPosition(tiles, p) {
+			g.clearFloorLine(m.Pos, p) && !containsPosition(tiles, p) {
 			tiles = append(tiles, p)
 		}
 	}
@@ -121,31 +121,7 @@ func (g *game) prepareEpicStrike(m *monster) {
 		return
 	}
 	m.StrikeTiles = tiles
-	g.addMessage(fmt.Sprintf("%s prepares %s! Red X tiles will be struck on its next active turn. Move clear; the marked tiles will not follow you.", m.Name, epicStrikeName(m.Kind)))
-}
-
-// Walls stop both warning and damage; hidden chambers remain concealed.
-func (g *game) clearEpicLine(from, to pos) bool {
-	dx, dy := abs(to.X-from.X), -abs(to.Y-from.Y)
-	sx, sy := sign(to.X-from.X), sign(to.Y-from.Y)
-	err := dx + dy
-	for {
-		if !g.inBounds(from) || g.current().Tiles[from.Y][from.X] == '#' {
-			return false
-		}
-		if from == to {
-			return true
-		}
-		e2 := 2 * err
-		if e2 >= dy {
-			err += dy
-			from.X += sx
-		}
-		if e2 <= dx {
-			err += dx
-			from.Y += sy
-		}
-	}
+	g.addMessage(fmt.Sprintf("%s prepares %s! Move clear.", m.Name, epicStrikeName(m.Kind)))
 }
 
 func (g *game) resolveEpicStrike(m *monster) bool {

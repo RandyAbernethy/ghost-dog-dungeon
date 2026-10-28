@@ -55,9 +55,20 @@ func TestRageUsesAllDamageSourcesAndTwoActionEscape(t *testing.T) {
 			if m.Rage != epicRageLimit {
 				t.Fatal("every damaging source must build rage")
 			}
+			if strings.Count(strings.Join(g.messages, "\n"), m.Name+" grows more enraged.") != 4 {
+				t.Fatalf("each damaging hit must describe growing anger: %q", g.messages)
+			}
+			var gauge bytes.Buffer
+			g.renderEpicWarnings(&gauge)
+			if !strings.Contains(gauge.String(), m.Name+": rage 4/4") {
+				t.Fatal("the rage gauge must retain the numeric count")
+			}
 			g.processCommand(".")
 			if m.RetaliationTurns != 2 || m.Rage != 0 || !g.epicDangerAt(g.player.Pos) {
 				t.Fatal("full rage must announce a two-action wide attack")
+			}
+			if g.messages[len(g.messages)-1] != m.Name+" erupts in rage! "+epicStrikeName(kind)+" will strike in two actions. Move clear." {
+				t.Fatalf("retaliation must retain timing without explaining map symbols: %q", g.messages)
 			}
 			for _, next := range g.openNeighbors(g.player.Pos, true) {
 				if !g.epicDangerAt(next) {
@@ -234,5 +245,9 @@ func TestRetaliationThroughExecutableSaveLoad(t *testing.T) {
 	}
 	if !strings.Contains(string(output), "RETALIATION in 1 action") {
 		t.Fatal("countdown must remain visible after saving and loading")
+	}
+	prose := strings.Join(strings.Fields(stripANSI(string(output))), " ")
+	if !strings.Contains(prose, m.Name+" erupts in rage! "+epicStrikeName(m.Kind)+" will strike in two actions. Move clear.") {
+		t.Fatal("the executable must show the concise retaliation warning")
 	}
 }

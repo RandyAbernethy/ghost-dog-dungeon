@@ -167,31 +167,31 @@ func (g *game) collectItem(it item) {
 		g.addMessage(fmt.Sprintf("You pack %s / %s. %s", candidateName, slotLabel(it.Armor.Slot), cmp))
 	case itemPotion:
 		g.player.Potions++
-		g.addMessage("You stash a healing potion. Restores 12-18 health when used with p.")
+		g.addMessage("You stash a healing potion; press p to drink it.")
 	case itemFireScroll:
 		g.player.FireScrolls++
-		g.addMessage("You pocket a fire scroll. It detonates near the closest foe when used with f.")
+		g.addMessage("You pocket a fire scroll; press f to read it.")
 	case itemBlinkStone:
 		g.player.BlinkStones++
-		g.addMessage("You take a blink stone. Use g to teleport to the safest open spot on this floor.")
+		g.addMessage("You take a blink stone; press g to use it.")
 	case itemWardingCharm:
 		g.player.WardingCharms++
-		g.addMessage("You take a warding charm. Use b to protect you and your Ghost Dog for 3 enemy turns.")
+		g.addMessage("You take a warding charm; press b to use it.")
 	case itemSunOrb:
 		g.player.SunOrbs++
-		g.addMessage("You cradle a sun orb. Use u to burn every undead monster on this floor.")
+		g.addMessage("You cradle a sun orb; press u to use it.")
 	case itemFrostCharm:
 		g.player.FrostCharms++
-		g.addMessage("You take a frost charm. Use t to freeze and wound the nearest foe.")
+		g.addMessage("You take a frost charm; press t to use it.")
 	case itemStarfireOrb:
 		g.player.StarfireOrbs++
-		g.addMessage("You take a starfire orb. Use o to blast the nearest foe for heavy damage.")
+		g.addMessage("You take a starfire orb; press o to use it.")
 	case itemPhoenixAsh:
 		g.player.PhoenixAshes++
-		g.addMessage("You gather phoenix ash. Use n to restore a large amount of health.")
+		g.addMessage("You gather phoenix ash; press n to use it.")
 	case itemGhostRecallScroll:
 		g.player.GhostRecallScrolls++
-		g.addMessage("You find a Ghost Dog recall scroll. Use r to call your fallen companion back at full health.")
+		g.addMessage("You find a Ghost Dog recall scroll; press r to read it.")
 	case itemStoryScroll:
 		if it.StoryChapter >= 1 && it.StoryChapter <= len(ghostDogStory) {
 			seen := false

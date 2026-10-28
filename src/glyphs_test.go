@@ -147,6 +147,17 @@ func TestPhysicalAppearancesConcealFloorIdentities(t *testing.T) {
 }
 
 func TestPickupRevealsPhysicalItemIdentityAfterSaveLoad(t *testing.T) {
+	pickupMessages := map[itemKind]string{
+		itemPotion:            "You stash a healing potion; press p to drink it.",
+		itemFireScroll:        "You pocket a fire scroll; press f to read it.",
+		itemBlinkStone:        "You take a blink stone; press g to use it.",
+		itemWardingCharm:      "You take a warding charm; press b to use it.",
+		itemSunOrb:            "You cradle a sun orb; press u to use it.",
+		itemFrostCharm:        "You take a frost charm; press t to use it.",
+		itemStarfireOrb:       "You take a starfire orb; press o to use it.",
+		itemPhoenixAsh:        "You gather phoenix ash; press n to use it.",
+		itemGhostRecallScroll: "You find a Ghost Dog recall scroll; press r to read it.",
+	}
 	for _, it := range concealedFloorItems() {
 		t.Run(it.Name, func(t *testing.T) {
 			g := openArena()
@@ -171,6 +182,9 @@ func TestPickupRevealsPhysicalItemIdentityAfterSaveLoad(t *testing.T) {
 			loaded.processCommand("d")
 			if len(loaded.current().Items) != 0 || loaded.stats.Turns != 1 {
 				t.Fatal("pickup must remain an ordinary movement action")
+			}
+			if want := pickupMessages[it.Kind]; want != "" && !reflect.DeepEqual(loaded.messages, []string{"You move east.", want}) {
+				t.Fatalf("pickup must identify the consumable and its key without explaining effects: %q", loaded.messages)
 			}
 			var after bytes.Buffer
 			loaded.renderInventory(&after)

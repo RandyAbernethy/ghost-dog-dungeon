@@ -222,6 +222,9 @@ func TestEquipChoicesCostOneTurnAndAreRetained(t *testing.T) {
 	if g.player.Weapon != spear || g.stats.Turns != 1 || g.player.Weapons[0] != starter {
 		t.Fatal("equipping should keep the old weapon and spend one turn")
 	}
+	if !reflect.DeepEqual(g.messages, []string{"You equip Spear: 2-4 damage, reach 2."}) {
+		t.Fatalf("equipping must confirm the weapon without a turn-cost reminder: %q", g.messages)
+	}
 	g.processCommand("equip 2")
 	g.processCommand("equip 999")
 	if g.stats.Turns != 1 {
@@ -232,6 +235,9 @@ func TestEquipChoicesCostOneTurnAndAreRetained(t *testing.T) {
 	g.processCommand(fmt.Sprintf("equip %d", len(g.player.Weapons)+len(g.player.Armors)))
 	if g.player.HeadArmor != ward || g.stats.Turns != 2 {
 		t.Fatal("armor choices should equip their slot and spend one turn")
+	}
+	if strings.Contains(strings.Join(g.messages, "\n"), "Swapping equipment takes a turn.") {
+		t.Fatal("equipping armor must omit the repeated turn-cost reminder")
 	}
 	g.processCommand("equip 1")
 	if g.player.Weapon != starter || g.stats.Turns != 3 {
@@ -626,7 +632,7 @@ func TestRunBookEquipmentChallengesAndVictory(t *testing.T) {
 		t.Fatalf("run executable event: %v\n%s", err, stderr.String())
 	}
 	eventOutput := strings.Join(strings.Fields(stripANSI(stdout.String())), " ")
-	if !strings.Contains(eventOutput, "ghost of a friendly villager offers a choice") || !strings.Contains(eventOutput, "Press y (interact)") || !strings.Contains(eventOutput, "offers one gift") || !strings.Contains(eventOutput, "3. Ghost Dog recall scroll") || !strings.Contains(eventOutput, "one Ghost Dog recall scroll") || !strings.Contains(eventOutput, "nothing nearby") {
+	if !strings.Contains(eventOutput, "A villager's ghost waits nearby; press y to speak with it.") || !strings.Contains(eventOutput, "offers one gift") || !strings.Contains(eventOutput, "3. Ghost Dog recall scroll") || !strings.Contains(eventOutput, "one Ghost Dog recall scroll") || !strings.Contains(eventOutput, "nothing nearby") {
 		t.Fatal("the executable did not complete the one-use event flow")
 	}
 	eventLoaded, err := loadGame(lastSavePath(t, stdout.String()))

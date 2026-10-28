@@ -11,7 +11,7 @@ import (
 func arrivalPrompts(messages []string) []string {
 	var prompts []string
 	for _, message := range messages {
-		if strings.Contains(message, "(interact)") || strings.Contains(message, "A healing fountain flows nearby.") {
+		if strings.Contains(message, "; press y to ") || strings.Contains(message, "A healing fountain flows nearby.") {
 			prompts = append(prompts, message)
 		}
 	}
@@ -25,10 +25,10 @@ func TestObjectPromptsRepeatOnlyAfterLeavingAndReturning(t *testing.T) {
 		key  string
 		info string
 	}{
-		{"ghost of a friendly villager", eventGhost, "Press y", "choice of three gifts"},
-		{"healing shrine", eventShrine, "press y", "heals you and a living Ghost Dog"},
-		{"keepsake", eventKeepsake, "press y", "Ash's keepsake, a faded collar, lies nearby; press y (interact)."},
-		{"lever", eventLever, "Press y", "open a passage"},
+		{"ghost of a friendly villager", eventGhost, "press y", "A villager's ghost waits nearby; press y to speak with it."},
+		{"healing shrine", eventShrine, "press y", "A healing shrine glows nearby; press y to interact with it."},
+		{"keepsake", eventKeepsake, "press y", "A faded collar lies nearby; press y to examine it."},
+		{"lever", eventLever, "press y", "A lever stands nearby; press y to pull it."},
 		{"fountain", "", "Press v", "A healing fountain flows nearby. Press v to drink."},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -45,7 +45,7 @@ func TestObjectPromptsRepeatOnlyAfterLeavingAndReturning(t *testing.T) {
 				count := 0
 				for _, message := range g.messages {
 					if strings.Contains(message, tc.info) {
-						if (tc.kind == eventKeepsake || tc.name == "fountain") && message != tc.info {
+						if message != tc.info {
 							t.Fatalf("arrival prompt must not disclose rewards or mechanics: %s", message)
 						}
 						count++
@@ -98,7 +98,7 @@ func TestNearbyObjectsPromptIndependently(t *testing.T) {
 	g.messages = nil
 	g.processCommand("d")
 	prompts := arrivalPrompts(g.messages)
-	if len(prompts) != 2 || !strings.Contains(prompts[0], "ghost of a friendly villager") || !strings.Contains(prompts[1], "healing fountain") {
+	if len(prompts) != 2 || !strings.Contains(prompts[0], "villager's ghost") || !strings.Contains(prompts[1], "healing fountain") {
 		t.Fatalf("each newly nearby object should prompt: %v", g.messages)
 	}
 	g.messages = nil
@@ -151,7 +151,7 @@ func TestArrivalPromptsOnStairsAndBlink(t *testing.T) {
 		first.Fountains = []fountain{{Pos: pos{6, 5}, Used: true}}
 		g.messages = nil
 		g.processCommand(">")
-		if !strings.Contains(strings.Join(g.messages, " "), "ghost of a friendly villager offers a choice") || g.stats.Turns != 1 {
+		if !strings.Contains(strings.Join(g.messages, " "), "A villager's ghost waits nearby; press y to speak with it.") || g.stats.Turns != 1 {
 			t.Fatal("descending should announce nearby objects on the destination floor")
 		}
 		g.messages = nil
@@ -168,7 +168,7 @@ func TestArrivalPromptsOnStairsAndBlink(t *testing.T) {
 		g.current().Events = []floorEvent{{Kind: eventKeepsake, Pos: pos{10, 10}}}
 		g.messages = nil
 		g.processCommand("g")
-		if !strings.Contains(strings.Join(g.messages, " "), "Ash's keepsake, a faded collar") || g.stats.Turns != 1 || g.current().Events[0].Used {
+		if !strings.Contains(strings.Join(g.messages, " "), "A faded collar lies nearby; press y to examine it.") || g.stats.Turns != 1 || g.current().Events[0].Used {
 			t.Fatal("blinking beside an object should describe it without activating it")
 		}
 	})
@@ -207,7 +207,7 @@ func TestObjectPromptsStayQuietAcrossScreensAndSaveLoad(t *testing.T) {
 	loaded.processCommand("a")
 	loaded.processCommand("d")
 	prompts := arrivalPrompts(loaded.messages)
-	if len(prompts) != 1 || !strings.Contains(prompts[0], "ghost of a friendly villager offers a choice") {
+	if len(prompts) != 1 || !strings.Contains(prompts[0], "A villager's ghost waits nearby; press y to speak with it.") {
 		t.Fatal("leaving and returning after loading should prompt again")
 	}
 }

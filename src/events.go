@@ -140,14 +140,17 @@ func (g *game) interactEvent() bool {
 		return false
 	case eventShrine:
 		if g.player.HP == g.player.MaxHP && (!g.dogPresent() || g.dog.HP == g.dog.MaxHP) {
-			g.addMessage("The shrine waits until its blessing can heal you or Ghost Dog.")
+			g.addMessage("The shrine glows softly, but you feel no change.")
 			return false
 		}
-		g.player.HP = min(g.player.MaxHP, g.player.HP+6)
-		if g.dogPresent() {
-			g.dog.HP = min(g.dog.MaxHP, g.dog.HP+10)
+		if g.player.HP < g.player.MaxHP {
+			g.player.HP = min(g.player.MaxHP, g.player.HP+6)
+			g.addMessage("Your wounds ease in the shrine's gentle light.")
 		}
-		g.addMessage("The shrine's gentle light restores your strength and comforts your living companion.")
+		if g.dogPresent() && g.dog.HP < g.dog.MaxHP {
+			g.dog.HP = min(g.dog.MaxHP, g.dog.HP+10)
+			g.addMessage("Ash's pale outline steadies in the shrine's light.")
+		}
 	case eventKeepsake:
 		if !g.dogPresent() || distance(g.dog.Pos, e.Pos) > 2 {
 			g.addMessage("A faded collar lies here. Ghost Dog may remember it when he is with you.")
@@ -184,13 +187,13 @@ func (g *game) describeNearbyObjects(previousLevel int, previousPos pos) {
 		}
 		switch e.Kind {
 		case eventGhost:
-			g.addMessage("A ghost of a friendly villager offers a choice of three gifts. Press y (interact) to hear its offer.")
+			g.addMessage("A villager's ghost waits nearby; press y to speak with it.")
 		case eventShrine:
-			g.addMessage("A healing shrine glows nearby. Its one-use blessing heals you and a living Ghost Dog; press y (interact) to receive it.")
+			g.addMessage("A healing shrine glows nearby; press y to interact with it.")
 		case eventKeepsake:
-			g.addMessage("Ash's keepsake, a faded collar, lies nearby; press y (interact).")
+			g.addMessage("A faded collar lies nearby; press y to examine it.")
 		case eventLever:
-			g.addMessage("A shortcut lever stands nearby. Press y (interact) to open a passage through a stone wall.")
+			g.addMessage("A lever stands nearby; press y to pull it.")
 		}
 	}
 	for _, f := range lvl.Fountains {

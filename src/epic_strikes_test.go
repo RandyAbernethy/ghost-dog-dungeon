@@ -26,6 +26,9 @@ func TestEpicWarningsGiveOnePlayerActionAndNeverRetarget(t *testing.T) {
 			if g.player.HP != 200 || m.ActionTurns != 3 || !containsPosition(m.StrikeTiles, g.player.Pos) || g.rng.State != beforeRNG {
 				t.Fatal("preparing a signature must warn without damage or randomness")
 			}
+			if g.messages[len(g.messages)-1] != m.Name+" prepares "+epicStrikeName(kind)+"! Move clear." {
+				t.Fatalf("preparation must name the attack without explaining map symbols: %q", g.messages)
+			}
 			var out bytes.Buffer
 			g.render(&out)
 			g.renderInspect(&out)

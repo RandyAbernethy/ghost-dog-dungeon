@@ -380,7 +380,7 @@ These examples include the campaign goal and content that can appear in a run.
 ```text
 $ ./bin/ghostdog --seed 42
 
-Ghost Dog Dungeon version 1.0.4
+Ghost Dog Dungeon version 1.1.0
 Dungeon seed: 42
 
 === Personal Records ===

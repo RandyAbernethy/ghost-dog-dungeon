@@ -292,6 +292,9 @@ func TestWardingCharmProtectsGhostDogForThreeEnemyTurns(t *testing.T) {
 	for turn, command := range []string{"b", ".", ".", "."} {
 		beforeHP := g.dog.HP
 		g.processCommand(command)
+		if turn == 0 && g.messages[0] != "A pale ward circles you and Ash." {
+			t.Fatalf("the ward must describe both companions: %q", g.messages)
+		}
 		wantDamage := 3
 		if turn == 3 {
 			wantDamage = 6
@@ -305,6 +308,12 @@ func TestWardingCharmProtectsGhostDogForThreeEnemyTurns(t *testing.T) {
 	}
 	if g.player.WardingCharms != 0 {
 		t.Fatal("casting the ward should consume one charm")
+	}
+	solo := openArena()
+	solo.player.WardingCharms = 1
+	solo.processCommand("b")
+	if strings.Join(solo.messages, "\n") != "A pale ward circles you." {
+		t.Fatalf("a solo ward must describe only the player: %q", solo.messages)
 	}
 }
 
@@ -342,7 +351,7 @@ func TestWardProtectsGhostDogFromLightning(t *testing.T) {
 	}
 }
 
-func TestGhostDogDeathExplainsHowToFreeIt(t *testing.T) {
+func TestGhostDogDeathDescribesDispersion(t *testing.T) {
 	g := openArena()
 	g.dog.Freed = true
 	g.dog.Alive = true
@@ -352,8 +361,8 @@ func TestGhostDogDeathExplainsHowToFreeIt(t *testing.T) {
 	if g.dog.Alive || g.dog.HP != 0 {
 		t.Fatalf("ghost dog should be dead at 0 HP, got alive=%t hp=%d", g.dog.Alive, g.dog.HP)
 	}
-	if !strings.Contains(strings.Join(g.messages, "\n"), "The Ghost Dog can only be freed now by a magic spell or by killing the Dread Lich") {
-		t.Fatalf("missing ghost-dog death guidance: %q", strings.Join(g.messages, " | "))
+	if !strings.Contains(strings.Join(g.messages, "\n"), "Ash's outline breaks apart into silver mist.") {
+		t.Fatalf("missing ghost-dog dispersion message: %q", strings.Join(g.messages, " | "))
 	}
 }
 

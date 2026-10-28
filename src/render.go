@@ -473,7 +473,7 @@ func (g *game) inventoryLines() []inventoryLine {
 }
 
 func (g *game) contextHint() string {
-	if hint := g.cryptHint(); hint != "" {
+	if hint := g.cryptHint(); hint != "" || g.inCrypt {
 		return hint
 	}
 	if g.dogPresent() && g.dog.Chained && distance(g.player.Pos, g.dog.Pos) <= 1 {

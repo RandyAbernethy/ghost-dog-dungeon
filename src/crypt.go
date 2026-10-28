@@ -71,7 +71,7 @@ func (g *game) useCryptDoor(next pos) (bool, bool) {
 	if g.dog.active() {
 		g.placeDogNearPlayer()
 	}
-	g.addMessage("You enter " + cryptName + ". The door seals behind you. Only the far secret exit leads back.")
+	g.addMessage("You enter " + cryptName + ". The stone door seals behind you.")
 	g.addMessage("Darkness limits sight to three tiles; existing wards fade.")
 	return true, true
 }
@@ -87,7 +87,7 @@ func (g *game) searchCrypt() bool {
 		}
 		c.EntranceRevealed = true
 		g.current().Tiles[c.Entrance.Y][c.Entrance.X] = '.'
-		g.addMessage("You uncover a secret door to " + cryptName + ". Step through { to enter; the entrance seals behind you. You must cross the maze to return. Undead of floor-eight strength and the Under Lich guard the route.")
+		g.addMessage(`You uncover a secret door, step through { to enter. A message is scratched into the stone here, "Beware the maze of the Under Lich".`)
 		return true
 	}
 	found := false
@@ -125,11 +125,11 @@ func (g *game) cryptHint() string {
 				return "a " + string(t.Kind) + " trap is nearby — press y beside it to disarm; stepping on it still triggers it."
 			}
 		}
-		return "The entrance behind you is sealed."
+		return ""
 	}
 	if g.currentLevel == c.ParentFloor && !c.Floor.Visited && distance(g.player.Pos, c.Entrance) <= 1 {
 		if c.EntranceRevealed {
-			return "the crypt door { is a one-way entrance. The entrance seals behind you; only the far secret exit leads back."
+			return "Step through { to enter. Scratched into the stone: “Beware the maze of the Under Lich”."
 		}
 	}
 	return ""

@@ -46,7 +46,7 @@ func additionalMonsterDescription(kind monsterKind) string {
 	case monsterRustGuard:
 		return "Its salvaged iron plates block 1 damage per hit."
 	case monsterBarrowArcher:
-		return "Undead; fires physical arrows from five tiles away."
+		return "Undead; fires physical arrows from up to five tiles away along a clear line."
 	case monsterGraveAcolyte:
 		return "Undead; distant chants deal spell damage and weaken your next strike."
 	case monsterEmberHound:

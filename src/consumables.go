@@ -54,9 +54,9 @@ func (g *game) useWardingCharm() bool {
 	}
 	g.player.ShieldTurns = 3
 	if g.dogPresent() {
-		g.addMessage("A pale ward circles you and the Ghost Dog for the next 3 enemy turns.")
+		g.addMessage("A pale ward circles you and Ash.")
 	} else {
-		g.addMessage("A pale ward circles you for the next 3 enemy turns.")
+		g.addMessage("A pale ward circles you.")
 	}
 	return true
 }
@@ -81,9 +81,9 @@ func (g *game) useBlinkStone() bool {
 	g.dogFocus = nil
 	if g.dog.active() {
 		g.dog.Pos = landing.dog
-		g.addMessage("Space folds and carries you and Ghost Dog to the safest open spot on this floor.")
+		g.addMessage("Space folds around you and Ash. You emerge elsewhere.")
 	} else {
-		g.addMessage("Space folds and carries you to the safest open spot on this floor.")
+		g.addMessage("Space folds around you. You emerge elsewhere.")
 	}
 	g.collectItems()
 	return true

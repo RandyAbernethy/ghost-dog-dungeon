@@ -86,7 +86,7 @@ func (g *game) triggerCryptTrap(previous pos) {
 		g.hurtPlayer(t.Damage, "A pit opens beneath your feet")
 		if g.player.HP > 0 {
 			g.player.BoundTurns, g.player.Binding = 1, bindingPit
-			g.addMessage("You must spend one movement turn climbing out of the pit.")
+			g.addMessage("You struggle for a handhold on the pit's crumbling edge.")
 		}
 	case trapDarts:
 		g.hurtPlayer(t.Damage, "Hidden slits fire a volley of darts")
@@ -104,7 +104,7 @@ func (g *game) triggerCryptTrap(previous pos) {
 		}
 	case trapGas:
 		g.player.PoisonTurns = max(g.player.PoisonTurns, 3)
-		g.addMessage("Choking gas surrounds you. Poison will hurt you for three action turns, including this one.")
+		g.addMessage("Choking gas surrounds you. Your lungs begin to burn.")
 	case trapRepulsion:
 		g.hurtPlayerSpell(t.Damage, "A repulsion rune hurls you backward")
 		if g.player.HP > 0 && g.isWalkable(previous, false) {

@@ -76,6 +76,46 @@ func TestHealingShrineAndKeepsakeSupportOnlyALivingCompanion(t *testing.T) {
 	}
 }
 
+func TestShrineMessagesDescribeOnlyHealingRecipients(t *testing.T) {
+	const playerHealing = "Your wounds ease in the shrine's gentle light."
+	const dogHealing = "Ash's pale outline steadies in the shrine's light."
+	const noHealing = "The shrine glows softly, but you feel no change."
+	for _, tc := range []struct {
+		name                    string
+		playerHP, dogHP         int
+		freed, alive            bool
+		wantPlayerHP, wantDogHP int
+		messages                []string
+	}{
+		{name: "healthy together", playerHP: 46, dogHP: 34, freed: true, alive: true, wantPlayerHP: 46, wantDogHP: 34, messages: []string{noHealing}},
+		{name: "player only", playerHP: 40, dogHP: 34, freed: true, alive: true, wantPlayerHP: 46, wantDogHP: 34, messages: []string{playerHealing}},
+		{name: "Ash only", playerHP: 46, dogHP: 24, freed: true, alive: true, wantPlayerHP: 46, wantDogHP: 34, messages: []string{dogHealing}},
+		{name: "both", playerHP: 40, dogHP: 24, freed: true, alive: true, wantPlayerHP: 46, wantDogHP: 34, messages: []string{playerHealing, dogHealing}},
+		{name: "Ash not freed", playerHP: 40, dogHP: 24, alive: true, wantPlayerHP: 46, wantDogHP: 24, messages: []string{playerHealing}},
+		{name: "Ash fallen", playerHP: 40, freed: true, wantPlayerHP: 46, messages: []string{playerHealing}},
+		{name: "healthy player and fallen Ash", playerHP: 46, freed: true, wantPlayerHP: 46, messages: []string{noHealing}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			g := openArena()
+			g.current().Events = []floorEvent{{Kind: eventShrine, Pos: pos{6, 5}}}
+			g.player.HP = tc.playerHP
+			g.dog.HP, g.dog.Freed, g.dog.Alive, g.dog.Pos = tc.dogHP, tc.freed, tc.alive, pos{5, 4}
+			rng := g.rng.State
+			g.processCommand("y")
+			if !reflect.DeepEqual(g.messages, tc.messages) {
+				t.Fatalf("healing messages = %q, want %q", g.messages, tc.messages)
+			}
+			wantTurns := 0
+			if tc.wantPlayerHP > tc.playerHP || tc.wantDogHP > tc.dogHP {
+				wantTurns = 1
+			}
+			if g.player.HP != tc.wantPlayerHP || g.dog.HP != tc.wantDogHP || g.stats.Turns != wantTurns || g.current().Events[0].Used != (wantTurns == 1) || g.rng.State != rng {
+				t.Fatal("recipient messages must preserve healing, turn costs, one-time use and RNG")
+			}
+		})
+	}
+}
+
 func TestKeepsakeHealingThroughExecutableAndSaveLoad(t *testing.T) {
 	g := openArena()
 	g.current().Events = []floorEvent{{Kind: eventKeepsake, Pos: pos{6, 5}}}

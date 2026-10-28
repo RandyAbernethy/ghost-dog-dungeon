@@ -146,20 +146,26 @@ continuation indentation. Color codes do not count toward the width. Snapshot-pa
 so paths can be copied exactly.
 
 On supported Unix terminals, keys act immediately. In command-and-Enter mode, enter a command and press Enter.
-The hidden crypt leaves its fountain and magic restrictions for players to discover. Suppressed magic reports
+The hidden crypt’s entrance bears a scratched warning about the Under Lich’s maze, leaving its travel, fountain
+and magic restrictions for players to discover. Suppressed magic reports
 that the crypt consumed its power without effect.
 
 Start with movement, **i** for the inventory menu, **y** to interact, **m** to inspect, and help (**?** on Unix,
 **h** in command-and-Enter mode). Help shows the complete control and feature reference for your input mode.
-Nearby keepsake prompts identify the faded collar and interaction key without revealing rewards.
+Nearby event prompts describe what you see and how to interact, leaving gifts, lever effects, and the collar's
+history to be discovered. Objective prompts give the interaction control; shrine messages describe only who receives healing.
+Vigil messages describe the spirit's condition; objective completion text comes before the reward's pickup description.
+Action messages describe Ash's dispersal, wards, blinking and traps as they happen, leaving their rules to discovery
+and reference screens. Equipment messages omit repeated turn-cost reminders.
+Barrow Archers need a clear line of floor tiles to you before they can attack you or Ghost Dog; walls block their attacks.
 The map shows survival information and a legend of nearby visible entities. Spell ward and strike bonus appear only
 when nonzero; inventory retains their complete statistics, including zeros. Consumable counts and detailed statistics live
 in inventory and records. Each monster species, physical item category, and map feature has a distinct symbol:
 `?` scroll (including side stories), `=` orb, `%` charm, `!` potion, `*` stone, `)` weapon, `[` armor.
 Warding and Frost Charms share **%**. Phoenix Ash is a stronger healing consumable (22–30 HP) and shares the potion
 appearance **!** with healing potions (12–18 HP). All floor legends, inspection text and drop announcements show only
-physical categories; pickup reveals exact names, properties and story contents. Inventory and gift offers show
-identified items. **F** means a
+physical categories; pickup identifies items and reveals story contents. Consumable pickup messages give the use key;
+inventory and gift offers provide item properties. **F** means a
 healing fountain; **f** means a spent fountain. **c** opens the discovered-enemy codex.
 Status, menus, hints and warnings wrap to the Unix terminal width, capped at 80 columns. Windows and redirected output
 use a compact 60-column fallback; set `COLUMNS` to override it. The map itself requires 38 columns.
@@ -230,6 +236,7 @@ damage range before ordinary defenses. Every four damaging hits, including Ash a
 When there is room to escape, full rage prepares a wide retaliation with **two actions** of warning: start moving
 immediately and move again, interrupt it, use protection, or blink. Waiting to dodge until the last action may be fatal.
 Marked tiles never follow you. Ash begins escaping wide warnings early. Epics remain optional and bypassable.
+Epic turn logs announce awakening, anger and incoming attacks without explaining map symbols or attack routines.
 
 Armor guards against incoming damage. Reach weapons can strike from two tiles away: press the direction toward
 an enemy in a straight line. If the adjacent tile is empty, you attack without moving; you can also strike over

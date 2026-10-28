@@ -43,7 +43,13 @@ func TestSpiritVigilTurnsSaveAndOneTimeReward(t *testing.T) {
 	if !o.Started || o.Progress != 0 || g.stats.Turns != 1 {
 		t.Fatal("starting the vigil must spend one turn without counting it toward protection")
 	}
+	if !reflect.DeepEqual(g.messages, []string{"You promise to stay with the lost spirit and protect it."}) {
+		t.Fatalf("vigil start must describe the promise: %q", g.messages)
+	}
 	g.processCommand("y")
+	if g.messages[len(g.messages)-1] != "The vigil continues. Stay close and protect the spirit." {
+		t.Fatalf("reading the vigil must give its story prompt: %q", g.messages)
+	}
 	g.processCommand("v") // No fountain: failed action.
 	var out bytes.Buffer
 	if err := g.loop(strings.NewReader("m\nbook\nmap\nquit\n"), &out); err != nil {
@@ -54,6 +60,9 @@ func TestSpiritVigilTurnsSaveAndOneTimeReward(t *testing.T) {
 		t.Fatal("reading and failed actions must not protect the spirit or spend RNG")
 	}
 	g.processCommand(".")
+	if g.messages[len(g.messages)-1] != "You keep the spirit company." {
+		t.Fatalf("vigil progress must describe companionship: %q", g.messages)
+	}
 	g = saveAndReloadAdventure(t, g)
 	g.processCommand(".")
 	g.processCommand(".")
@@ -100,6 +109,9 @@ func TestSpiritCanFailOrBeGuardedByLivingAsh(t *testing.T) {
 	g.current().Monsters = []*monster{&m}
 	for i := 0; i < 3; i++ {
 		g.processCommand(".")
+		if !strings.Contains(strings.Join(g.messages, "\n"), "The spirit's light falters as enemies draw near.") {
+			t.Fatalf("nearby enemies must visibly trouble the spirit: %q", g.messages)
+		}
 	}
 	if !g.current().Objective.Failed || g.current().Objective.Completed || g.player.WardingCharms != 0 {
 		t.Fatal("three turns with an adjacent enemy must extinguish the spirit without a reward")
@@ -110,6 +122,9 @@ func TestSpiritCanFailOrBeGuardedByLivingAsh(t *testing.T) {
 	g.processCommand(">")
 	if !g.levels[0].Objective.Failed {
 		t.Fatal("leaving the floor must abandon an active vigil")
+	}
+	if !strings.Contains(strings.Join(g.messages, "\n"), "The abandoned spirit fades into the darkness.") {
+		t.Fatalf("abandonment must describe the spirit fading: %q", g.messages)
 	}
 	g = objectiveArena(objectiveSpirit)
 	g.processCommand("y")
@@ -154,25 +169,38 @@ func TestObjectiveMarkerTakesPriorityOverNearbyFreeEvent(t *testing.T) {
 }
 
 func TestObjectiveArrivalPromptsAndRenderingAreQuiet(t *testing.T) {
-	g := objectiveArena(objectiveSigils)
-	g.player.Pos = pos{5, 8}
-	g.processCommand("w")
-	g.processCommand("w")
-	if strings.Count(strings.Join(g.messages, "\n"), "Three ritual sigils") != 1 {
-		t.Fatal("entering the objective must show its instructions")
-	}
-	before := *g.current().Objective
-	beforeSigils := append([]ritualSigil(nil), before.Sigils...)
-	log := append([]string(nil), g.messages...)
-	var out bytes.Buffer
-	g.render(&out)
-	g.renderInspect(&out)
-	if !reflect.DeepEqual(before, *g.current().Objective) || !reflect.DeepEqual(beforeSigils, g.current().Objective.Sigils) || !reflect.DeepEqual(log, g.messages) {
-		t.Fatal("display and inspection must not mutate objective or log state")
-	}
-	g.processCommand("a")
-	if strings.Contains(strings.Join(g.messages, "\n"), "Three ritual sigils") {
-		t.Fatal("moving within the room must not repeat arrival prompts")
+	for _, tc := range []struct {
+		kind   objectiveKind
+		prompt string
+	}{
+		{objectiveSpirit, "A lost spirit waits here. Press y beside S to keep it company."},
+		{objectiveSigils, "Three ritual sigils glow here. Stand on O and press y to break a sigil."},
+	} {
+		t.Run(string(tc.kind), func(t *testing.T) {
+			g := objectiveArena(tc.kind)
+			g.player.Pos = pos{5, 8}
+			g.processCommand("w")
+			g.processCommand("w")
+			if strings.Count(strings.Join(g.messages, "\n"), tc.prompt) != 1 {
+				t.Fatal("entering the objective must show its instructions")
+			}
+			before := *g.current().Objective
+			beforeSigils := append([]ritualSigil(nil), before.Sigils...)
+			log := append([]string(nil), g.messages...)
+			var out bytes.Buffer
+			g.render(&out)
+			g.renderInspect(&out)
+			if !reflect.DeepEqual(before, *g.current().Objective) || !reflect.DeepEqual(beforeSigils, g.current().Objective.Sigils) || !reflect.DeepEqual(log, g.messages) {
+				t.Fatal("display and inspection must not mutate objective or log state")
+			}
+			g.processCommand("a")
+			if strings.Contains(strings.Join(g.messages, "\n"), tc.prompt) {
+				t.Fatal("moving within the room must not repeat arrival prompts")
+			}
+			if !strings.Contains(strings.Join(strings.Fields(out.String()), " "), tc.prompt) {
+				t.Fatal("the map must retain the concise objective interaction prompt")
+			}
+		})
 	}
 }
 

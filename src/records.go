@@ -157,8 +157,8 @@ func renderRecordAchievements(w io.Writer, achievements []recordAchievement) {
 func (g *game) renderChallenges(w io.Writer) {
 	fmt.Fprintln(w, "\n=== Optional Challenges ===")
 	fmt.Fprintf(w, "This run: %d turns, %d monsters killed, Ghost Dog fell %d time(s).\n", g.stats.Turns, g.stats.MonstersKilled, g.stats.GhostDogFalls)
-	fmt.Fprintf(w, "Difficulty defeated: %d points. Tougher enemies earn more points.\n", g.stats.DifficultyDefeated)
-	fmt.Fprintln(w, "Fewest turns: escape as quickly as you can. Most kills: counts kills by you and Ghost Dog in a run ending in escape or death.")
+	fmt.Fprintf(w, "Difficulty defeated: %d points.\n\n", g.stats.DifficultyDefeated)
+	fmt.Fprintln(w, "Tougher enemies earn more points. Most kills counts kills by you and Ghost Dog.")
 	if g.stats.GhostDogFalls > 0 {
 		fmt.Fprintln(w, "Escape without Ghost Dog falling: failed this run, even if he is revived.")
 	} else if g.won && g.dog.active() {

@@ -221,3 +221,27 @@ func max(a, b int) int {
 	}
 	return b
 }
+
+// Trace the straight shot through terrain; actors and features are separate from floor tiles.
+func (g *game) clearFloorLine(from, to pos) bool {
+	dx, dy := abs(to.X-from.X), -abs(to.Y-from.Y)
+	sx, sy := sign(to.X-from.X), sign(to.Y-from.Y)
+	err := dx + dy
+	for {
+		if !g.inBounds(from) || g.current().Tiles[from.Y][from.X] != '.' {
+			return false
+		}
+		if from == to {
+			return true
+		}
+		e2 := 2 * err
+		if e2 >= dy {
+			err += dy
+			from.X += sx
+		}
+		if e2 <= dx {
+			err += dx
+			from.Y += sy
+		}
+	}
+}

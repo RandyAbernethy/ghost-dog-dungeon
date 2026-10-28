@@ -10,7 +10,7 @@ func (g *game) epicNormalTurn(m *monster) {
 	if dog {
 		target = g.dog.Pos
 	}
-	if distance(m.Pos, target) > 2 || !g.clearEpicLine(m.Pos, target) {
+	if distance(m.Pos, target) > 2 || !g.clearFloorLine(m.Pos, target) {
 		g.moveMonster(m)
 		return
 	}
@@ -86,13 +86,13 @@ func (g *game) legalEpicEscapeStep(from, to pos, player bool) bool {
 func (g *game) prepareEpicRetaliation(m *monster) bool {
 	var tiles []pos
 	addArea := func(center pos) {
-		if distance(m.Pos, center) > 4 || !g.clearEpicLine(m.Pos, center) {
+		if distance(m.Pos, center) > 4 || !g.clearFloorLine(m.Pos, center) {
 			return
 		}
 		for dy := -1; dy <= 1; dy++ {
 			for dx := -1; dx <= 1; dx++ {
 				p := pos{center.X + dx, center.Y + dy}
-				if g.inBounds(p) && p != m.Pos && g.current().Tiles[p.Y][p.X] != '#' && g.clearEpicLine(m.Pos, p) && !containsPosition(tiles, p) {
+				if g.inBounds(p) && p != m.Pos && g.current().Tiles[p.Y][p.X] != '#' && g.clearFloorLine(m.Pos, p) && !containsPosition(tiles, p) {
 					tiles = append(tiles, p)
 				}
 			}
@@ -120,6 +120,6 @@ func (g *game) prepareEpicRetaliation(m *monster) bool {
 		}
 	}
 	m.StrikeTiles, m.RetaliationTurns, m.Rage = tiles, 2, 0
-	g.addMessage(fmt.Sprintf("%s rage erupts! RETALIATION: %s covers a wide area in TWO actions. Move twice now, interrupt, protect, or blink; marked tiles will not follow you.", m.Name, epicStrikeName(m.Kind)))
+	g.addMessage(fmt.Sprintf("%s erupts in rage! %s will strike in two actions. Move clear.", m.Name, epicStrikeName(m.Kind)))
 	return true
 }

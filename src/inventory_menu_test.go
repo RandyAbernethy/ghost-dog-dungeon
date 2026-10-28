@@ -90,6 +90,10 @@ func TestPackActionsThroughExecutable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("menu executable: %v\n%s", err, output)
 	}
+	prose := strings.Join(strings.Fields(stripANSI(string(output))), " ")
+	if !strings.Contains(prose, "You drop Rusty Knife on the floor.") || strings.Contains(prose, "Dropping takes a turn.") {
+		t.Fatal("the executable must confirm the drop without a turn-cost reminder")
+	}
 	loaded, err := loadGame(lastSavePath(t, string(output)))
 	if err != nil {
 		t.Fatal(err)

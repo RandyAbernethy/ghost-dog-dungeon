@@ -105,6 +105,9 @@ func TestBlinkStoneDoesNotReviveOrFreeGhostDog(t *testing.T) {
 		if g.dog != before {
 			t.Fatal("a blink stone should not move, free, or revive an unavailable Ghost Dog")
 		}
+		if !reflect.DeepEqual(g.messages, []string{"Space folds around you. You emerge elsewhere."}) {
+			t.Fatalf("a solo blink must describe only the player: %q", g.messages)
+		}
 	}
 }
 
@@ -151,7 +154,7 @@ func TestRunBlinkStone(t *testing.T) {
 	if err := run(args, strings.NewReader("g\nsave\nquit\n"), &stdout, &stderr); err != nil {
 		t.Fatalf("run blink command: %v\n%s", err, stderr.String())
 	}
-	if !strings.Contains(strings.Join(strings.Fields(stdout.String()), " "), "Space folds and carries you and Ghost Dog to the safest open spot on this floor.") {
+	if !strings.Contains(strings.Join(strings.Fields(stdout.String()), " "), "Space folds around you and Ash. You emerge elsewhere.") {
 		t.Fatal("the game should report the companions teleporting together")
 	}
 	loaded, err := loadGame(lastSavePath(t, stdout.String()))

@@ -16,6 +16,9 @@ func TestEpicsMoveAndAttackSlowlyAndCanBeOutrun(t *testing.T) {
 		if !m.Awakened || m.Pos == start {
 			t.Fatalf("%s should wake and take its first step", kind)
 		}
+		if strings.Join(g.messages, "\n") != m.Name+" awakens and turns toward you!" {
+			t.Fatalf("awakening must announce the creature without explaining its attacks: %q", g.messages)
+		}
 		first := m.Pos
 		g.monsterTurn(&m)
 		g.monsterTurn(&m)

@@ -205,7 +205,7 @@ func TestDifficultyScoreCountsEachDeathAndPersistsBestFinishedRun(t *testing.T) 
 	}
 	var out bytes.Buffer
 	g.renderChallenges(&out)
-	if !strings.Contains(out.String(), fmt.Sprintf("Difficulty defeated: %d points.", g.stats.DifficultyDefeated)) || !strings.Contains(out.String(), "Most difficulty defeated record:") {
+	if !strings.Contains(out.String(), fmt.Sprintf("Difficulty defeated: %d points.\n\nTougher enemies earn more points. Most kills counts kills by you and Ghost Dog.\n", g.stats.DifficultyDefeated)) || !strings.Contains(out.String(), "Most difficulty defeated record:") {
 		t.Fatal("challenge screen should show the run's score and saved record")
 	}
 }

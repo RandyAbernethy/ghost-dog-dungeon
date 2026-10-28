@@ -88,7 +88,7 @@ func (g *game) awakenEpic(m *monster) {
 		return
 	}
 	m.Awakened = true
-	g.addMessage(m.Name + " awakens! Normal attacks reach two tiles and alternate with warned signatures. Four damaging hits provoke a two-action retaliation. Retreat now or prepare for a dangerous fight.")
+	g.addMessage(m.Name + " awakens and turns toward you!")
 }
 
 func (g *game) epicRest(m *monster) bool {

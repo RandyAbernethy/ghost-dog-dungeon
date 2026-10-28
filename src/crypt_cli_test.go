@@ -83,7 +83,7 @@ func TestGeneratedCryptThroughExecutableAndSaveLoad(t *testing.T) {
 		t.Fatal("compiled save/load traversal must match uninterrupted play through the entire generated crypt")
 	}
 	prose := strings.Join(strings.Fields(stripANSI(string(output))), " ")
-	for _, want := range []string{cryptName, "entrance seals behind you", "no ward forms", "space refuses to fold", "Under Lich falls.", "return to floor"} {
+	for _, want := range []string{cryptName, `"Beware the maze of the Under Lich"`, "no ward forms", "space refuses to fold", "Under Lich falls.", "return to floor"} {
 		if !strings.Contains(prose, want) {
 			t.Fatalf("compiled crypt did not show %q", want)
 		}
@@ -121,6 +121,9 @@ func TestCryptTrapDiscoveryDisarmingAndPoisonThroughExecutable(t *testing.T) {
 		}
 		if loaded.player.HP != wantHP || loaded.player.PoisonTurns != 0 || loaded.stats.Turns != 3 || !loaded.crypt.Traps[0].Spent {
 			t.Fatalf("disarm=%v: saved trap state and poison turns must follow command-loop actions", disarm)
+		}
+		if strings.Contains(string(output), "Choking gas surrounds you. Your lungs begin to burn.") == disarm {
+			t.Fatal("only triggering the gas trap must describe the choking fumes")
 		}
 	}
 }

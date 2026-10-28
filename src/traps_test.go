@@ -27,8 +27,11 @@ func TestAllEightCryptTrapsTriggerOnceThroughMovement(t *testing.T) {
 			}
 			switch kind {
 			case trapPit:
-				if g.player.BoundTurns != 1 || g.player.Binding != bindingPit || !strings.Contains(g.contextHint(), "entrance") {
+				if g.player.BoundTurns != 1 || g.player.Binding != bindingPit {
 					t.Fatal("a pit must hold the player until a movement action climbs out")
+				}
+				if !strings.Contains(strings.Join(g.messages, "\n"), "You struggle for a handhold on the pit's crumbling edge.") {
+					t.Fatal("falling into a pit must describe the struggle to climb out")
 				}
 			case trapFrost:
 				if g.player.Binding != bindingIce || g.player.BoundTurns != 1 {
@@ -42,6 +45,9 @@ func TestAllEightCryptTrapsTriggerOnceThroughMovement(t *testing.T) {
 				if g.player.PoisonTurns != 2 || g.player.HP != 198 {
 					t.Fatal("gas must start three action turns of poison, including this action")
 				}
+				if !strings.Contains(strings.Join(g.messages, "\n"), "Choking gas surrounds you. Your lungs begin to burn.") {
+					t.Fatal("gas must describe the inhaled poison")
+				}
 			case trapRepulsion:
 				if g.player.Pos != (pos{5, 5}) {
 					t.Fatal("repulsion must push the player back to the previous free tile")
@@ -54,6 +60,9 @@ func TestAllEightCryptTrapsTriggerOnceThroughMovement(t *testing.T) {
 				g.processCommand("a")
 				if g.player.Pos != p || g.player.BoundTurns != 0 || g.player.Binding != "" {
 					t.Fatal("escaping the hold must cost exactly one movement turn")
+				}
+				if kind == trapPit && g.messages[0] != "You haul yourself out of the collapsed pit." {
+					t.Fatal("escaping a pit must describe climbing out")
 				}
 			}
 			g.player.PoisonTurns = 0
